@@ -48,4 +48,3 @@ const AdsterraBanner = () => {
 };
 
 export default AdsterraBanner;
-
