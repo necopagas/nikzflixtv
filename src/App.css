@@ -206,3 +206,9 @@ body::-webkit-scrollbar-thumb { background-color: var(--brand-color); border-rad
         grid-template-columns: repeat(5, minmax(0, 1fr)); /* 5 columns sa lg screen */
     }
 }
+
+/* --- STYLES PARA SA USER PROFILE DROPDOWN --- */
+.profile-dropdown {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    border: 1px solid var(--border-color);
+}

@@ -20,17 +20,35 @@ export const MOVIE_GENRES = [
 ];
 
 export const EMBED_URLS = {
-    vidsrc: { movie: (id) => `https://vidsrc.to/embed/movie/${id}`, tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` },
-    multiembed: { movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`, tv: (id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}` },
-    vidlink: { movie: (id) => `https://vidlink.pro/movie/${id}`, tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}` },
-    // --- FIX: Gi-update ang URLs sa Videasy para sa Movies ug TV Shows ---
-    videasy: {
-        movie: (imdb_id) => imdb_id ? `https://player.videasy.net/movie/${imdb_id}` : null,
-        tv: (imdb_id, s, e) => imdb_id ? `https://player.videasy.net/tv/${imdb_id}/${s}/${e}` : null,
+    vidsrc: { 
+        movie: (id) => `https://vidsrc.to/embed/movie/${id}`, 
+        tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` 
     },
-    vidlink_anime: {
-        anime: (mal_id, e, type) => `https://vidlink.pro/anime/${mal_id}/${e}/${type}?fallback=true`
-    }
+    vidsrc_me: {
+        movie: (id) => `https://vidsrc.me/embed/movie?tmdb=${id}`,
+        tv: (id, s, e) => `https://vidsrc.me/embed/tv?tmdb=${id}&s=${s}&e=${e}`
+    },
+    two_embed: {
+        movie: (id) => `https://www.2embed.cc/embed/${id}`,
+        tv: (id, s, e) => `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}`
+    },
+    multiembed: { 
+        movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`, 
+        tv: (id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}` 
+    },
+    autoembed: {
+        movie: (id) => `https://autoembed.pro/embed/movie/${id}`,
+        tv: (id, s, e) => `https://autoembed.pro/embed/tv/${id}/${s}/${e}`,
+    },
+    vidfast: {
+        movie: (id) => `https://vidfast.pro/movie/${id}`,
+        tv: (id, s, e) => `https://vidfast.pro/tv/${id}/${s}/${e}`,
+    },
+    vidlink: { 
+        movie: (id) => `https://vidlink.pro/movie/${id}`, 
+        tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}` 
+    },
 };
 
-export const SOURCE_ORDER = ['vidlink', 'vidsrc', 'multiembed', 'videasy'];
+// --- GI-UPDATE NGA SOURCE ORDER: Gi-una na ang 'autoembed' ---
+export const SOURCE_ORDER = ['autoembed', 'vidsrc', 'vidsrc_me', 'two_embed', 'multiembed', 'vidfast', 'vidlink'];

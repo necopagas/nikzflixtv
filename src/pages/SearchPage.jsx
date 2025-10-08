@@ -24,7 +24,8 @@ export const SearchPage = ({ onOpenModal, isWatched }) => {
         const fetchSearchResults = async () => {
             setIsLoading(true);
             const data = await fetchData(API_ENDPOINTS.search(query, page));
-            setResults(prev => [...prev, ...data.results]);
+            const validResults = data.results.filter(item => item.poster_path);
+            setResults(prev => [...prev, ...validResults]);
             setHasMore(data.page < data.total_pages);
             setIsLoading(false);
         };
@@ -48,15 +49,20 @@ export const SearchPage = ({ onOpenModal, isWatched }) => {
                             key={item.id} 
                             item={item} 
                             onOpenModal={onOpenModal} 
-                            // --- ANG FIX NAA DINHI: Sakto na ang pagtawag sa isWatched ---
-                            isWatched={() => isWatched(item.id)} 
+                            isWatched={isWatched(item.id)} 
                         />
                     ))}
                 </div>
             ) : (
                 !isLoading && <p>No results found for "{query}".</p>
             )}
-            {isLoading && <p>Loading...</p>}
+            {isLoading && (
+                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                    {Array.from({ length: 12 }).map((_, i) => (
+                        <div key={i} className="aspect-[2/3] skeleton"></div>
+                    ))}
+                </div>
+            )}
             {hasMore && !isLoading && (
                 <div className="flex justify-center mt-8">
                     <button onClick={loadMore} className="px-6 py-3 bg-red-600 text-white font-bold rounded hover:bg-red-700">

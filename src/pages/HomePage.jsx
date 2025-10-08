@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMyList } from '../hooks/useMyList';
 import { useContinueWatching } from '../hooks/useContinueWatching';
 import { Banner } from '../components/Banner';
@@ -9,11 +9,29 @@ import { API_ENDPOINTS, MOVIE_GENRES } from '../config';
 import { fetchData } from '../utils/fetchData';
 
 export const HomePage = ({ onOpenModal, isWatched }) => {
-    const { myList } = useMyList();
-    const { continueWatchingList } = useContinueWatching();
+    const { myList, loading: myListLoading } = useMyList();
+    const { continueWatchingList, loading: continueWatchingLoading } = useContinueWatching();
+    
+    // --- IBALIK ANG MGA STATES PARA SA DATA ---
+    const [trending, setTrending] = useState([]);
+    const [popular, setPopular] = useState([]);
+    const [topRated, setTopRated] = useState([]);
+    const [tvShows, setTvShows] = useState([]);
+    const [anime, setAnime] = useState([]);
+    const [asianDramas, setAsianDramas] = useState([]);
     const [selectedGenre, setSelectedGenre] = useState(null);
     const [genreMovies, setGenreMovies] = useState([]);
     const [isLoadingGenre, setIsLoadingGenre] = useState(false);
+
+    // --- IBALIK ANG useEffect PARA SA PAG-FETCH OG DATA ---
+    useEffect(() => {
+        fetchData(API_ENDPOINTS.trending).then(data => setTrending(data.results));
+        fetchData(API_ENDPOINTS.popular).then(data => setPopular(data.results));
+        fetchData(API_ENDPOINTS.toprated).then(data => setTopRated(data.results));
+        fetchData(API_ENDPOINTS.tvshows).then(data => setTvShows(data.results));
+        fetchData(API_ENDPOINTS.anime).then(data => setAnime(data.results));
+        fetchData(API_ENDPOINTS.asianDramas).then(data => setAsianDramas(data.results));
+    }, []);
 
     const handleGenreSelect = (genreId) => {
         if (selectedGenre === genreId) {
@@ -37,9 +55,10 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
                     selectedGenre={selectedGenre}
                     onGenreSelect={handleGenreSelect}
                 />
+                
+                {/* --- IBALIK ANG PAGPASA SA 'items' SA ROW --- */}
                 {selectedGenre && (
                     <Row
-                        // --- ANG FIX NAA DINHI: Gigamit na ang backticks (`) para sa key ---
                         key={`genre-${selectedGenre}`}
                         title={MOVIE_GENRES.find(g => g.id === selectedGenre)?.name || 'Genre Results'}
                         items={genreMovies}
@@ -48,19 +67,24 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
                         isLoading={isLoadingGenre}
                     />
                 )}
-                <Row title="Trending Now" endpoint="trending" onOpenModal={onOpenModal} isWatched={isWatched} />
+                
+                <Row title="Trending Now" items={trending} onOpenModal={onOpenModal} isWatched={isWatched} />
                 <AdsterraBanner />
-                <Row title="Popular Movies" endpoint="popular" onOpenModal={onOpenModal} isWatched={isWatched} />
-                {continueWatchingList.length > 0 && (
-                    <Row title="Continue Watching" items={continueWatchingList} onOpenModal={onOpenModal} isWatched={isWatched} />
+                <Row title="Popular Movies" items={popular} onOpenModal={onOpenModal} isWatched={isWatched} />
+                
+                {(continueWatchingList.length > 0 || continueWatchingLoading) && (
+                    <Row title="Continue Watching" items={continueWatchingList} onOpenModal={onOpenModal} isWatched={isWatched} isLoading={continueWatchingLoading} />
                 )}
-                <Row title="Top Rated Movies" endpoint="toprated" onOpenModal={onOpenModal} isWatched={isWatched} />
-                <Row title="Popular TV Shows" endpoint="tvshows" onOpenModal={onOpenModal} isWatched={isWatched} />
-                {myList.length > 0 && (
-                     <Row title="My List" items={myList} onOpenModal={onOpenModal} isWatched={isWatched} />
+
+                <Row title="Top Rated Movies" items={topRated} onOpenModal={onOpenModal} isWatched={isWatched} />
+                <Row title="Popular TV Shows" items={tvShows} onOpenModal={onOpenModal} isWatched={isWatched} />
+
+                {(myList.length > 0 || myListLoading) && (
+                     <Row title="My List" items={myList} onOpenModal={onOpenModal} isWatched={isWatched} isLoading={myListLoading} />
                 )}
-                <Row title="Anime" endpoint="anime" onOpenModal={onOpenModal} isWatched={isWatched} isLarge />
-                <Row title="Asian Dramas" endpoint="asianDramas" onOpenModal={onOpenModal} isWatched={isWatched} />
+
+                <Row title="Anime" items={anime} onOpenModal={onOpenModal} isWatched={isWatched} isLarge />
+                <Row title="Asian Dramas" items={asianDramas} onOpenModal={onOpenModal} isWatched={isWatched} />
             </div>
         </>
     );

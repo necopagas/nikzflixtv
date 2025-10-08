@@ -2,49 +2,32 @@ import React, { useEffect } from 'react';
 
 const AdsterraBanner = () => {
   useEffect(() => {
-    // This function creates and injects the script tag
+    // Kini nga function maghimo ug mag-inject sa pop-under script
     const loadAdScript = () => {
-      // Create a new script element
+      // Maghimo ug bag-ong script element
       const script = document.createElement('script');
       
-      // Set the attributes from your Adsterra code
-      script.async = true;
-      script.setAttribute('data-cfasync', 'false');
-      // Ang imong bag-o nga script URL
-      script.src = "//gainedspotsspun.com/0b8e16ce5c5d7303bb2755058f2e65b4/invoke.js";
+      // I-set ang attributes gikan sa imong Adsterra pop-under code
+      script.type = 'text/javascript';
+      script.src = '//gainedspotsspun.com/61/b8/02/61b80217fd398dccf27a4a8ef563b396.js';
       
-      // Find the container div to append the script to, to be safe
-      const container = document.getElementById('container-0b8e16ce5c5d7303bb2755058f2e65b4');
+      // Idugang ang script sa document body
+      document.body.appendChild(script);
 
-      // Add the script to the body or container
-      if (container) {
-          document.body.appendChild(script);
-      }
-
-      // This is for cleanup. It removes the script if the component is unmounted.
+      // Cleanup function: tangtangon ang script kung ma-unmount ang component
       return () => {
-        // Check if the script is still in the body before trying to remove it
         if (script.parentNode === document.body) {
             document.body.removeChild(script);
         }
       };
     };
 
-    // A small delay can sometimes help ensure the container div is ready
-    const timer = setTimeout(() => {
-        loadAdScript();
-    }, 100);
+    loadAdScript();
 
-    return () => clearTimeout(timer);
+  }, []); // Ang empty array [] para kausa ra ni modagan inig mount sa component
 
-  }, []); // The empty array [] ensures this script runs only once when the component mounts
-
-  return (
-    <div className="flex justify-center my-8">
-      {/* Ang imong bag-o nga container ID */}
-      <div id="container-0b8e16ce5c5d7303bb2755058f2e65b4"></div>
-    </div>
-  );
+  // Dili na kinahanglan mag-render ug bisan unsa nga visible
+  return null;
 };
 
 export default AdsterraBanner;

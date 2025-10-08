@@ -4,8 +4,13 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { Modal } from './components/Modal';
 import { BackToTopButton } from './components/BackToTopButton';
+import { SettingsModal } from './components/SettingsModal';
 import { HomePage } from './pages/HomePage';
 import { SearchPage } from './pages/SearchPage';
+import { AuthPage } from './pages/AuthPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { MyListPage } from './pages/MyListPage';
+import { useAuth } from './context/AuthContext'; 
 import { useMyList } from './hooks/useMyList';
 import { useContinueWatching } from './hooks/useContinueWatching';
 import { useTheme } from './hooks/useTheme';
@@ -14,12 +19,15 @@ import { useWatchedHistory } from './hooks/useWatchedHistory';
 export default function App() {
     const [modalItem, setModalItem] = useState(null);
     const [playOnOpen, setPlayOnOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const location = useLocation();
     
-    const { isItemInMyList, toggleMyList } = useMyList();
-    const { setItemProgress } = useContinueWatching();
+    const { currentUser } = useAuth();
+    
+    const { myList, isItemInMyList, toggleMyList, clearMyList } = useMyList();
+    const { continueWatchingList, setItemProgress, clearContinueWatching } = useContinueWatching();
     const { theme, toggleTheme } = useTheme();
-    const { isWatched, addToWatched } = useWatchedHistory();
+    const { watchedHistory, isWatched, addToWatched, clearWatchedHistory } = useWatchedHistory();
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -37,7 +45,11 @@ export default function App() {
     
     return (
         <div className="flex flex-col min-h-screen">
-            <Header theme={theme} toggleTheme={toggleTheme} />
+            <Header 
+                theme={theme} 
+                toggleTheme={toggleTheme} 
+                onOpenSettings={() => setIsSettingsOpen(true)}
+            />
             <main className="flex-grow">
                 <Routes>
                     <Route 
@@ -48,10 +60,17 @@ export default function App() {
                         path="/search" 
                         element={<SearchPage onOpenModal={handleOpenModal} isWatched={isWatched} />} 
                     />
+                    <Route path="/auth" element={<AuthPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
+                    <Route 
+                        path="/my-list" 
+                        element={<MyListPage onOpenModal={handleOpenModal} isWatched={isWatched} />} 
+                    />
                 </Routes>
             </main>
             <Footer />
             <BackToTopButton />
+
             {modalItem && (
                 <Modal 
                     item={modalItem} 
@@ -59,11 +78,23 @@ export default function App() {
                     isItemInMyList={isItemInMyList} 
                     onToggleMyList={toggleMyList} 
                     playOnOpen={playOnOpen} 
-                    // --- ANG FIX NAA DINHI: Sakto na ang pagpasa sa function ---
                     onEpisodePlay={(itemForProgress, season, episode) => setItemProgress(itemForProgress, season, episode)} 
                     addToWatched={addToWatched}
+                    // --- ANG FIX NAA DINHI: ipasa ang tibuok 'isWatched' function ---
                     isWatched={isWatched} 
                     onOpenModal={handleOpenModal}
+                    continueWatchingList={continueWatchingList}
+                />
+            )}
+
+            {isSettingsOpen && (
+                <SettingsModal
+                    onClose={() => setIsSettingsOpen(false)}
+                    theme={theme}
+                    toggleTheme={toggleTheme}
+                    onClearContinueWatching={clearContinueWatching}
+                    onClearWatchedHistory={clearWatchedHistory}
+                    onClearMyList={clearMyList}
                 />
             )}
         </div>
