@@ -20,17 +20,34 @@ export const MOVIE_GENRES = [
 ];
 
 export const EMBED_URLS = {
-    vidsrc: { movie: (id) => `https://vidsrc.to/embed/movie/${id}`, tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` },
-    multiembed: { movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`, tv: (id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}` },
-    vidlink: { movie: (id) => `https://vidlink.pro/movie/${id}`, tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}` },
-    // --- FIX: Gi-update ang URLs sa Videasy para sa Movies ug TV Shows ---
+    vidsrc: { 
+        movie: (id) => `https://vidsrc.to/embed/movie/${id}`, 
+        tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` 
+    },
+    multiembed: { 
+        movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`, 
+        tv: (id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}` 
+    },
+    vidlink: { 
+        movie: (id) => `https://vidlink.pro/movie/${id}`, 
+        tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}` 
+    },
     videasy: {
         movie: (imdb_id) => imdb_id ? `https://player.videasy.net/movie/${imdb_id}` : null,
         tv: (imdb_id, s, e) => imdb_id ? `https://player.videasy.net/tv/${imdb_id}/${s}/${e}` : null,
+    },
+    vidfast: {
+        movie: (id) => `https://vidfast.pro/movie/${id}?autoPlay=true`,
+        tv: (id, s, e) => `https://vidfast.pro/tv/${id}/${s}/${e}?autoPlay=true`,
+    },
+    autoembed: {
+        movie: (id) => `https://autoembed.pro/embed/movie/${id}`,
+        tv: (id, s, e) => `https://autoembed.pro/embed/tv/${id}/${s}/${e}`,
     },
     vidlink_anime: {
         anime: (mal_id, e, type) => `https://vidlink.pro/anime/${mal_id}/${e}/${type}?fallback=true`
     }
 };
 
-export const SOURCE_ORDER = ['vidlink', 'vidsrc', 'multiembed', 'videasy'];
+// --- FIX: Gi-una na ang 'autoembed' sa lista ---
+export const SOURCE_ORDER = ['autoembed', 'vidlink', 'vidfast', 'vidsrc', 'multiembed', 'videasy'];
