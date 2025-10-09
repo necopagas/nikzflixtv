@@ -24,39 +24,10 @@ export const EMBED_URLS = {
         movie: (id) => `https://vidsrc.to/embed/movie/${id}`, 
         tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` 
     },
-<<<<<<< HEAD
-    vidsrc_me: {
-        movie: (id) => `https://vidsrc.me/embed/movie?tmdb=${id}`,
-        tv: (id, s, e) => `https://vidsrc.me/embed/tv?tmdb=${id}&s=${s}&e=${e}`
-    },
-    two_embed: {
-        movie: (id) => `https://www.2embed.cc/embed/${id}`,
-        tv: (id, s, e) => `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}`
-    },
-=======
->>>>>>> 41c1e71829e6081b556708e2fd87475ff0122d26
     multiembed: { 
         movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`, 
         tv: (id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}` 
     },
-<<<<<<< HEAD
-    autoembed: {
-        movie: (id) => `https://autoembed.pro/embed/movie/${id}`,
-        tv: (id, s, e) => `https://autoembed.pro/embed/tv/${id}/${s}/${e}`,
-    },
-    vidfast: {
-        movie: (id) => `https://vidfast.pro/movie/${id}`,
-        tv: (id, s, e) => `https://vidfast.pro/tv/${id}/${s}/${e}`,
-    },
-    vidlink: { 
-        movie: (id) => `https://vidlink.pro/movie/${id}`, 
-        tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}` 
-    },
-};
-
-// --- GI-UPDATE NGA SOURCE ORDER: Gi-una na ang 'autoembed' ---
-export const SOURCE_ORDER = ['autoembed', 'vidsrc', 'vidsrc_me', 'two_embed', 'multiembed', 'vidfast', 'vidlink'];
-=======
     vidlink: { 
         movie: (id) => `https://vidlink.pro/movie/${id}`, 
         tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}` 
@@ -78,6 +49,4 @@ export const SOURCE_ORDER = ['autoembed', 'vidsrc', 'vidsrc_me', 'two_embed', 'm
     }
 };
 
-// --- FIX: Gi-una na ang 'autoembed' sa lista ---
 export const SOURCE_ORDER = ['autoembed', 'vidlink', 'vidfast', 'vidsrc', 'multiembed', 'videasy'];
->>>>>>> 41c1e71829e6081b556708e2fd87475ff0122d26
