@@ -72,7 +72,7 @@ export const IPTV_CHANNELS = [
     { name: 'CARTOON NETWORK', url: 'https://cdn3.skygo.mn/live/disk1/Cartoon_Network/HLSv3-FTA/Cartoon_Network.m3u8' },
     { name: 'BABYSHARK TV', url: 'https://newidco-babysharktv-1-eu.rakuten.wurl.tv/playlist.m3u8' },
     { name: 'KIDOODLE TV', url: 'https://kidoodletv-kdtv-1-us.samsung.wurl.tv/playlist.m3u8' },
-    { name: 'PBS KIDS', url: 'https://2-fss-2.streamhoster.com/pl_140/amlst:200914-1298290/playlist.m3u8' },
+    { name: 'PBS KIDS', url: 'https://2-fss-2.streamhoster.com/pl_140/amlst:200914-129820/playlist.m3u8' },
     { name: 'BBC KIDS', url: 'https://dmr1h4skdal9h.cloudfront.net/v1/manifest/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-msbj6srh7nhug/ce36558b-b031-4284-94be-91ed22d31a41/2.m3u8' },
     { name: 'ZOOMOO', url: 'https://cdn3.skygo.mn/live/disk1/Zoomoo/HLSv3-FTA/Zoomoo.m3u8' },
     { name: 'DISCOVERY FAMILY CHANNEL', url: 'https://fl5.moveonjoy.com/DISCOVERY_FAMILY_CHANNEL/index.m3u8' },

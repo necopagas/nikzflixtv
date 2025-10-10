@@ -12,7 +12,7 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
     const [selectedEpisode, setSelectedEpisode] = useState(1);
     const [currentSource, setCurrentSource] = useState(SOURCE_ORDER[0]);
     const [isLoading, setIsLoading] = useState(true);
-    const [showPlayer, setShowPlayer] = useState(false); // --- Sugdi kanunay nga false ---
+    const [showPlayer, setShowPlayer] = useState(false);
     const modalRef = useRef();
     
     const media_type = initialItem?.media_type || (initialItem?.title ? 'movie' : 'tv');
@@ -33,7 +33,6 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
 
         const mediaType = initialItem?.media_type || (initialItem?.title ? 'movie' : 'tv');
 
-        // I-fetch ang details ug recommendations dungan
         Promise.all([
             fetchData(API_ENDPOINTS.details(mediaType, initialItem.id)),
             fetchData(API_ENDPOINTS.recommendations(mediaType, initialItem.id))
@@ -43,7 +42,6 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
             setTrailer(officialTrailer);
             setRecommendations(recsData.results || []);
 
-            // I-set ang progress para sa TV shows
             if (mediaType === 'tv') {
                 const savedProgress = continueWatchingList.find(i => i.id.toString() === initialItem.id.toString());
                 if (savedProgress?.season && savedProgress?.episode) {
@@ -55,11 +53,10 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
                 }
             }
             
-            // Human ma-load tanan, tan-awa kung dapat ba i-play dayon
             if (playOnOpen) {
                 handlePlay();
             } else {
-                setShowPlayer(false); // Siguradoha nga dili mo-play kung "More Info" lang
+                setShowPlayer(false);
             }
 
         }).catch(error => {
@@ -68,7 +65,7 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
             setIsLoading(false);
         });
 
-    }, [initialItem]); // --- I-depende lang sa initialItem para malikayan ang unnecessary re-renders ---
+    }, [initialItem]);
     
     const handleSeasonChange = (seasonNumber) => {
         setSelectedSeason(seasonNumber);

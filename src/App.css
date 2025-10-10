@@ -172,63 +172,63 @@ body::-webkit-scrollbar-thumb { background-color: var(--brand-color); border-rad
     transform: scale(1.1);
 }
 
-/* --- ENHANCEMENTS & MOBILE FRIENDLINESS (BAG-ONG GIDUGANG) --- */
-
-/* Gradient text para sa Header Title */
 .header h1 {
     background: linear-gradient(90deg, #e50914, #f81d28);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
-/* Responsive Modal Size */
 .modal-content-wrapper {
-    width: 95%; /* Mogamit ug halos tibuok screen sa mobile */
+    width: 95%; 
     max-width: 64rem;
     max-height: 95%;
 }
 
 .modal-body {
-    max-height: 90vh; /* Para naay gamay space sa taas ug ubos */
+    max-height: 90vh;
 }
 
-/* Responsive Recommendations Grid inside Modal */
 .recommendations-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 columns sa pinakagamay nga screen */
+    grid-template-columns: repeat(2, minmax(0, 1fr)); 
 }
 @media (min-width: 640px) {
     .recommendations-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3 columns sa sm screen */
+        grid-template-columns: repeat(3, minmax(0, 1fr)); 
     }
 }
 @media (min-width: 1024px) {
     .recommendations-grid {
-        grid-template-columns: repeat(5, minmax(0, 1fr)); /* 5 columns sa lg screen */
+        grid-template-columns: repeat(5, minmax(0, 1fr)); 
     }
 }
 
-/* --- STYLES PARA SA USER PROFILE DROPDOWN --- */
 .profile-dropdown {
     box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     border: 1px solid var(--border-color);
 }
 
-/* --- IPTV PAGE STYLES --- */
+/* --- IPTV PAGE STYLES (Mobile Friendly) --- */
 .iptv-layout {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column; 
     gap: 2rem;
 }
 
 @media (min-width: 1024px) {
     .iptv-layout {
-        grid-template-columns: 3fr 1fr;
+        flex-direction: row; 
+    }
+    .iptv-player-section {
+        flex: 3; 
+    }
+    .iptv-channel-list-wrapper {
+        flex: 1; 
     }
 }
 
 .player-wrapper {
     position: relative;
-    padding-top: 56.25%; /* 16:9 Aspect Ratio */
+    padding-top: 56.25%; 
     background-color: black;
     border-radius: 8px;
     overflow: hidden;
@@ -272,7 +272,6 @@ body::-webkit-scrollbar-thumb { background-color: var(--brand-color); border-rad
     font-weight: 700;
 }
 
-/* --- ENHANCED IPTV PAGE STYLES (SCOPED TO PREVENT CONFLICTS) --- */
 .iptv-page-container .iptv-player-section {
     background-color: var(--bg-secondary);
     border-radius: 8px;
@@ -318,7 +317,7 @@ body::-webkit-scrollbar-thumb { background-color: var(--brand-color); border-rad
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     display: flex;
     flex-direction: column;
-    max-height: 85vh; /* Adjust height */
+    max-height: 85vh; 
 }
 
 .iptv-page-container .channel-search-container {
@@ -356,7 +355,6 @@ body::-webkit-scrollbar-thumb { background-color: var(--brand-color); border-rad
     overflow-y: auto;
 }
 
-/* Custom Scrollbar for Channel List */
 .iptv-page-container .iptv-channel-list::-webkit-scrollbar {
     width: 8px;
 }

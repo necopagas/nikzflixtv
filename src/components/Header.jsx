@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, NavLink } from 'react-router-dom'; // --- Import NavLink ---
+import { useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const useClock = () => {
@@ -54,7 +54,6 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                     <i className="fa-solid fa-clapperboard text-red-600 text-2xl sm:text-3xl"></i>
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-[#E50914]">NikzFlix</h1>
                 </a>
-                 {/* --- BAG-ONG LINK PARA SA MY LIST UG IPTV --- */}
                 <nav className="hidden md:flex items-center space-x-6">
                     <NavLink to="/" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Home</NavLink>
                     <NavLink to="/my-list" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>My List</NavLink>
