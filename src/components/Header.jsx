@@ -54,8 +54,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                     <i className="fa-solid fa-clapperboard text-red-600 text-2xl sm:text-3xl"></i>
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-[#E50914]">NikzFlix</h1>
                 </a>
-                 {/* --- FIX: Change "hidden md:flex" to "flex" and adjust spacing --- */}
-                <nav className="flex items-center space-x-3 md:space-x-6">
+                <nav className="hidden md:flex items-center space-x-6">
                     <NavLink to="/" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Home</NavLink>
                     <NavLink to="/my-list" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>My List</NavLink>
                     <NavLink to="/live-tv" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Live TV</NavLink>
