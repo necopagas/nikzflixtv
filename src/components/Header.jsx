@@ -15,6 +15,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
     const [isScrolled, setIsScrolled] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // State para sa mobile menu
     const clock = useClock();
 
     const { currentUser, logout } = useAuth();
@@ -30,13 +31,15 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
         e.preventDefault();
         if (searchQuery.trim().length > 0) {
             navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+            setIsMobileMenuOpen(false); // Isira ang menu human mag-search
         }
     };
-
+    
     const handleLogout = async () => {
         try {
             await logout();
             navigate('/');
+            setIsMobileMenuOpen(false); // Isira ang menu
         } catch (error) {
             console.error("Failed to log out", error);
         }
@@ -45,15 +48,22 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
     const navigateToProfile = () => {
         setIsProfileOpen(false);
         navigate('/profile');
+        setIsMobileMenuOpen(false); // Isira ang menu
+    };
+    
+    const handleNavLinkClick = () => {
+        setIsMobileMenuOpen(false); // Isira ang menu inig click sa link
     };
 
     return (
         <header className={`header fixed top-0 left-0 w-full px-4 sm:px-8 py-4 flex items-center justify-between z-50 transition-colors duration-300 ${isScrolled ? 'scrolled' : ''}`}>
+            {/* --- LEFT SIDE --- */}
             <div className="flex items-center space-x-4 md:space-x-8">
                 <a href="/" onClick={(e) => { e.preventDefault(); navigate('/'); }} className="flex items-center space-x-2 cursor-pointer">
                     <i className="fa-solid fa-clapperboard text-red-600 text-2xl sm:text-3xl"></i>
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-[#E50914]">NikzFlix</h1>
                 </a>
+                {/* --- NAV PARA SA DESKTOP --- */}
                 <nav className="hidden md:flex items-center space-x-6">
                     <NavLink to="/" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Home</NavLink>
                     <NavLink to="/my-list" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>My List</NavLink>
@@ -61,53 +71,88 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                 </nav>
             </div>
 
+            {/* --- RIGHT SIDE --- */}
             <div className="flex items-center gap-2 sm:gap-4">
-                <form onSubmit={handleSearch} className="flex items-center">
-                    <div className="search-container relative flex items-center">
-                        <button type="submit" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10">
-                            <i className="fa-solid fa-search"></i>
-                        </button>
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="search-input border-2 border-transparent p-2 pl-10 rounded-full w-32 sm:w-64 focus:w-40 sm:focus:w-72 focus:outline-none"
-                            placeholder="Search..."
-                        />
+                {/* --- Search, settings, etc para sa DESKTOP --- */}
+                <div className="hidden md:flex items-center gap-2 sm:gap-4">
+                    <form onSubmit={handleSearch} className="flex items-center">
+                        <div className="search-container relative flex items-center">
+                            <button type="submit" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10">
+                                <i className="fa-solid fa-search"></i>
+                            </button>
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="search-input border-2 border-transparent p-2 pl-10 rounded-full w-40 focus:w-64 focus:outline-none"
+                                placeholder="Search..."
+                            />
+                        </div>
+                    </form>
+                    <button type="button" onClick={onOpenSettings} className="theme-toggle" title="Settings"><i className="fas fa-cog"></i></button>
+                    <button type="button" onClick={toggleTheme} className="theme-toggle" title="Toggle Theme"><i className={`fas ${theme === 'light' ? 'fa-moon' : 'fa-sun'}`}></i></button>
+                    <div className="clock text-xl font-semibold whitespace-nowrap">{clock}</div>
+                    <div className="relative">
+                        {currentUser ? (
+                            <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center font-bold">
+                                {currentUser.email.charAt(0).toUpperCase()}
+                            </button>
+                        ) : (
+                            <button onClick={() => navigate('/auth')} className="px-4 py-2 bg-[var(--brand-color)] rounded-md font-semibold">
+                                Login
+                            </button>
+                        )}
+                        {currentUser && isProfileOpen && (
+                            <div className="absolute right-0 mt-2 w-48 bg-[var(--bg-secondary)] rounded-md shadow-lg py-1 z-50">
+                                <div className="px-4 py-2 text-sm text-[var(--text-secondary)] border-b border-[var(--border-color)]">{currentUser.email}</div>
+                                <a href="#" onClick={navigateToProfile} className="block px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]">My Profile</a>
+                                <a href="#" onClick={handleLogout} className="block px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]">Logout</a>
+                            </div>
+                        )}
                     </div>
-                </form>
+                </div>
 
-                <button type="button" onClick={onOpenSettings} className="theme-toggle" title="Settings">
-                    <i className="fas fa-cog"></i>
+                {/* --- HAMBURGER MENU BUTTON (para sa mobile) --- */}
+                <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden text-2xl z-[1001]">
+                    <i className={isMobileMenuOpen ? "fas fa-times" : "fas fa-bars"}></i>
                 </button>
-                <button type="button" onClick={toggleTheme} className="theme-toggle" title="Toggle Theme">
-                    <i className={`fas ${theme === 'light' ? 'fa-moon' : 'fa-sun'}`}></i>
-                </button>
-                <div className="clock hidden md:block text-xl font-semibold whitespace-nowrap">{clock}</div>
+            </div>
 
-                <div className="relative">
+            {/* --- MOBILE MENU (Mugawas kung i-click ang hamburger) --- */}
+            <div className={`mobile-menu ${isMobileMenuOpen ? 'open' : ''}`}>
+                <nav className="flex flex-col items-center space-y-8 pt-24 text-xl">
+                    <NavLink to="/" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Home</NavLink>
+                    <NavLink to="/my-list" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>My List</NavLink>
+                    <NavLink to="/live-tv" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Live TV</NavLink>
+
+                    <div className="w-full px-4">
+                        <form onSubmit={handleSearch} className="flex items-center">
+                            <div className="search-container relative flex items-center w-full">
+                                <button type="submit" className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 z-10"><i className="fa-solid fa-search"></i></button>
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="search-input w-full border-2 border-transparent p-3 pl-12 rounded-full"
+                                    placeholder="Search..."
+                                />
+                            </div>
+                        </form>
+                    </div>
+
+                    <div className="border-t border-[var(--border-color)] w-full my-4"></div>
+
                     {currentUser ? (
-                        <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center font-bold">
-                            {currentUser.email.charAt(0).toUpperCase()}
-                        </button>
+                         <>
+                            <button onClick={navigateToProfile} className="font-semibold">My Profile</button>
+                            <button onClick={handleLogout} className="font-semibold">Logout</button>
+                         </>
                     ) : (
-                        <button onClick={() => navigate('/auth')} className="px-4 py-2 bg-[var(--brand-color)] rounded-md font-semibold">
+                        <button onClick={() => { navigate('/auth'); handleNavLinkClick(); }} className="px-6 py-2 bg-[var(--brand-color)] rounded-md font-semibold">
                             Login
                         </button>
                     )}
-
-                    {currentUser && isProfileOpen && (
-                        <div className="absolute right-0 mt-2 w-48 bg-[var(--bg-secondary)] rounded-md shadow-lg py-1 z-50">
-                            <div className="px-4 py-2 text-sm text-[var(--text-secondary)] border-b border-[var(--border-color)]">{currentUser.email}</div>
-                            <a href="#" onClick={navigateToProfile} className="block px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]">
-                                My Profile
-                            </a>
-                            <a href="#" onClick={handleLogout} className="block px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]">
-                                Logout
-                            </a>
-                        </div>
-                    )}
-                </div>
+                </nav>
             </div>
         </header>
     );
