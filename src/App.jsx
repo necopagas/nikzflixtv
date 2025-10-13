@@ -16,6 +16,7 @@ import { useMyList } from './hooks/useMyList';
 import { useContinueWatching } from './hooks/useContinueWatching';
 import { useTheme } from './hooks/useTheme';
 import { useWatchedHistory } from './hooks/useWatchedHistory';
+import { VisitorCounter } from './components/VisitorCounter';
 
 export default function App() {
     const [modalItem, setModalItem] = useState(null);

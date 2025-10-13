@@ -406,3 +406,19 @@ body::-webkit-scrollbar-thumb { background-color: var(--brand-color); border-rad
 .mobile-menu.open {
     right: 0; /* Mo-slide pasulod sa screen */
 }
+
+.visitor-counter {
+ display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.live-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #22c55e; /* green-500 */
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+}

@@ -1,8 +1,12 @@
 import React from 'react';
+import { VisitorCounter } from './VisitorCounter';
 
 export const Footer = () => {
     return (
         <footer className="bg-transparent text-center py-6 mt-12 border-t border-[var(--border-color)]">
+            <div className="flex justify-center items-center mb-2">
+                <VisitorCounter />
+            </div>
             <p className="text-[var(--text-secondary)]">
                 © {new Date().getFullYear()} NikzFlix. All Rights Reserved.
             </p>
