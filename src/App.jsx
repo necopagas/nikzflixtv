@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -10,13 +10,12 @@ import { SearchPage } from './pages/SearchPage';
 import { AuthPage } from './pages/AuthPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { MyListPage } from './pages/MyListPage';
-import { IPTVPage } from './pages/IPTVPage'; // Import the new page
+import { IPTVPage } from './pages/IPTVPage';
 import { useAuth } from './context/AuthContext';
 import { useMyList } from './hooks/useMyList';
 import { useContinueWatching } from './hooks/useContinueWatching';
 import { useTheme } from './hooks/useTheme';
 import { useWatchedHistory } from './hooks/useWatchedHistory';
-import { VisitorCounter } from './components/VisitorCounter';
 
 export default function App() {
     const [modalItem, setModalItem] = useState(null);
@@ -24,16 +23,93 @@ export default function App() {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const location = useLocation();
 
-    const { currentUser } = useAuth();
+    // --- STATES PARA SA DEVTOOLS DETECTOR UG ANIMATION ---
+    const [isDevToolsOpened, setIsDevToolsOpened] = useState(false);
+    const [completedLines, setCompletedLines] = useState([]);
+    const [currentLineText, setCurrentLineText] = useState('');
+    const [lineIndex, setLineIndex] = useState(0);
+    const soundPlayed = useRef(false);
+
+    // --- Gihimong mas hadlok ang mga mensahe ---
+    const scaryMessages = [
+        "INITIALIZING SYSTEM OVERRIDE...",
+        "FIREWALL BREACHED. SECURITY PROTOCOLS BYPASSED.",
+        "TRACKING USER LOCATION... [GEOLOCATION API ACTIVE]",
+        "USER DATA PACKET INTERCEPTION: nikzflix_userdata.zip",
+        "[▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓] 100% - DATA CAPTURED.",
+        "FINAL WARNING: IMMEDIATE DISCONNECTION REQUIRED.",
+    ];
 
     const { myList, isItemInMyList, toggleMyList, clearMyList } = useMyList();
     const { continueWatchingList, setItemProgress, clearContinueWatching } = useContinueWatching();
     const { theme, toggleTheme } = useTheme();
-    const { watchedHistory, isWatched, addToWatched, clearWatchedHistory } = useWatchedHistory();
+    const { isWatched, addToWatched, clearWatchedHistory } = useWatchedHistory();
+
 
     useEffect(() => {
         window.scrollTo(0, 0);
     }, [location.pathname]);
+    
+    // --- USA KA useEffect PARA SA TANANG SECURITY FEATURES ---
+    useEffect(() => {
+        const devToolsChecker = () => {
+            const threshold = 160;
+            if (window.outerWidth - window.innerWidth > threshold || window.outerHeight - window.innerHeight > threshold) {
+                setIsDevToolsOpened(true);
+            } else {
+                setIsDevToolsOpened(false);
+                soundPlayed.current = false;
+            }
+        };
+        const intervalId = setInterval(devToolsChecker, 1000);
+        const handleContextMenu = (e) => e.preventDefault();
+        const handleKeyDown = (e) => {
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+                e.preventDefault();
+            }
+        };
+        document.addEventListener('contextmenu', handleContextMenu);
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            clearInterval(intervalId);
+            document.removeEventListener('contextmenu', handleContextMenu);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, []);
+
+    // --- useEffect PARA SA TYPING ANIMATION UG SOUND ---
+    useEffect(() => {
+        if (!isDevToolsOpened) {
+            setCompletedLines([]);
+            setCurrentLineText('');
+            setLineIndex(0);
+            return;
+        }
+
+        if (isDevToolsOpened && !soundPlayed.current) {
+            const audio = new Audio('/alarm.mp3');
+            audio.play();
+            soundPlayed.current = true;
+        }
+
+        if (isDevToolsOpened && lineIndex < scaryMessages.length) {
+            const lineToType = scaryMessages[lineIndex];
+            let charIndex = 0;
+            const typingInterval = setInterval(() => {
+                if (charIndex < lineToType.length) {
+                    setCurrentLineText(lineToType.substring(0, charIndex + 1));
+                    charIndex++;
+                } else {
+                    clearInterval(typingInterval);
+                    setCompletedLines(prev => [...prev, lineToType]);
+                    setCurrentLineText('');
+                    setTimeout(() => setLineIndex(prev => prev + 1), 500);
+                }
+            }, 50);
+            return () => clearInterval(typingInterval);
+        }
+    }, [isDevToolsOpened, lineIndex]);
+
 
     const handleOpenModal = (item, play = false) => {
         setModalItem(item);
@@ -47,6 +123,24 @@ export default function App() {
 
     return (
         <div className="flex flex-col min-h-screen">
+            {isDevToolsOpened && (
+                // --- Gidugang ang 'bg-black' para masiguro nga solid ang background ---
+                <div className="hacker-overlay fixed inset-0 bg-black z-[9999] flex items-center justify-center p-8 font-mono">
+                    <div className="w-full max-w-2xl text-left">
+                        {completedLines.map((line, index) => (
+                            <p key={index} className={`text-lg ${index >= 4 ? 'text-red-500 font-bold' : 'text-green-400'}`}>
+                                {line}
+                            </p>
+                        ))}
+                        {currentLineText && (
+                             <p className="text-lg text-green-400">
+                                {currentLineText}
+                                <span className="blinking-cursor">|</span>
+                            </p>
+                        )}
+                    </div>
+                </div>
+            )}
             <Header
                 theme={theme}
                 toggleTheme={toggleTheme}
@@ -54,20 +148,11 @@ export default function App() {
             />
             <main className="flex-grow">
                 <Routes>
-                    <Route
-                        path="/"
-                        element={<HomePage onOpenModal={handleOpenModal} isWatched={isWatched} />}
-                    />
-                    <Route
-                        path="/search"
-                        element={<SearchPage onOpenModal={handleOpenModal} isWatched={isWatched} />}
-                    />
+                    <Route path="/" element={<HomePage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
+                    <Route path="/search" element={<SearchPage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
                     <Route path="/auth" element={<AuthPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
-                    <Route
-                        path="/my-list"
-                        element={<MyListPage onOpenModal={handleOpenModal} isWatched={isWatched} />}
-                    />
+                    <Route path="/my-list" element={<MyListPage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
                     <Route path="/live-tv" element={<IPTVPage />} />
                 </Routes>
             </main>
@@ -83,7 +168,6 @@ export default function App() {
                     playOnOpen={playOnOpen}
                     onEpisodePlay={(itemForProgress, season, episode) => setItemProgress(itemForProgress, season, episode)}
                     addToWatched={addToWatched}
-                    // --- ANG FIX NAA DINHI: ipasa ang tibuok 'isWatched' function ---
                     isWatched={isWatched}
                     onOpenModal={handleOpenModal}
                     continueWatchingList={continueWatchingList}

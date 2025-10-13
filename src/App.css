@@ -422,3 +422,18 @@ body::-webkit-scrollbar-thumb { background-color: var(--brand-color); border-rad
     border-radius: 50%;
     animation: pulse 1.5s infinite;
 }
+
+/* --- CSS PARA SA BLINKING CURSOR SA HACKER MESSAGE --- */
+.blinking-cursor {
+    font-weight: bold;
+    animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+    from, to {
+        color: transparent;
+    }
+    50% {
+        color: #4ade80; /* green-400 */
+    }
+}
