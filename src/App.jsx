@@ -17,20 +17,80 @@ import { useContinueWatching } from './hooks/useContinueWatching';
 import { useTheme } from './hooks/useTheme';
 import { useWatchedHistory } from './hooks/useWatchedHistory';
 
+// --- BAG-O UG MAS ASTIG NGA HACKER GREETING ---
+const HackerGreeting = ({ onFinished }) => {
+    const [lines, setLines] = useState([]);
+    const [showCursor, setShowCursor] = useState(true);
+
+    const greetingLines = [
+        "Initializing secure connection...",
+        "Querying user identity...",
+        "Identity confirmed.",
+        "Welcome, Ka PHCorner.",
+        "Unlocking NikzFlix archives...",
+        "System is now ready."
+    ];
+
+    useEffect(() => {
+        let currentLineIndex = 0;
+        let currentCharIndex = 0;
+        let completedLines = [];
+
+        const typeLine = () => {
+            if (currentLineIndex >= greetingLines.length) {
+                setShowCursor(false);
+                clearInterval(typingInterval);
+                setTimeout(onFinished, 2000); 
+                return;
+            }
+
+            const currentLineText = greetingLines[currentLineIndex];
+            
+            setLines([
+                ...completedLines,
+                currentLineText.substring(0, currentCharIndex)
+            ]);
+
+            currentCharIndex++;
+            
+            if (currentCharIndex > currentLineText.length) {
+                completedLines.push(currentLineText);
+                currentLineIndex++;
+                currentCharIndex = 0;
+            }
+        };
+
+        const typingInterval = setInterval(typeLine, 120);
+
+        return () => clearInterval(typingInterval);
+    }, [onFinished]);
+
+    return (
+        <div className="hacker-greeting-overlay">
+            <div className="hacker-text-container">
+                {lines.map((line, index) => (
+                    <p key={index}>
+                        <span>&gt; </span>{line}
+                        {index === lines.length - 1 && showCursor && <span className="blinking-cursor">|</span>}
+                    </p>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 export default function App() {
     const [modalItem, setModalItem] = useState(null);
     const [playOnOpen, setPlayOnOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const location = useLocation();
-
-    // --- STATES PARA SA DEVTOOLS DETECTOR UG ANIMATION ---
+    const [showGreeting, setShowGreeting] = useState(true);
     const [isDevToolsOpened, setIsDevToolsOpened] = useState(false);
     const [completedLines, setCompletedLines] = useState([]);
     const [currentLineText, setCurrentLineText] = useState('');
     const [lineIndex, setLineIndex] = useState(0);
     const soundPlayed = useRef(false);
 
-    // --- Gihimong mas hadlok ang mga mensahe ---
     const scaryMessages = [
         "INITIALIZING SYSTEM OVERRIDE...",
         "FIREWALL BREACHED. SECURITY PROTOCOLS BYPASSED.",
@@ -50,7 +110,6 @@ export default function App() {
         window.scrollTo(0, 0);
     }, [location.pathname]);
     
-    // --- USA KA useEffect PARA SA TANANG SECURITY FEATURES ---
     useEffect(() => {
         const devToolsChecker = () => {
             const threshold = 160;
@@ -77,7 +136,6 @@ export default function App() {
         };
     }, []);
 
-    // --- useEffect PARA SA TYPING ANIMATION UG SOUND ---
     useEffect(() => {
         if (!isDevToolsOpened) {
             setCompletedLines([]);
@@ -121,10 +179,13 @@ export default function App() {
         setPlayOnOpen(false);
     };
 
+    if (showGreeting) {
+        return <HackerGreeting onFinished={() => setShowGreeting(false)} />;
+    }
+
     return (
         <div className="flex flex-col min-h-screen">
             {isDevToolsOpened && (
-                // --- Gidugang ang 'bg-black' para masiguro nga solid ang background ---
                 <div className="hacker-overlay fixed inset-0 bg-black z-[9999] flex items-center justify-center p-8 font-mono">
                     <div className="w-full max-w-2xl text-left">
                         {completedLines.map((line, index) => (

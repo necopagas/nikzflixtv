@@ -12,7 +12,6 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
     const { myList, loading: myListLoading } = useMyList();
     const { continueWatchingList, loading: continueWatchingLoading } = useContinueWatching();
     
-    // --- IBALIK ANG MGA STATES PARA SA DATA ---
     const [trending, setTrending] = useState([]);
     const [popular, setPopular] = useState([]);
     const [topRated, setTopRated] = useState([]);
@@ -23,7 +22,6 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
     const [genreMovies, setGenreMovies] = useState([]);
     const [isLoadingGenre, setIsLoadingGenre] = useState(false);
 
-    // --- IBALIK ANG useEffect PARA SA PAG-FETCH OG DATA ---
     useEffect(() => {
         fetchData(API_ENDPOINTS.trending).then(data => setTrending(data.results));
         fetchData(API_ENDPOINTS.popular).then(data => setPopular(data.results));
@@ -56,7 +54,6 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
                     onGenreSelect={handleGenreSelect}
                 />
                 
-                {/* --- IBALIK ANG PAGPASA SA 'items' SA ROW --- */}
                 {selectedGenre && (
                     <Row
                         key={`genre-${selectedGenre}`}

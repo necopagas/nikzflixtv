@@ -15,7 +15,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
     const [isScrolled, setIsScrolled] = useState(false);
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // State para sa mobile menu
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const clock = useClock();
 
     const { currentUser, logout } = useAuth();
@@ -31,7 +31,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
         e.preventDefault();
         if (searchQuery.trim().length > 0) {
             navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-            setIsMobileMenuOpen(false); // Isira ang menu human mag-search
+            setIsMobileMenuOpen(false);
         }
     };
     
@@ -39,7 +39,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
         try {
             await logout();
             navigate('/');
-            setIsMobileMenuOpen(false); // Isira ang menu
+            setIsMobileMenuOpen(false);
         } catch (error) {
             console.error("Failed to log out", error);
         }
@@ -48,11 +48,11 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
     const navigateToProfile = () => {
         setIsProfileOpen(false);
         navigate('/profile');
-        setIsMobileMenuOpen(false); // Isira ang menu
+        setIsMobileMenuOpen(false);
     };
     
     const handleNavLinkClick = () => {
-        setIsMobileMenuOpen(false); // Isira ang menu inig click sa link
+        setIsMobileMenuOpen(false);
     };
 
     return (

@@ -5,7 +5,6 @@ import { useApi } from '../hooks/useApi';
 export const Row = ({ title, endpoint, param, items: propItems, onOpenModal, isWatched, isLarge = false, isLoading: propIsLoading = false }) => {
     const rowRef = useRef(null);
     
-    // Gamiton ang hook kung naay endpoint, kung wala, gamiton ang "propItems" (para sa My List, etc.)
     const { items: apiItems, loading: apiLoading } = useApi(endpoint, param);
     
     const items = endpoint ? apiItems : propItems;
@@ -22,8 +21,8 @@ export const Row = ({ title, endpoint, param, items: propItems, onOpenModal, isW
     }
 
     return (
-        <div className="row my-8">
-            <h2 className="text-2xl font-bold mb-4">{title}</h2>
+        <div className="row my-10">
+            <h2 className="text-3xl font-bold mb-4">{title}</h2>
             <div className="relative group">
                  <button onClick={() => scroll(-500)} className="scroll-arrow left-arrow opacity-0 group-hover:opacity-100">&lt;</button>
                 <div ref={rowRef} className={`row-posters flex overflow-x-scroll overflow-y-hidden space-x-4 p-2 ${isLarge ? 'h-96' : 'h-64'}`}>
