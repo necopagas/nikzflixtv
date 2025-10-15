@@ -11,80 +11,18 @@ import { AuthPage } from './pages/AuthPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { MyListPage } from './pages/MyListPage';
 import { IPTVPage } from './pages/IPTVPage';
+import { ChatRoomPage } from './pages/ChatRoomPage'; // <-- GIBALIK NAKO NI
 import { useAuth } from './context/AuthContext';
 import { useMyList } from './hooks/useMyList';
 import { useContinueWatching } from './hooks/useContinueWatching';
 import { useTheme } from './hooks/useTheme';
 import { useWatchedHistory } from './hooks/useWatchedHistory';
 
-// --- BAG-O UG MAS ASTIG NGA HACKER GREETING ---
-const HackerGreeting = ({ onFinished }) => {
-    const [lines, setLines] = useState([]);
-    const [showCursor, setShowCursor] = useState(true);
-
-    const greetingLines = [
-        "Initializing secure connection...",
-        "Querying user identity...",
-        "Identity confirmed.",
-        "Welcome, Ka PHCorner.",
-        "Unlocking NikzFlix archives...",
-        "System is now ready."
-    ];
-
-    useEffect(() => {
-        let currentLineIndex = 0;
-        let currentCharIndex = 0;
-        let completedLines = [];
-
-        const typeLine = () => {
-            if (currentLineIndex >= greetingLines.length) {
-                setShowCursor(false);
-                clearInterval(typingInterval);
-                setTimeout(onFinished, 2000); 
-                return;
-            }
-
-            const currentLineText = greetingLines[currentLineIndex];
-            
-            setLines([
-                ...completedLines,
-                currentLineText.substring(0, currentCharIndex)
-            ]);
-
-            currentCharIndex++;
-            
-            if (currentCharIndex > currentLineText.length) {
-                completedLines.push(currentLineText);
-                currentLineIndex++;
-                currentCharIndex = 0;
-            }
-        };
-
-        const typingInterval = setInterval(typeLine, 120);
-
-        return () => clearInterval(typingInterval);
-    }, [onFinished]);
-
-    return (
-        <div className="hacker-greeting-overlay">
-            <div className="hacker-text-container">
-                {lines.map((line, index) => (
-                    <p key={index}>
-                        <span>&gt; </span>{line}
-                        {index === lines.length - 1 && showCursor && <span className="blinking-cursor">|</span>}
-                    </p>
-                ))}
-            </div>
-        </div>
-    );
-};
-
 export default function App() {
     const [modalItem, setModalItem] = useState(null);
     const [playOnOpen, setPlayOnOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const location = useLocation();
-    const [showGreeting, setShowGreeting] = useState(true);
     const [isDevToolsOpened, setIsDevToolsOpened] = useState(false);
     const [completedLines, setCompletedLines] = useState([]);
     const [currentLineText, setCurrentLineText] = useState('');
@@ -179,10 +117,6 @@ export default function App() {
         setPlayOnOpen(false);
     };
 
-    if (showGreeting) {
-        return <HackerGreeting onFinished={() => setShowGreeting(false)} />;
-    }
-
     return (
         <div className="flex flex-col min-h-screen">
             {isDevToolsOpened && (
@@ -215,6 +149,7 @@ export default function App() {
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/my-list" element={<MyListPage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
                     <Route path="/live-tv" element={<IPTVPage />} />
+                    <Route path="/chat-room" element={<ChatRoomPage />} /> {/* <-- UG GIBALIK SAD NAKO NI */}
                 </Routes>
             </main>
             <Footer />

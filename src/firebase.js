@@ -13,8 +13,7 @@ const firebaseConfig = {
   messagingSenderId: "1040086897249",
   appId: "1:1040086897249:web:ef2c7a7bba9599f6421020",
   measurementId: "G-6Y9W7DJ3K3",
-  // --- DIRI NIMO IDUGANG ---
-  databaseURL: "https://nikzflixtv-default-rtdb.firebaseio.com" // Ilisdi ni sa imong actual URL
+  databaseURL: "https://nikzflixtv-default-rtdb.firebaseio.com"
 };
 
 const app = initializeApp(firebaseConfig);

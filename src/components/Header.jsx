@@ -68,6 +68,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                     <NavLink to="/" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Home</NavLink>
                     <NavLink to="/my-list" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>My List</NavLink>
                     <NavLink to="/live-tv" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Live TV</NavLink>
+                    <NavLink to="/chat-room" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Chat Room</NavLink>
                 </nav>
             </div>
 
@@ -124,6 +125,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                     <NavLink to="/" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Home</NavLink>
                     <NavLink to="/my-list" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>My List</NavLink>
                     <NavLink to="/live-tv" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Live TV</NavLink>
+                    <NavLink to="/chat-room" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Chat Room</NavLink>
 
                     <div className="w-full px-4">
                         <form onSubmit={handleSearch} className="flex items-center">
