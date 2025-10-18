@@ -1,4 +1,4 @@
-export const API_KEY = "3b0f392b6173455e37624a78bd5f79d4"; 
+export const API_KEY = "3b0f392b6173455e37624a78bd5f79d4";
 export const IMG_PATH = "https://image.tmdb.org/t/p/w500";
 export const BACKDROP_PATH = "https://image.tmdb.org/t/p/original";
 
@@ -9,6 +9,8 @@ export const API_ENDPOINTS = {
     tvshows: `https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}`,
     anime: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=210024&sort_by=popularity.desc`,
     asianDramas: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_genres=18&with_origin_country=KR,JP,CN,TH&sort_by=popularity.desc`,
+    // --- BAG-O NGA ENDPOINT PARA SA SHORT DRAMAS/MINISERIES ---
+    shortDramas: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=215239&sort_by=popularity.desc`,
     search: (query, page = 1) => `https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}&page=${page}`,
     details: (type, id) => `https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}&append_to_response=videos,credits,external_ids`,
     byGenre: (genreId) => `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&with_genres=${genreId}&sort_by=popularity.desc`,
@@ -20,17 +22,17 @@ export const MOVIE_GENRES = [
 ];
 
 export const EMBED_URLS = {
-    vidsrc: { 
-        movie: (id) => `https://vidsrc.to/embed/movie/${id}`, 
-        tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` 
+    vidsrc: {
+        movie: (id) => `https://vidsrc.to/embed/movie/${id}`,
+        tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}`
     },
-    multiembed: { 
-        movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`, 
-        tv: (id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}` 
+    multiembed: {
+        movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`,
+        tv: (id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}`
     },
-    vidlink: { 
-        movie: (id) => `https://vidlink.pro/movie/${id}`, 
-        tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}` 
+    vidlink: {
+        movie: (id) => `https://vidlink.pro/movie/${id}`,
+        tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}`
     },
     videasy: {
         movie: (imdb_id) => imdb_id ? `https://player.videasy.net/movie/${imdb_id}` : null,
@@ -50,3 +52,5 @@ export const EMBED_URLS = {
 };
 
 export const SOURCE_ORDER = ['autoembed', 'vidlink', 'vidfast', 'vidsrc', 'multiembed', 'videasy'];
+
+// ... (ang uban code sa ubos parehas ra) ...
