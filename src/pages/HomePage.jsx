@@ -12,7 +12,9 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
     const { myList, loading: myListLoading } = useMyList();
     const { continueWatchingList, loading: continueWatchingLoading } = useContinueWatching();
     
-    // --- IBALIK ANG MGA STATES PARA SA DATA ---
+    // --- MAGHIMO TA OG STATE PARA SA SHORT DRAMAS ---
+    const [shortDramas, setShortDramas] = useState([]);
+
     const [trending, setTrending] = useState([]);
     const [popular, setPopular] = useState([]);
     const [topRated, setTopRated] = useState([]);
@@ -23,8 +25,10 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
     const [genreMovies, setGenreMovies] = useState([]);
     const [isLoadingGenre, setIsLoadingGenre] = useState(false);
 
-    // --- IBALIK ANG useEffect PARA SA PAG-FETCH OG DATA ---
     useEffect(() => {
+        // --- UG I-FETCH NATO ANG DATA PARA SA SHORT DRAMAS ---
+        fetchData(API_ENDPOINTS.shortDramas).then(data => setShortDramas(data.results));
+
         fetchData(API_ENDPOINTS.trending).then(data => setTrending(data.results));
         fetchData(API_ENDPOINTS.popular).then(data => setPopular(data.results));
         fetchData(API_ENDPOINTS.toprated).then(data => setTopRated(data.results));
@@ -56,7 +60,6 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
                     onGenreSelect={handleGenreSelect}
                 />
                 
-                {/* --- IBALIK ANG PAGPASA SA 'items' SA ROW --- */}
                 {selectedGenre && (
                     <Row
                         key={`genre-${selectedGenre}`}
@@ -75,6 +78,9 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
                 {(continueWatchingList.length > 0 || continueWatchingLoading) && (
                     <Row title="Continue Watching" items={continueWatchingList} onOpenModal={onOpenModal} isWatched={isWatched} isLoading={continueWatchingLoading} />
                 )}
+
+                {/* --- UG Ipakita ang Row para sa Short Dramas --- */}
+                <Row title="Short Dramas & Miniseries" items={shortDramas} onOpenModal={onOpenModal} isWatched={isWatched} />
 
                 <Row title="Top Rated Movies" items={topRated} onOpenModal={onOpenModal} isWatched={isWatched} />
                 <Row title="Popular TV Shows" items={tvShows} onOpenModal={onOpenModal} isWatched={isWatched} />
