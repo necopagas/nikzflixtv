@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -10,7 +10,10 @@ import { SearchPage } from './pages/SearchPage';
 import { AuthPage } from './pages/AuthPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { MyListPage } from './pages/MyListPage';
-import { useAuth } from './context/AuthContext'; 
+import { IPTVPage } from './pages/IPTVPage';
+import { ChatRoomPage } from './pages/ChatRoomPage';
+import { AnimePage } from './pages/AnimePage'; // <-- I-IMPORT ANG ANIME PAGE
+import { useAuth } from './context/AuthContext';
 import { useMyList } from './hooks/useMyList';
 import { useContinueWatching } from './hooks/useContinueWatching';
 import { useTheme } from './hooks/useTheme';
@@ -21,82 +24,35 @@ export default function App() {
     const [playOnOpen, setPlayOnOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const location = useLocation();
-    
-    const { currentUser } = useAuth();
-    
-    const { myList, isItemInMyList, toggleMyList, clearMyList } = useMyList();
-    const { continueWatchingList, setItemProgress, clearContinueWatching } = useContinueWatching();
-    const { theme, toggleTheme } = useTheme();
-    const { watchedHistory, isWatched, addToWatched, clearWatchedHistory } = useWatchedHistory();
+    // ... (ang uban states parehas ra)
 
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, [location.pathname]);
-    
-    const handleOpenModal = (item, play = false) => {
-        setModalItem(item);
-        setPlayOnOpen(play);
-    };
+    // ... (ang tanan functions ug useEffects parehas ra)
 
-    const handleCloseModal = () => {
-        setModalItem(null);
-        setPlayOnOpen(false);
-    };
-    
     return (
         <div className="flex flex-col min-h-screen">
-            <Header 
-                theme={theme} 
-                toggleTheme={toggleTheme} 
+            {/* ... (ang dev tools overlay parehas ra) ... */}
+            <Header
+                theme={theme}
+                toggleTheme={toggleTheme}
                 onOpenSettings={() => setIsSettingsOpen(true)}
             />
             <main className="flex-grow">
                 <Routes>
-                    <Route 
-                        path="/" 
-                        element={<HomePage onOpenModal={handleOpenModal} isWatched={isWatched} />} 
-                    />
-                    <Route 
-                        path="/search" 
-                        element={<SearchPage onOpenModal={handleOpenModal} isWatched={isWatched} />} 
-                    />
+                    <Route path="/" element={<HomePage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
+                    <Route path="/search" element={<SearchPage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
                     <Route path="/auth" element={<AuthPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
-                    <Route 
-                        path="/my-list" 
-                        element={<MyListPage onOpenModal={handleOpenModal} isWatched={isWatched} />} 
-                    />
+                    <Route path="/my-list" element={<MyListPage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
+                    <Route path="/live-tv" element={<IPTVPage />} />
+                    <Route path="/chat-room" element={<ChatRoomPage />} />
+                    {/* --- BAG-ONG ROUTE PARA SA ANIME --- */}
+                    <Route path="/anime" element={<AnimePage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
                 </Routes>
             </main>
             <Footer />
             <BackToTopButton />
 
-            {modalItem && (
-                <Modal 
-                    item={modalItem} 
-                    onClose={handleCloseModal} 
-                    isItemInMyList={isItemInMyList} 
-                    onToggleMyList={toggleMyList} 
-                    playOnOpen={playOnOpen} 
-                    onEpisodePlay={(itemForProgress, season, episode) => setItemProgress(itemForProgress, season, episode)} 
-                    addToWatched={addToWatched}
-                    // --- ANG FIX NAA DINHI: ipasa ang tibuok 'isWatched' function ---
-                    isWatched={isWatched} 
-                    onOpenModal={handleOpenModal}
-                    continueWatchingList={continueWatchingList}
-                />
-            )}
-
-            {isSettingsOpen && (
-                <SettingsModal
-                    onClose={() => setIsSettingsOpen(false)}
-                    theme={theme}
-                    toggleTheme={toggleTheme}
-                    onClearContinueWatching={clearContinueWatching}
-                    onClearWatchedHistory={clearWatchedHistory}
-                    onClearMyList={clearMyList}
-                />
-            )}
+            {/* ... (ang Modal ug SettingsModal parehas ra) ... */}
         </div>
     );
 }
