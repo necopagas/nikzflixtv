@@ -7,12 +7,18 @@ export const API_ENDPOINTS = {
     popular: `https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}`,
     toprated: `https://api.themoviedb.org/3/movie/top_rated?api_key=${API_KEY}`,
     tvshows: `https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}`,
-    anime: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=210024&sort_by=popularity.desc`,
     asianDramas: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_genres=18&with_origin_country=KR,JP,CN,TH&sort_by=popularity.desc`,
-    
-    // --- GI-ILISDAN UG MAS SAKTO NGA ENDPOINT PARA SA MINISERIES ---
     shortDramas: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_type=1&sort_by=popularity.desc`,
+
+    // --- MGA BAG-ONG ENDPOINTS PARA SA ANIME PAGE ---
+    animePopular: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=210024&sort_by=popularity.desc`,
+    animeTopRated: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=210024&sort_by=vote_average.desc&vote_count.gte=100`,
+    animeMovies: `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&with_keywords=210024&sort_by=popularity.desc`,
+    animeOnTheAir: `https://api.themoviedb.org/3/tv/on_the_air?api_key=${API_KEY}&with_keywords=210024`,
     
+    // Gi-rename nato ang daan nga 'anime' para klaro
+    discoverAnime: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=210024&sort_by=popularity.desc`,
+
     search: (query, page = 1) => `https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}&page=${page}`,
     details: (type, id) => `https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}&append_to_response=videos,credits,external_ids`,
     byGenre: (genreId) => `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&with_genres=${genreId}&sort_by=popularity.desc`,
@@ -58,8 +64,5 @@ export const SOURCE_ORDER = ['autoembed', 'vidlink', 'vidfast', 'vidsrc', 'multi
 // Ang uban code sa ubos parehas ra...
 export const IPTV_CHANNELS = [
     { name: 'GMA 7', url: 'https://amg01006-abs-cbn-abscbn-gma-x7-dash-abscbnono-dzsx9.amagi.tv/index.mpd' },
-    { name: 'JUNGO TV PINOY', url: 'https://jungotvstream.chanall.tv/jungotv/jungopinoytv/stream.m3u8' },
-    { name: 'SCREAMFLIX', url: 'https://jungotvstream.chanall.tv/jungotv/screamflix/stream.m3u8' },
-    { name: 'HALLYPOP', url: 'https://jungotvstream.chanall.tv/jungotv/hallypop/stream.m3u8' },
     // ...ug ang uban channels
 ];
