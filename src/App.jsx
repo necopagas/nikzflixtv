@@ -10,9 +10,10 @@ import { SearchPage } from './pages/SearchPage';
 import { AuthPage } from './pages/AuthPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { MyListPage } from './pages/MyListPage';
-import { IPTVPage } from './pages/IPTVPage';
+// --- ANIA ANG GI-AYO NGA IMPORT ---
+import { IPTVPage } from './pages/IPTVPage.jsx'; 
 import { ChatRoomPage } from './pages/ChatRoomPage';
-import { AnimePage } from './pages/AnimePage'; // <-- GI-IMPORT ANG ANIME PAGE
+import { AnimePage } from './pages/AnimePage';
 import { useAuth } from './context/AuthContext';
 import { useMyList } from './hooks/useMyList';
 import { useContinueWatching } from './hooks/useContinueWatching';
