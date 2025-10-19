@@ -11,7 +11,14 @@ import { AuthPage } from './pages/AuthPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { MyListPage } from './pages/MyListPage';
 import { IPTVPage } from './pages/IPTVPage';
-import { ChatRoomPage } from './pages/ChatRoomPage'; // <-- GIBALIK NAKO NI
+import { ChatRoomPage } from './pages/ChatRoomPage';
+import { AnimePage } from './pages/AnimePage';
+import { MangaPage } from './pages/MangaPage';
+import { MangaDetailPage } from './pages/MangaDetailPage';
+import { ChapterReaderPage } from './pages/ChapterReaderPage';
+import { DramaPage } from './pages/DramaPage'; // <-- IMPORT ANG BAG-O
+import { DramaDetailPage } from './pages/DramaDetailPage'; // <-- IMPORT ANG BAG-O
+import { DramaPlayerPage } from './pages/DramaPlayerPage'; // <-- IMPORT ANG BAG-O
 import { useAuth } from './context/AuthContext';
 import { useMyList } from './hooks/useMyList';
 import { useContinueWatching } from './hooks/useContinueWatching';
@@ -147,9 +154,21 @@ export default function App() {
                     <Route path="/search" element={<SearchPage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
                     <Route path="/auth" element={<AuthPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/anime" element={<AnimePage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
+                    
+                    <Route path="/manga" element={<MangaPage />} />
+                    <Route path="/manga/:mangaId" element={<MangaDetailPage />} />
+                    <Route path="/manga/:mangaId/chapter/:chapterId" element={<ChapterReaderPage />} />
+
+                    {/* --- BAG-O NGA DRAMA ROUTES --- */}
+                    <Route path="/drama" element={<DramaPage />} />
+                    <Route path="/drama/:dramaId" element={<DramaDetailPage />} />
+                    <Route path="/drama/watch/:episodeId" element={<DramaPlayerPage />} />
+                    {/* --------------------------- */}
+                    
                     <Route path="/my-list" element={<MyListPage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
                     <Route path="/live-tv" element={<IPTVPage />} />
-                    <Route path="/chat-room" element={<ChatRoomPage />} /> {/* <-- UG GIBALIK SAD NAKO NI */}
+                    <Route path="/chat-room" element={<ChatRoomPage />} />
                 </Routes>
             </main>
             <Footer />

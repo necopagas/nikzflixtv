@@ -1,14 +1,41 @@
+// src/config.js
+
+// --- TMDB API CONFIG ---
 export const API_KEY = "3b0f392b6173455e37624a78bd5f79d4";
 export const IMG_PATH = "https://image.tmdb.org/t/p/w500";
 export const BACKDROP_PATH = "https://image.tmdb.org/t/p/original";
+
+const ANIME_KEYWORD = "210024"; // Keyword for Anime on TMDB
+const CURRENT_DATE = new Date().toISOString().split('T')[0];
+const ISEKAI_KEYWORD = "193808"; // Keyword for Isekai on TMDB
+
+// --- BAG-O NGA GENRE LIST PARA SA ANIME PAGE ---
+export const ANIME_GENRES = [
+    { id: 10759, name: 'Action & Adventure' },
+    { id: 35, name: 'Comedy' },
+    { id: 18, name: 'Drama' },
+    { id: 10765, name: 'Sci-Fi & Fantasy' },
+    { id: 9648, name: 'Mystery' },
+    { id: 99999, name: 'Isekai' } // Custom ID para sa Isekai
+];
 
 export const API_ENDPOINTS = {
     trending: `https://api.themoviedb.org/3/trending/all/day?api_key=${API_KEY}`,
     popular: `https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}`,
     toprated: `https://api.themoviedb.org/3/movie/top_rated?api_key=${API_KEY}`,
     tvshows: `https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}`,
-    anime: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=210024&sort_by=popularity.desc`,
     asianDramas: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_genres=18&with_origin_country=KR,JP,CN,TH&sort_by=popularity.desc`,
+
+    // --- ANIME ENDPOINTS ---
+    anime: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=${ANIME_KEYWORD}&sort_by=popularity.desc`,
+    animePopular: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=${ANIME_KEYWORD}&sort_by=popularity.desc`,
+    animeTopRated: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=${ANIME_KEYWORD}&sort_by=vote_average.desc&vote_count.gte=500`,
+    animeNewReleases: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=${ANIME_KEYWORD}&sort_by=first_air_date.desc&air_date.lte=${CURRENT_DATE}`,
+
+    // --- BAG-ONG ENDPOINTS PARA SA ANIME GENRE FILTER ---
+    animeByGenre: (genreId) => `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=${ANIME_KEYWORD}&with_genres=${genreId}&sort_by=popularity.desc`,
+    animeIsekai: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=${ANIME_KEYWORD},${ISEKAI_KEYWORD}&sort_by=popularity.desc`,
+
     search: (query, page = 1) => `https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}&page=${page}`,
     details: (type, id) => `https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}&append_to_response=videos,credits,external_ids`,
     byGenre: (genreId) => `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&with_genres=${genreId}&sort_by=popularity.desc`,

@@ -258,11 +258,16 @@ body::-webkit-scrollbar-thumb {
 .theme-toggle { background: var(--bg-tertiary); color: var(--text-primary); width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; transition: all 0.3s ease; border: none; }
 .theme-toggle:hover { transform: rotate(15deg); }
 
+
+/* --- FIX PARA SA POSTER --- */
 .poster-wrapper {
     position: relative;
     overflow: hidden;
     border-radius: 0.375rem;
+    display: flex; /* <-- Importante para i-stretch ang content */
+    aspect-ratio: 2 / 3; /* <-- Mag-set sa sakto nga porma sa poster (patindog) */
 }
+
 
 .watched-progress {
     position: absolute;
