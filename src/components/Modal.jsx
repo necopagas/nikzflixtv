@@ -13,23 +13,34 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
     const [currentSource, setCurrentSource] = useState(SOURCE_ORDER[0]);
     const [isLoading, setIsLoading] = useState(true);
     const [showPlayer, setShowPlayer] = useState(false);
-    const modalRef = useRef();
     
-    const media_type = initialItem?.media_type || (initialItem?.title ? 'movie' : 'tv');
-    const isTV = media_type === 'tv';
+    const modalRef = useRef(null);
 
     const handlePlay = () => {
         setShowPlayer(true);
         if (isTV) {
             onEpisodePlay(item, selectedSeason, selectedEpisode); 
+        } else {
+            onEpisodePlay(item, 1, 1); 
         }
         addToWatched(item.id);
     };
     
+    const handleKeyDown = (e, action) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            action();
+        }
+    };
+
     useEffect(() => {
         setIsLoading(true);
         setItem(initialItem);
         setTrailer(null);
+
+        setTimeout(() => {
+            modalRef.current?.focus();
+        }, 100);
 
         const mediaType = initialItem?.media_type || (initialItem?.title ? 'movie' : 'tv');
 
@@ -65,7 +76,10 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
             setIsLoading(false);
         });
 
-    }, [initialItem]);
+    }, [initialItem, playOnOpen]); 
+    
+    const media_type = initialItem?.media_type || (initialItem?.title ? 'movie' : 'tv');
+    const isTV = media_type === 'tv';
     
     const handleSeasonChange = (seasonNumber) => {
         setSelectedSeason(seasonNumber);
@@ -74,7 +88,7 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
 
     const handleEpisodeChange = (episodeNumber) => {
         setSelectedEpisode(episodeNumber);
-        onEpisodePlay(item, selectedSeason, episodeNumber);
+        onEpisodePlay(item, selectedSeason, episodeNumber); 
         setShowPlayer(true);
     };
     
@@ -106,7 +120,10 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
                 <button
                     key={source}
                     onClick={() => handleSourceChange(source)}
-                    className={`source-btn px-3 py-1 rounded-full text-sm transition-colors ${currentSource === source ? 'active' : ''}`}
+                    tabIndex="0"
+                    onKeyDown={(e) => handleKeyDown(e, () => handleSourceChange(source))}
+                    // Consistent secondary button style
+                    className={`source-btn px-3 py-1 rounded-full text-sm transition-colors ${currentSource === source ? 'active bg-[var(--brand-color)] text-white font-bold' : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)]'}`}
                 >
                     {source.replace('_', '.')}
                 </button>
@@ -120,9 +137,21 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
     
     return (
         <div className="fixed inset-0 bg-black bg-opacity-75 z-[100] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-            <div ref={modalRef} className="modal-content-wrapper">
+            <div 
+                ref={modalRef} 
+                tabIndex="-1" 
+                onKeyDown={(e) => e.key === 'Escape' && onClose()}
+                className="modal-content-wrapper focus:outline-none"
+            >
                 <div className="modal-body p-8 relative">
-                    <button onClick={onClose} className="absolute top-4 right-4 text-2xl text-white">&times;</button>
+                    <button 
+                        onClick={onClose} 
+                        tabIndex="0"
+                        onKeyDown={(e) => handleKeyDown(e, onClose)}
+                        className="absolute top-4 right-4 text-2xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" // Style for close X
+                    >
+                        &times;
+                    </button>
                     
                     {showPlayer ? (
                         <div className="aspect-video bg-black rounded-lg">
@@ -148,8 +177,24 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
                                 </>
                             )}
                             <div className="flex space-x-2">
-                                {!showPlayer && <button onClick={handlePlay} className="px-6 py-2 bg-red-600 rounded">Play</button>}
-                                <button onClick={() => onToggleMyList(item)} className="px-6 py-2 bg-gray-700 rounded">
+                                {!showPlayer && (
+                                    <button 
+                                        onClick={handlePlay} 
+                                        tabIndex="0"
+                                        onKeyDown={(e) => handleKeyDown(e, handlePlay)}
+                                        // Primary button style
+                                        className="px-6 py-2 bg-[var(--brand-color)] hover:bg-red-700 rounded font-semibold transition-colors"
+                                    >
+                                        Play
+                                    </button>
+                                )}
+                                <button 
+                                    onClick={() => onToggleMyList(item)} 
+                                    tabIndex="0"
+                                    onKeyDown={(e) => handleKeyDown(e, () => onToggleMyList(item))}
+                                    // Consistent secondary button style
+                                    className="px-6 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)] rounded font-semibold transition-colors"
+                                >
                                     {isItemInMyList(item.id) ? 'Remove from List' : 'Add to My List'}
                                 </button>
                             </div>
@@ -161,14 +206,28 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
                             <h3 className="section-title">Seasons & Episodes</h3>
                             <div className="flex flex-wrap gap-2 mb-4">
                                 {details.seasons?.map(season => (
-                                    <button key={season.id} onClick={() => handleSeasonChange(season.season_number)} className={`px-3 py-1 rounded-full ${selectedSeason === season.season_number ? 'bg-red-600' : 'bg-[var(--bg-tertiary)]'}`}>
+                                    <button 
+                                        key={season.id} 
+                                        onClick={() => handleSeasonChange(season.season_number)} 
+                                        tabIndex="0"
+                                        onKeyDown={(e) => handleKeyDown(e, () => handleSeasonChange(season.season_number))}
+                                        // Consistent secondary style, active state uses brand color
+                                        className={`px-3 py-1 rounded-full transition-colors font-medium ${selectedSeason === season.season_number ? 'bg-[var(--brand-color)] text-white' : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)]'}`}
+                                    >
                                         {season.name}
                                     </button>
                                 ))}
                             </div>
                             <div className="episodes grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
                                 {Array.from({ length: details.seasons?.find(s => s.season_number === selectedSeason)?.episode_count || 0 }, (_, i) => i + 1).map(ep => (
-                                    <button key={ep} onClick={() => handleEpisodeChange(ep)} className={`aspect-square rounded ${selectedEpisode === ep ? 'active' : ''}`}>
+                                    <button 
+                                        key={ep} 
+                                        onClick={() => handleEpisodeChange(ep)} 
+                                        tabIndex="0"
+                                        onKeyDown={(e) => handleKeyDown(e, () => handleEpisodeChange(ep))}
+                                        // Uses CSS class 'episodes button' defined in App.css, which already uses variables
+                                        className={`aspect-square rounded ${selectedEpisode === ep ? 'active' : ''}`}
+                                    >
                                         {ep}
                                     </button>
                                 ))}

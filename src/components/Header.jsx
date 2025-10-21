@@ -65,7 +65,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                 <nav className="hidden md:flex items-center space-x-6">
                     <NavLink to="/" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Home</NavLink>
                     <NavLink to="/anime" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Anime</NavLink>
-                    <NavLink to="/manga" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Manga</NavLink>
+                    {/* <NavLink to="/manga" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Manga</NavLink> */} {/* <-- REMOVED */}
                     <NavLink to="/drama" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Drama</NavLink>
                     <NavLink to="/my-list" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>My List</NavLink>
                     <NavLink to="/live-tv" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Live TV</NavLink>
@@ -121,7 +121,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                 <nav className="flex flex-col items-center space-y-8 pt-24 text-xl">
                     <NavLink to="/" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Home</NavLink>
                     <NavLink to="/anime" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Anime</NavLink>
-                    <NavLink to="/manga" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Manga</NavLink>
+                    {/* <NavLink to="/manga" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Manga</NavLink> */} {/* <-- REMOVED */}
                     <NavLink to="/drama" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Drama</NavLink>
                     <NavLink to="/my-list" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>My List</NavLink>
                     <NavLink to="/live-tv" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Live TV</NavLink>

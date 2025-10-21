@@ -2,10 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactPlayer from 'react-player';
+// --- GIBALIK ANG DAAN NGA IMPORT ---
 import { getDramaEpisodeSources } from '../utils/consumetApi';
 
 export const DramaPlayerPage = () => {
     const { episodeId } = useParams();
+    // --- GIBALIK ANG DAAN NGA STATE ---
     const [sources, setSources] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -13,10 +15,11 @@ export const DramaPlayerPage = () => {
     useEffect(() => {
         setIsLoading(true);
         setError(null);
+        // --- GIBALIK ANG DAAN NGA FUNCTION CALL ---
         getDramaEpisodeSources(episodeId)
             .then(data => {
+                // --- GIBALIK ANG DAAN NGA LOGIC ---
                 if (data && data.sources && data.sources.length > 0) {
-                    // Pilion nato ang pinaka-taas nga quality
                     const bestSource = data.sources.reduce((prev, current) => (parseInt(prev.quality) > parseInt(current.quality)) ? prev : current);
                     setSources(bestSource);
                 } else {
@@ -44,6 +47,7 @@ export const DramaPlayerPage = () => {
                     <div className="player-wrapper rounded-lg overflow-hidden">
                         <ReactPlayer
                             className="react-player"
+                            // --- GIBALIK ANG DAAN NGA URL ---
                             url={sources.url}
                             width="100%"
                             height="100%"

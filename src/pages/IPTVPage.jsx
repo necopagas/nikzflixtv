@@ -21,6 +21,14 @@ export const IPTVPage = () => {
         );
     }, [searchQuery]);
 
+    // --- GIDUGANG NGA HANDLER PARA SA KEYBOARD ---
+    const handleKeyDown = (e, channel) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleChannelSelect(channel);
+        }
+    };
+
     return (
         <div className="iptv-page-container px-4 sm:px-8 md:px-16 pt-28 pb-20">
             <h1 className="text-3xl font-bold mb-8">Live TV Channels</h1>
@@ -49,21 +57,25 @@ export const IPTVPage = () => {
                         />
                     </div>
                     <div className="iptv-channel-list">
-                        <ul>
+                        {/* --- GI-USAB GIKAN SA <ul> PADULONG SA <div> --- */}
+                        <div role="list">
                             {filteredChannels.length > 0 ? (
                                 filteredChannels.map(channel => (
-                                    <li
+                                    /* --- GI-USAB GIKAN SA <li> PADULONG SA <button> PARA SA ACCESSIBILITY --- */
+                                    <button
                                         key={channel.name}
                                         className={`channel-item ${selectedChannel.name === channel.name ? 'active' : ''}`}
                                         onClick={() => handleChannelSelect(channel)}
+                                        onKeyDown={(e) => handleKeyDown(e, channel)} // Dili strikto nga kinahanglanon kay <button> na, pero good practice
+                                        role="listitem"
                                     >
                                         {channel.name}
-                                    </li>
+                                    </button>
                                 ))
                             ) : (
-                                <li className="no-results">No channels found.</li>
+                                <p className="no-results">No channels found.</p> // Gi-usab gikan sa <li>
                             )}
-                        </ul>
+                        </div>
                     </div>
                 </div>
             </div>

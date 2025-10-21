@@ -1,43 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { fetchData } from '../utils/fetchData';
-import { API_ENDPOINTS } from '../config';
+import { searchMoviesAndTV } from '../utils/consumetApi'; // <-- GIBALIK SA DAAN NGA IMPORT
 import { Poster } from '../components/Poster';
+import { IMG_PATH } from '../config'; // Import IMG_PATH for the poster
 
 export const SearchPage = ({ onOpenModal, isWatched }) => {
     const [searchParams] = useSearchParams();
     const query = searchParams.get('q');
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(true);
 
     useEffect(() => {
-        setResults([]);
-        setPage(1);
-        setHasMore(true);
-    }, [query]);
-
-    useEffect(() => {
-        if (!query) return;
+        if (!query) {
+            setResults([]);
+            return;
+        };
 
         const fetchSearchResults = async () => {
             setIsLoading(true);
-            const data = await fetchData(API_ENDPOINTS.search(query, page));
-            const validResults = data.results.filter(item => item.poster_path);
-            setResults(prev => [...prev, ...validResults]);
-            setHasMore(data.page < data.total_pages);
+            const data = await searchMoviesAndTV(query);
+            
+            // Normalize the data to match what the Poster component expects
+            const normalizedData = data.map(item => ({
+                id: item.id,
+                title: item.title,
+                name: item.title, // Use title for name as well
+                poster_path: item.image, // Map image to poster_path
+                media_type: item.type === 'Movie' ? 'movie' : 'tv',
+            })).filter(item => item.poster_path); // Filter out items without an image
+
+            setResults(normalizedData);
             setIsLoading(false);
         };
 
         fetchSearchResults();
-    }, [query, page]);
-
-    const loadMore = () => {
-        if (!isLoading && hasMore) {
-            setPage(prev => prev + 1);
-        }
-    };
+    }, [query]);
 
     return (
         <div className="px-4 sm:px-8 md:px-16 pt-28 pb-20">
@@ -47,7 +44,7 @@ export const SearchPage = ({ onOpenModal, isWatched }) => {
                     {results.map(item => (
                         <Poster 
                             key={item.id} 
-                            item={item} 
+                            item={{...item, poster_path: item.poster_path}} // Ang poster component mo-handle na sa full URL
                             onOpenModal={onOpenModal} 
                             isWatched={isWatched(item.id)} 
                         />
@@ -59,15 +56,8 @@ export const SearchPage = ({ onOpenModal, isWatched }) => {
             {isLoading && (
                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
                     {Array.from({ length: 12 }).map((_, i) => (
-                        <div key={i} className="aspect-[2/3] skeleton"></div>
+                        <div key="skeleton-search-{i}" className="aspect-[2/3] skeleton"></div>
                     ))}
-                </div>
-            )}
-            {hasMore && !isLoading && (
-                <div className="flex justify-center mt-8">
-                    <button onClick={loadMore} className="px-6 py-3 bg-red-600 text-white font-bold rounded hover:bg-red-700">
-                        Load More
-                    </button>
                 </div>
             )}
         </div>

@@ -139,3 +139,41 @@ export const IPTV_CHANNELS = [
     { name: 'HGTV', url: 'https://fl2.moveonjoy.com/HGTV/index.m3u8' },
     { name: 'COMEDY CENTRAL', url: 'https://fl3.moveonjoy.com/Comedy_Central/index.m3u8' }
 ];
+
+// --- ADMIN CONFIGURATION ---
+// Ilisi ang 'YOUR_FIREBASE_UID_HERE' sa imong actual Firebase User ID
+export const ADMIN_UIDS = ['YOUR_FIREBASE_UID_HERE']; 
+
+// --- CURATED COLLECTIONS ---
+// Magbutang ta og title ug lista sa TMDB IDs (Movie or TV) para sa kada collection
+export const CURATED_COLLECTIONS = [
+    {
+        title: "Halloween Horrors 🎃",
+        ids: [
+            { id: 760161, type: 'movie' }, // Orphan: First Kill
+            { id: 965876, type: 'movie' }, // Pearl
+            { id: 616820, type: 'movie' }, // Barbarian
+            { id: 756999, type: 'movie' }, // Nope
+            { id: 760741, type: 'movie' }, // Beast
+            { id: 507089, type: 'movie' }, // The Black Phone
+            { id: 536554, type: 'movie' }, // Smile
+            { id: 420634, type: 'movie' }, // Terrifier 2
+            // ... dugangi pa ...
+        ]
+    },
+    {
+        title: "Mind-Bending Sci-Fi 👽",
+        ids: [
+            { id: 603, type: 'movie' },    // The Matrix
+            { id: 157336, type: 'movie' }, // Interstellar
+            { id: 27205, type: 'movie' },  // Inception
+            { id: 137113, type: 'tv' },    // Rick and Morty
+            { id: 66732, type: 'tv' },     // Stranger Things
+            { id: 70593, type: 'tv' },     // Dark
+            { id: 42009, type: 'tv' },     // Black Mirror
+            { id: 119051, type: 'tv' },    // Loki
+            // ... dugangi pa ...
+        ]
+    },
+    // Pwede pa ka magdugang og lain nga collections
+];

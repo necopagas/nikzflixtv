@@ -77,7 +77,7 @@ body::-webkit-scrollbar-thumb {
     inset: 0;
     background: linear-gradient(90deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.3) 50%, transparent 100%),
                 linear-gradient(0deg, var(--bg-primary) 0%, transparent 40%, rgba(0,0,0,0.6) 100%);
-    z-index: 1;
+    z-index: 1; /* <-- SAKTO NA NI (z-index: 1) */
 }
 
 .banner-button {
@@ -399,7 +399,7 @@ body::-webkit-scrollbar-thumb {
     overflow-y: auto;
 }
 
-.iptv-channel-list ul {
+.iptv-channel-list ul, .iptv-channel-list [role="list"] {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -411,6 +411,13 @@ body::-webkit-scrollbar-thumb {
     border-radius: 6px;
     transition: background-color 0.2s;
     font-weight: 500;
+    /* Gidugang para mo-behave parehas sa <li> */
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: none;
+    color: var(--text-primary);
 }
 
 .channel-item:hover {
@@ -530,7 +537,7 @@ body::-webkit-scrollbar-thumb {
     background-color: var(--bg-tertiary-hover);
 }
 
-.iptv-page-container .no-results {
+.iptv-page-container .no-results, .no-results {
     padding: 1rem;
     text-align: center;
     color: var(--text-secondary);
@@ -571,6 +578,12 @@ body::-webkit-scrollbar-thumb {
     border-radius: 50%;
     animation: pulse 1.5s infinite;
 }
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
 
 /* --- CSS PARA SA BLINKING CURSOR SA HACKER MESSAGE --- */
 .blinking-cursor {
@@ -781,4 +794,91 @@ body::-webkit-scrollbar-thumb {
 .chat-room-container .chat-send-btn:hover {
     transform: scale(1.1) rotate(15deg);
     background-color: #c50812;
+}
+
+/*
+=====================================================
+--- STYLES PARA SA SMART TV & KEYBOARD NAVIGATION ---
+=====================================================
+*/
+
+/* --- Poster Focus Style --- */
+.poster-wrapper {
+    /* Magdugang ta og border para sa focus effect. */
+    border: 4px solid transparent;
+    /* I-adjust ang transition para maapil ang border */
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                z-index 0.4s, 
+                border-color 0.3s ease;
+}
+
+/* Kini ang "magic". 
+  Kung ang poster-wrapper kay naka-focus (via remote/keyboard),
+  ipakita ang klaro nga border.
+*/
+.poster-wrapper:focus,
+.poster-wrapper:focus-visible {
+    outline: none; /* Tanggalon ang default blue outline */
+    border-color: var(--brand-color); /* Ipakita ang atong brand color */
+    transform: scale(1.1); /* Padak-on gamay para klaro */
+    z-index: 50;
+}
+
+
+/* --- Button Focus Styles (Para sa tibuok app) --- */
+/* I-style nato tanan buttons para klaro ang focus */
+
+.banner-button:focus,
+.genre-button:focus,
+.episodes button:focus,
+.source-btn:focus,
+.theme-toggle:focus,
+.back-to-top:focus,
+.settings-modal button:focus,
+.auth-page button:focus,
+.profile-page button:focus,
+.chat-send-btn:focus,
+.iptv-page-container .channel-item:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--bg-primary), 0 0 0 5px var(--brand-color) !important;
+}
+
+/* Special focus style para sa genre buttons */
+.genre-button:focus {
+    background-color: var(--bg-tertiary-hover);
+    transform: translateY(-2px);
+}
+.genre-button.active:focus {
+    background-color: var(--brand-color);
+}
+
+/* Special focus style para sa episode buttons */
+.episodes button:focus {
+    background: var(--bg-tertiary-hover);
+    transform: translateY(-3px);
+    border-color: var(--border-color);
+}
+.episodes button.active:focus {
+    background: var(--brand-color);
+}
+
+
+/* --- Font Scaling para sa Dagko nga Screens (TVs) --- */
+/*
+  Kini mo-scale sa tanan text (nga naggamit og 'rem')
+  para mas dako ug mabasa sa TV.
+*/
+
+@media (min-width: 1920px) {
+    /* Para sa standard 1080p TV */
+    html {
+        font-size: 112.5%; /* 18px base imbis 16px */
+    }
+}
+
+@media (min-width: 3840px) { 
+    /* Para sa 4K TVs */
+     html {
+        font-size: 150%; /* 24px base */
+    }
 }
