@@ -13,10 +13,7 @@ import { MyListPage } from './pages/MyListPage';
 import { IPTVPage } from './pages/IPTVPage';
 import { ChatRoomPage } from './pages/ChatRoomPage';
 import { AnimePage } from './pages/AnimePage';
-// import { MangaPage } from './pages/MangaPage'; // <-- REMOVED
-// import { MangaDetailPage } from './pages/MangaDetailPage'; // <-- REMOVED
-// import { ChapterReaderPage } from './pages/ChapterReaderPage'; // <-- REMOVED
-import { DramaPage } from './pages/DramaPage'; 
+import { DramaPage } from './pages/DramaPage';
 import { DramaDetailPage } from './pages/DramaDetailPage';
 import { DramaPlayerPage } from './pages/DramaPlayerPage';
 import { useAuth } from './context/AuthContext';
@@ -26,179 +23,169 @@ import { useTheme } from './hooks/useTheme';
 import { useWatchedHistory } from './hooks/useWatchedHistory';
 
 export default function App() {
-    const [modalItem, setModalItem] = useState(null);
-    const [playOnOpen, setPlayOnOpen] = useState(false);
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const location = useLocation();
-    const [isDevToolsOpened, setIsDevToolsOpened] = useState(false);
-    const [completedLines, setCompletedLines] = useState([]);
-    const [currentLineText, setCurrentLineText] = useState('');
-    const [lineIndex, setLineIndex] = useState(0);
-    const soundPlayed = useRef(false);
+  const [modalItem, setModalItem] = useState(null);
+  const [playOnOpen, setPlayOnOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const location = useLocation();
+  const [isDevToolsOpened, setIsDevToolsOpened] = useState(false);
+  const [completedLines, setCompletedLines] = useState([]);
+  const [currentLineText, setCurrentLineText] = useState('');
+  const [lineIndex, setLineIndex] = useState(0);
+  const soundPlayed = useRef(false);
 
-    const scaryMessages = [
-        "INITIALIZING SYSTEM OVERRIDE...",
-        "FIREWALL BREACHED. SECURITY PROTOCOLS BYPASSED.",
-        "TRACKING USER LOCATION... [GEOLOCATION API ACTIVE]",
-        "USER DATA PACKET INTERCEPTION: nikzflix_userdata.zip",
-        "[▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓] 100% - DATA CAPTURED.",
-        "FINAL WARNING: IMMEDIATE DISCONNECTION REQUIRED.",
-    ];
+  const scaryMessages = [
+    "INITIALIZING SYSTEM OVERRIDE...",
+    "FIREWALL BREACHED. SECURITY PROTOCOLS BYPASSED.",
+    "TRACKING USER LOCATION... [GEOLOCATION API ACTIVE]",
+    "USER DATA PACKET INTERCEPTION: nikzflix_userdata.zip",
+    "[▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓] 100% - DATA CAPTURED.",
+    "FINAL WARNING: IMMEDIATE DISCONNECTION REQUIRED.",
+  ];
 
-    const { myList, isItemInMyList, toggleMyList, clearMyList } = useMyList();
-    const { continueWatchingList, setItemProgress, clearContinueWatching } = useContinueWatching();
-    const { theme, toggleTheme } = useTheme();
-    const { isWatched, addToWatched, clearWatchedHistory } = useWatchedHistory();
+  const { myList, isItemInMyList, toggleMyList, clearMyList } = useMyList();
+  const { continueWatchingList, setItemProgress, clearContinueWatching } = useContinueWatching();
+  const { theme, toggleTheme } = useTheme();
+  const { isWatched, addToWatched, clearWatchedHistory } = useWatchedHistory();
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, [location.pathname]);
-    
-    useEffect(() => {
-        const devToolsChecker = () => {
-            const threshold = 160;
-            if (window.outerWidth - window.innerWidth > threshold || window.outerHeight - window.innerHeight > threshold) {
-                setIsDevToolsOpened(true);
-            } else {
-                setIsDevToolsOpened(false);
-                soundPlayed.current = false;
-            }
-        };
-        const intervalId = setInterval(devToolsChecker, 1000);
-        const handleContextMenu = (e) => e.preventDefault();
-        const handleKeyDown = (e) => {
-            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
-                e.preventDefault();
-            }
-        };
-        document.addEventListener('contextmenu', handleContextMenu);
-        document.addEventListener('keydown', handleKeyDown);
-        return () => {
-            clearInterval(intervalId);
-            document.removeEventListener('contextmenu', handleContextMenu);
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, []);
-
-    useEffect(() => {
-        if (!isDevToolsOpened) {
-            setCompletedLines([]);
-            setCurrentLineText('');
-            setLineIndex(0);
-            return;
-        }
-
-        if (isDevToolsOpened && !soundPlayed.current) {
-            const audio = new Audio('/alarm.mp3');
-            audio.play();
-            soundPlayed.current = true;
-        }
-
-        if (isDevToolsOpened && lineIndex < scaryMessages.length) {
-            const lineToType = scaryMessages[lineIndex];
-            let charIndex = 0;
-            const typingInterval = setInterval(() => {
-                if (charIndex < lineToType.length) {
-                    setCurrentLineText(lineToType.substring(0, charIndex + 1));
-                    charIndex++;
-                } else {
-                    clearInterval(typingInterval);
-                    setCompletedLines(prev => [...prev, lineToType]);
-                    setCurrentLineText('');
-                    setTimeout(() => setLineIndex(prev => prev + 1), 500);
-                }
-            }, 50);
-            return () => clearInterval(typingInterval);
-        }
-    }, [isDevToolsOpened, lineIndex]);
-
-
-    const handleOpenModal = (item, play = false) => {
-        setModalItem(item);
-        setPlayOnOpen(play);
+  useEffect(() => {
+    const devToolsChecker = () => {
+      const threshold = 160;
+      if (window.outerWidth - window.innerWidth > threshold || window.outerHeight - window.innerHeight > threshold) {
+        setIsDevToolsOpened(true);
+      } else {
+        setIsDevToolsOpened(false);
+        soundPlayed.current = false;
+      }
     };
-
-    const handleCloseModal = () => {
-        setModalItem(null);
-        setPlayOnOpen(false);
+    const intervalId = setInterval(devToolsChecker, 1000);
+    const handleContextMenu = (e) => e.preventDefault();
+    const handleKeyDown = (e) => {
+      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+        e.preventDefault();
+      }
     };
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
-    return (
-        <div className="flex flex-col min-h-screen">
-            {isDevToolsOpened && (
-                <div className="hacker-overlay fixed inset-0 bg-black z-[9999] flex items-center justify-center p-8 font-mono">
-                    <div className="w-full max-w-2xl text-left">
-                        {completedLines.map((line, index) => (
-                            <p key={index} className={`text-lg ${index >= 4 ? 'text-red-500 font-bold' : 'text-green-400'}`}>
-                                {line}
-                            </p>
-                        ))}
-                        {currentLineText && (
-                             <p className="text-lg text-green-400">
-                                {currentLineText}
-                                <span className="blinking-cursor">|</span>
-                            </p>
-                        )}
-                    </div>
-                </div>
+  useEffect(() => {
+    if (!isDevToolsOpened) {
+      setCompletedLines([]);
+      setCurrentLineText('');
+      setLineIndex(0);
+      return;
+    }
+
+    if (isDevToolsOpened && !soundPlayed.current) {
+      const audio = new Audio('/alarm.mp3');
+      audio.play();
+      soundPlayed.current = true;
+    }
+
+    if (isDevToolsOpened && lineIndex < scaryMessages.length) {
+      const lineToType = scaryMessages[lineIndex];
+      let charIndex = 0;
+      const typingInterval = setInterval(() => {
+        if (charIndex < lineToType.length) {
+          setCurrentLineText(lineToType.substring(0, charIndex + 1));
+          charIndex++;
+        } else {
+          clearInterval(typingInterval);
+          setCompletedLines(prev => [...prev, lineToType]);
+          setCurrentLineText('');
+          setTimeout(() => setLineIndex(prev => prev + 1), 500);
+        }
+      }, 50);
+      return () => clearInterval(typingInterval);
+    }
+  }, [isDevToolsOpened, lineIndex]);
+
+  const handleOpenModal = (item, play = false) => {
+    setModalItem(item);
+    setPlayOnOpen(play);
+  };
+
+  const handleCloseModal = () => {
+    setModalItem(null);
+    setPlayOnOpen(false);
+  };
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      {isDevToolsOpened && (
+        <div className="hacker-overlay fixed inset-0 bg-black z-[9999] flex items-center justify-center p-8 font-mono">
+          <div className="w-full max-w-2xl text-left">
+            {completedLines.map((line, index) => (
+              <p key={index} className={`text-lg ${index >= 4 ? 'text-red-500 font-bold' : 'text-green-400'}`}>
+                {line}
+              </p>
+            ))}
+            {currentLineText && (
+              <p className="text-lg text-green-400">
+                {currentLineText}
+                <span className="blinking-cursor">|</span>
+              </p>
             )}
-            <Header
-                theme={theme}
-                toggleTheme={toggleTheme}
-                onOpenSettings={() => setIsSettingsOpen(true)}
-            />
-            <main className="flex-grow">
-                <Routes>
-                    <Route path="/" element={<HomePage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
-                    <Route path="/search" element={<SearchPage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
-                    <Route path="/auth" element={<AuthPage />} />
-                    <Route path="/profile" element={<ProfilePage />} />
-                    <Route path="/anime" element={<AnimePage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
-                    
-                    {/* --- REMOVED MANGA ROUTES --- */}
-                    {/* <Route path="/manga" element={<MangaPage />} /> */}
-                    {/* <Route path="/manga/:mangaId" element={<MangaDetailPage />} /> */}
-                    {/* <Route path="/manga/:mangaId/chapter/:chapterId" element={<ChapterReaderPage />} /> */}
-
-                    {/* --- DRAMA ROUTES --- */}
-                    <Route path="/drama" element={<DramaPage />} />
-                    <Route path="/drama/:dramaId" element={<DramaDetailPage />} />
-                    <Route path="/drama/watch/:episodeId" element={<DramaPlayerPage />} />
-                    
-                    <Route path="/my-list" element={<MyListPage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
-                    <Route path="/live-tv" element={<IPTVPage />} />
-                    <Route path="/chat-room" element={<ChatRoomPage />} />
-                </Routes>
-            </main>
-            <Footer />
-            <BackToTopButton />
-
-            {modalItem && (
-                <Modal
-                    item={modalItem}
-                    onClose={handleCloseModal}
-                    isItemInMyList={isItemInMyList}
-                    onToggleMyList={toggleMyList}
-                    playOnOpen={playOnOpen}
-                    onEpisodePlay={(itemForProgress, season, episode) => setItemProgress(itemForProgress, season, episode)}
-                    addToWatched={addToWatched}
-                    isWatched={isWatched}
-                    onOpenModal={handleOpenModal}  /* <-- KINI ANG GI-FIX */
-                    continueWatchingList={continueWatchingList}
-                />
-            )}
-
-            {isSettingsOpen && (
-                <SettingsModal
-                    onClose={() => setIsSettingsOpen(false)}
-                    theme={theme}
-                    toggleTheme={toggleTheme}
-                    onClearContinueWatching={clearContinueWatching}
-                    onClearWatchedHistory={clearWatchedHistory}
-                    onClearMyList={clearMyList}
-                />
-            )}
+          </div>
         </div>
-    );
+      )}
+      <Header
+        theme={theme}
+        toggleTheme={toggleTheme}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+      />
+      <main className="flex-grow">
+        <Routes>
+          <Route path="/" element={<HomePage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
+          <Route path="/search" element={<SearchPage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/anime" element={<AnimePage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
+          <Route path="/drama" element={<DramaPage />} />
+          <Route path="/drama/:dramaId" element={<DramaDetailPage />} />
+          <Route path="/drama/watch/:episodeId" element={<DramaPlayerPage />} />
+          <Route path="/my-list" element={<MyListPage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
+          <Route path="/live-tv" element={<IPTVPage />} />
+          <Route path="/chat-room" element={<ChatRoomPage />} />
+        </Routes>
+      </main>
+      <Footer />
+      <BackToTopButton />
+
+      {modalItem && (
+        <Modal
+          item={modalItem}
+          onClose={handleCloseModal}
+          isItemInMyList={isItemInMyList}
+          onToggleMyList={toggleMyList}
+          playOnOpen={playOnOpen}
+          onEpisodePlay={(itemForProgress, season, episode) => setItemProgress(itemForProgress, season, episode)}
+          addToWatched={addToWatched}
+          isWatched={isWatched}
+          onOpenModal={handleOpenModal}
+          continueWatchingList={continueWatchingList}
+        />
+      )}
+
+      {isSettingsOpen && (
+        <SettingsModal
+          onClose={() => setIsSettingsOpen(false)}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          onClearContinueWatching={clearContinueWatching}
+          onClearWatchedHistory={clearWatchedHistory}
+          onClearMyList={clearMyList}
+        />
+      )}
+    </div>
+  );
 }

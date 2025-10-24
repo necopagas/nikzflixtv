@@ -1,84 +1,77 @@
-import React, { useState, useMemo } from 'react';
-import { IPTV_CHANNELS } from '../config';
+// src/pages/IPTVPage.jsx
+import React, { useState, useEffect } from 'react';
 import { IPTVPlayer } from '../components/IPTVPlayer';
+import { IPTV_CHANNELS } from '../config'; // Mo-load gikan sa gi-update nga src/config.js
 
 export const IPTVPage = () => {
-    const [selectedChannel, setSelectedChannel] = useState(IPTV_CHANNELS[0]);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [isLoading, setIsLoading] = useState(true);
+  const [selectedUrl, setSelectedUrl] = useState(IPTV_CHANNELS[0]?.url);
+  const [nowPlaying, setNowPlaying] = useState(IPTV_CHANNELS[0]?.name);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [filtered, setFiltered] = useState(IPTV_CHANNELS);
 
-    const handleChannelSelect = (channel) => {
-        setIsLoading(true);
-        setSelectedChannel(channel);
-    };
-
-    const filteredChannels = useMemo(() => {
-        if (!searchQuery) {
-            return IPTV_CHANNELS;
-        }
-        return IPTV_CHANNELS.filter(channel =>
-            channel.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }, [searchQuery]);
-
-    // --- GIDUGANG NGA HANDLER PARA SA KEYBOARD ---
-    const handleKeyDown = (e, channel) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handleChannelSelect(channel);
-        }
-    };
-
-    return (
-        <div className="iptv-page-container px-4 sm:px-8 md:px-16 pt-28 pb-20">
-            <h1 className="text-3xl font-bold mb-8">Live TV Channels</h1>
-            <div className="iptv-layout">
-                <div className="iptv-player-section">
-                    <div className="player-header">
-                        <h2 className="now-playing-title">Now Playing</h2>
-                        <p className="now-playing-channel">{selectedChannel.name}</p>
-                    </div>
-                    <IPTVPlayer
-                        key={selectedChannel.url} // Add key to force re-mount on URL change
-                        url={selectedChannel.url}
-                        isLoading={isLoading}
-                        onCanPlay={() => setIsLoading(false)}
-                    />
-                </div>
-                <div className="iptv-channel-list-wrapper">
-                     <div className="channel-search-container">
-                        <i className="fas fa-search search-icon"></i>
-                        <input
-                            type="text"
-                            placeholder="Search for a channel..."
-                            className="channel-search-bar"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <div className="iptv-channel-list">
-                        {/* --- GI-USAB GIKAN SA <ul> PADULONG SA <div> --- */}
-                        <div role="list">
-                            {filteredChannels.length > 0 ? (
-                                filteredChannels.map(channel => (
-                                    /* --- GI-USAB GIKAN SA <li> PADULONG SA <button> PARA SA ACCESSIBILITY --- */
-                                    <button
-                                        key={channel.name}
-                                        className={`channel-item ${selectedChannel.name === channel.name ? 'active' : ''}`}
-                                        onClick={() => handleChannelSelect(channel)}
-                                        onKeyDown={(e) => handleKeyDown(e, channel)} // Dili strikto nga kinahanglanon kay <button> na, pero good practice
-                                        role="listitem"
-                                    >
-                                        {channel.name}
-                                    </button>
-                                ))
-                            ) : (
-                                <p className="no-results">No channels found.</p> // Gi-usab gikan sa <li>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  useEffect(() => {
+    const f = IPTV_CHANNELS.filter(c => 
+      c.name.toLowerCase().includes(search.toLowerCase())
     );
+    setFiltered(f);
+  }, [search]);
+
+  const play = (ch) => {
+    if (ch.url !== selectedUrl) {
+      setLoading(true);
+      setSelectedUrl(ch.url);
+      setNowPlaying(ch.name);
+    }
+  };
+
+  return (
+    // Gigamit ang imong existing page padding para mo-fit sa layout
+    <div className="px-4 sm:px-8 md:px-16 pt-28 pb-20"> 
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-4xl font-bold text-center text-[var(--brand-color)] mb-6">
+          Live TV
+        </h1>
+        
+        {/* Player Section (Gigamit imong theme colors) */}
+        <div className="bg-[var(--bg-secondary)] rounded-xl overflow-hidden mb-6 shadow-2xl">
+          <div className="bg-gradient-to-r from-[var(--brand-color)] to-red-700 p-3">
+            <p className="text-sm">NOW PLAYING:</p>
+            <h2 className="text-xl font-bold">{nowPlaying}</h2>
+          </div>
+          <IPTVPlayer 
+            url={selectedUrl} 
+            isLoading={loading} 
+            onCanPlay={() => setLoading(false)} 
+          />
+        </div>
+        
+        {/* Search Bar (Gigamit imong theme colors) */}
+        <input
+          type="text"
+          placeholder="Search channels..."
+          className="w-full max-w-md mx-auto block mb-6 p-3 rounded-lg bg-[var(--bg-secondary)] text-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-color)]"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        
+        {/* Channel List (Gigamit imong theme colors) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {filtered.map(ch => (
+            <button
+              key={ch.name}
+              onClick={() => play(ch)}
+              className={`p-4 rounded-lg font-bold transition-all ${
+                ch.url === selectedUrl 
+                  ? 'bg-[var(--brand-color)] text-white shadow-lg' 
+                  : 'bg-[var(--bg-secondary)] text-gray-300 hover:bg-[var(--bg-tertiary)]'
+              }`}
+            >
+              {ch.name}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 };

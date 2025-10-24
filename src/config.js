@@ -1,7 +1,7 @@
 // src/config.js
 
 // --- TMDB API CONFIG ---
-export const API_KEY = "3b0f392b6173455e37624a78bd5f79d4";
+export const API_KEY = "3b0f392b6173455e37624a78bd5f79d4"; // Your existing API key
 export const IMG_PATH = "https://image.tmdb.org/t/p/w500";
 export const BACKDROP_PATH = "https://image.tmdb.org/t/p/original";
 
@@ -9,7 +9,7 @@ const ANIME_KEYWORD = "210024"; // Keyword for Anime on TMDB
 const CURRENT_DATE = new Date().toISOString().split('T')[0];
 const ISEKAI_KEYWORD = "193808"; // Keyword for Isekai on TMDB
 
-// --- BAG-O NGA GENRE LIST PARA SA ANIME PAGE ---
+// --- GENRE LIST PARA SA ANIME PAGE ---
 export const ANIME_GENRES = [
     { id: 10759, name: 'Action & Adventure' },
     { id: 35, name: 'Comedy' },
@@ -32,7 +32,7 @@ export const API_ENDPOINTS = {
     animeTopRated: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=${ANIME_KEYWORD}&sort_by=vote_average.desc&vote_count.gte=500`,
     animeNewReleases: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=${ANIME_KEYWORD}&sort_by=first_air_date.desc&air_date.lte=${CURRENT_DATE}`,
 
-    // --- BAG-ONG ENDPOINTS PARA SA ANIME GENRE FILTER ---
+    // --- ENDPOINTS PARA SA ANIME GENRE FILTER ---
     animeByGenre: (genreId) => `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=${ANIME_KEYWORD}&with_genres=${genreId}&sort_by=popularity.desc`,
     animeIsekai: `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&with_keywords=${ANIME_KEYWORD},${ISEKAI_KEYWORD}&sort_by=popularity.desc`,
 
@@ -46,6 +46,7 @@ export const MOVIE_GENRES = [
     { id: 28, name: 'Action' }, { id: 12, name: 'Adventure' }, { id: 16, name: 'Animation' }, { id: 35, name: 'Comedy' }, { id: 80, name: 'Crime' }, { id: 99, name: 'Documentary' }, { id: 18, name: 'Drama' }, { id: 10751, name: 'Family' }, { id: 14, name: 'Fantasy' }, { id: 36, name: 'History' }, { id: 27, name: 'Horror' }, { id: 10402, name: 'Music' }, { id: 9648, name: 'Mystery' }, { id: 10749, name: 'Romance' }, { id: 878, name: 'Science Fiction' }, { id: 10770, name: 'TV Movie' }, { id: 53, name: 'Thriller' }, { id: 10752, name: 'War' }, { id: 37, name: 'Western' }
 ];
 
+// EMBED URLs from your project, keep these
 export const EMBED_URLS = {
     vidsrc: {
         movie: (id) => `https://vidsrc.to/embed/movie/${id}`,
@@ -53,33 +54,23 @@ export const EMBED_URLS = {
     },
     multiembed: {
         movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`,
-        tv: (id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}`
+        tv: (id, s, e) => `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${s}&e=${e}`
     },
-    vidlink: {
-        movie: (id) => `https://vidlink.pro/movie/${id}`,
-        tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}`
-    },
-    videasy: {
-        movie: (imdb_id) => imdb_id ? `https://player.videasy.net/movie/${imdb_id}` : null,
-        tv: (imdb_id, s, e) => imdb_id ? `https://player.videasy.net/tv/${imdb_id}/${s}/${e}` : null,
-    },
-    vidfast: {
-        movie: (id) => `https://vidfast.pro/movie/${id}?autoPlay=true`,
-        tv: (id, s, e) => `https://vidfast.pro/tv/${id}/${s}/${e}?autoPlay=true`,
-    },
-    autoembed: {
-        movie: (id) => `https://autoembed.pro/embed/movie/${id}`,
-        tv: (id, s, e) => `https://autoembed.pro/embed/tv/${id}/${s}/${e}`,
-    },
-    vidlink_anime: {
-        anime: (mal_id, e, type) => `https://vidlink.pro/anime/${mal_id}/${e}/${type}?fallback=true`
-    }
 };
 
-export const SOURCE_ORDER = ['autoembed', 'vidlink', 'vidfast', 'vidsrc', 'multiembed', 'videasy'];
+export const SOURCE_ORDER = ['vidsrc', 'multiembed']; // SOURCE_ORDER from your project
 
+// --- GITANGGAL ANG PROXY FUNCTION ---
+
+// --- IPTV CHANNEL LIST NGA WALAY PROXY (Gibalik ang GMA 7) ---
 export const IPTV_CHANNELS = [
-    { name: 'GMA 7', url: 'https://amg01006-abs-cbn-abscbn-gma-x7-dash-abscbnono-dzsx9.amagi.tv/index.mpd' },
+    // Gibalik ang GMA 7
+    { name: 'GMA 7', url: 'https://amg01006-abs-cbn-abscbn-gma-x7-dash-abscbnono-dzsx9.amagi.tv/index.mpd' }, // Pahinumdom: DASH ni, basin dili mo-play sa HLS player
+    
+    // --- GIDUGANG ANG BAG-ONG GMA STREAM ---
+    { name: 'GMA (HLS)', url: 'https://ott.m3u8.nathcreqtives.com/gmapinoytv/manifest.m3u8' },
+
+    // Ang uban channels
     { name: 'JUNGO TV PINOY', url: 'https://jungotvstream.chanall.tv/jungotv/jungopinoytv/stream.m3u8' },
     { name: 'SCREAMFLIX', url: 'https://jungotvstream.chanall.tv/jungotv/screamflix/stream.m3u8' },
     { name: 'HALLYPOP', url: 'https://jungotvstream.chanall.tv/jungotv/hallypop/stream.m3u8' },
@@ -110,7 +101,7 @@ export const IPTV_CHANNELS = [
     { name: 'NICK JR', url: 'https://fl5.moveonjoy.com/NICK_JR/index.m3u8' },
     { name: 'NICKTOONS', url: 'https://fl1.moveonjoy.com/NICKTOONS/index.m3u8' },
     { name: 'LIFETIME', url: 'https://fl5.moveonjoy.com/LIFETIME/index.m3u8' },
-    { name: 'AMC NETWORK', url: 'https://fl2.moveonjoy.com/AMC_NETWORK/index.m3u8' },
+    { name: 'AMC NETWORK', url: 'httpsD://fl2.moveonjoy.com/AMC_NETWORK/index.m3u8' },
     { name: 'HALLMARK CHANNEL', url: 'https://fl2.moveonjoy.com/HALLMARK_CHANNEL/index.m3u8' },
     { name: 'HALLMARK MOVIES MYSTERIES', url: 'https://fl2.moveonjoy.com/HALLMARK_MOVIES_MYSTERIES/index.m3u8' },
     { name: 'HBO', url: 'https://fl2.moveonjoy.com/HBO/index.m3u8' },
@@ -141,11 +132,9 @@ export const IPTV_CHANNELS = [
 ];
 
 // --- ADMIN CONFIGURATION ---
-// Ilisi ang 'YOUR_FIREBASE_UID_HERE' sa imong actual Firebase User ID
-export const ADMIN_UIDS = ['YOUR_FIREBASE_UID_HERE']; 
+export const ADMIN_UIDS = ['YOUR_FIREBASE_UID_HERE']; // Remember to replace this if needed
 
 // --- CURATED COLLECTIONS ---
-// Magbutang ta og title ug lista sa TMDB IDs (Movie or TV) para sa kada collection
 export const CURATED_COLLECTIONS = [
     {
         title: "Halloween Horrors 🎃",
@@ -158,7 +147,6 @@ export const CURATED_COLLECTIONS = [
             { id: 507089, type: 'movie' }, // The Black Phone
             { id: 536554, type: 'movie' }, // Smile
             { id: 420634, type: 'movie' }, // Terrifier 2
-            // ... dugangi pa ...
         ]
     },
     {
@@ -172,8 +160,6 @@ export const CURATED_COLLECTIONS = [
             { id: 70593, type: 'tv' },     // Dark
             { id: 42009, type: 'tv' },     // Black Mirror
             { id: 119051, type: 'tv' },    // Loki
-            // ... dugangi pa ...
         ]
     },
-    // Pwede pa ka magdugang og lain nga collections
 ];

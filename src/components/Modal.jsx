@@ -1,3 +1,4 @@
+// src/components/Modal.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchData } from '../utils/fetchData';
 import { API_ENDPOINTS, EMBED_URLS, SOURCE_ORDER, IMG_PATH, BACKDROP_PATH } from '../config';
@@ -104,11 +105,8 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
     const getPlayerUrl = () => {
         const imdb_id = details?.external_ids?.imdb_id;
 
-        if (currentSource === 'videasy') {
-            if (!isTV) return EMBED_URLS.videasy.movie(imdb_id);
-            return EMBED_URLS.videasy.tv(imdb_id, selectedSeason, selectedEpisode);
-        }
-
+        // --- GITANGGAL ANG 'videasy' BLOCK NGA NAG-CAUSE OG ERROR ---
+        
         if (!isTV) return EMBED_URLS[currentSource]?.movie(item.id);
         return EMBED_URLS[currentSource]?.tv(item.id, selectedSeason, selectedEpisode);
     };

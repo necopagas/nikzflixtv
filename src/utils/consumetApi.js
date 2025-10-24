@@ -9,7 +9,10 @@ const XYRASTREAM_API_KEY = "key1"; // Ang imong API key
  * Function to fetch data from the Consumet API.
  */
 const fetchConsumetData = async (endpoint) => {
-    const url = `${API_BASE_URL}${endpoint}`;
+    // --- GI-UPDATE PARA MOGAMIT OG PROXY ---
+    const targetUrl = `${API_BASE_URL}${endpoint}`;
+    const url = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
+    
     try {
         const response = await fetch(url);
         if (!response.ok) {
@@ -28,7 +31,10 @@ const fetchConsumetData = async (endpoint) => {
  * (Base sa imong gi-provide nga example)
  */
 const fetchXyraStreamData = async (endpoint, body) => {
-    const url = `${XYRASTREAM_API_BASE_URL}${endpoint}`;
+    // --- GI-UPDATE PARA MOGAMIT OG PROXY ---
+    const targetUrl = `${XYRASTREAM_API_BASE_URL}${endpoint}`;
+    const url = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
+    
     try {
         const response = await fetch(url, {
             method: 'POST',
