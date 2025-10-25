@@ -16,49 +16,47 @@ export const Modal = ({
   onOpenModal, 
   continueWatchingList 
 }) => {
-  const [item, setItem] = useState(initialItem);
+  const [item, setItem] = useState(initialItem); // FIXED: use updated item
   const [details, setDetails] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
   const [trailer, setTrailer] = useState(null);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [selectedEpisode, setSelectedEpisode] = useState(1);
-  const [currentSourceIndex, setCurrentSourceIndex] = useState(0); // Use index for auto-switch
+  const [currentSourceIndex, setCurrentSourceIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [showPlayer, setShowPlayer] = useState(false);
-  const [playerError, setPlayerError] = useState(false); // Detect if iframe fails
+  const [playerError, setPlayerError] = useState(false);
 
   const modalRef = useRef(null);
   const iframeRef = useRef(null);
 
   const currentSource = SOURCE_ORDER[currentSourceIndex];
-  const media_type = initialItem?.media_type || (initialItem?.title ? 'movie' : 'tv');
+  const media_type = item?.media_type || (item?.title ? 'movie' : 'tv'); // FIXED: use item, not initialItem
   const isTV = media_type === 'tv';
 
-  // === AUTO SWITCH SOURCE IF ERROR ===
+  // === AUTO SWITCH SOURCE ON ERROR ===
   const handlePlayerError = useCallback(() => {
     if (currentSourceIndex < SOURCE_ORDER.length - 1) {
       setCurrentSourceIndex(prev => prev + 1);
       setPlayerError(false);
     } else {
-      setPlayerError(true); // All sources failed
+      setPlayerError(true);
     }
   }, [currentSourceIndex]);
 
-  // Reset error when source changes
-  useEffect(() => {
-    setPlayerError(false);
-  }, [currentSourceIndex]);
+  useEffect(() => setPlayerError(false), [currentSourceIndex]);
 
-  // === PLAY HANDLER ===
+  // === PLAY HANDLER (FIXED!) ===
   const handlePlay = () => {
     setShowPlayer(true);
-    setCurrentSourceIndex(0); // Reset to first source
+    setCurrentSourceIndex(0);
+    addToWatched(item.id); // Use updated item
+
     if (isTV) {
       onEpisodePlay(item, selectedSeason, selectedEpisode);
     } else {
       onEpisodePlay(item, 1, 1);
     }
-    addToWatched(item.id);
   };
 
   // === KEYBOARD NAVIGATION ===
@@ -69,10 +67,10 @@ export const Modal = ({
     }
   };
 
-  // === FETCH DATA ON MOUNT ===
+  // === FETCH DATA ===
   useEffect(() => {
     setIsLoading(true);
-    setItem(initialItem);
+    setItem(initialItem); // Reset to initial
     setTrailer(null);
     setCurrentSourceIndex(0);
     setPlayerError(false);
@@ -86,7 +84,10 @@ export const Modal = ({
           fetchData(API_ENDPOINTS.recommendations(media_type, initialItem.id))
         ]);
 
+        const updatedItem = { ...initialItem, ...detailsData };
+        setItem(updatedItem); // FIXED: Update item with full details
         setDetails(detailsData);
+
         const officialTrailer = detailsData.videos?.results.find(
           v => v.type === 'Trailer' && v.site === 'YouTube'
         );
@@ -114,7 +115,7 @@ export const Modal = ({
     };
 
     fetchDetails();
-  }, [initialItem, playOnOpen, media_type, continueWatchingList, onEpisodePlay, addToWatched]);
+  }, [initialItem, playOnOpen, continueWatchingList, onEpisodePlay, addToWatched]);
 
   // === SEASON & EPISODE HANDLERS ===
   const handleSeasonChange = (season) => {
@@ -125,12 +126,12 @@ export const Modal = ({
 
   const handleEpisodeChange = (episode) => {
     setSelectedEpisode(episode);
-    onEpisodePlay(item, selectedSeason, episode);
+    onEpisodePlay(item, selectedSeason, episode); // Use updated item
     setShowPlayer(true);
-    setCurrentSourceIndex(0); // Reset source
+    setCurrentSourceIndex(0);
   };
 
-  // === GET PLAYER URL ===
+  // === GET PLAYER URL (FIXED!) ===
   const getPlayerUrl = () => {
     if (!details || !currentSource) return null;
     const src = EMBED_URLS[currentSource];
@@ -149,7 +150,7 @@ export const Modal = ({
     return null;
   };
 
-  // === RENDER SOURCE BUTTONS ===
+  // === RENDER SOURCES ===
   const renderSources = () => (
     <div className="flex flex-wrap items-center gap-2 mb-3">
       <span className="font-semibold text-[var(--text-secondary)] text-sm">Source:</span>
@@ -173,13 +174,19 @@ export const Modal = ({
           onClick={() => setCurrentSourceIndex(prev => prev + 1)}
           className="ml-2 text-xs text-[var(--text-secondary)] hover:text-[var(--brand-color)]"
         >
-          Next Server →
+          Next Server
         </button>
       )}
     </div>
   );
 
-  // === LOADING STATE ===
+  // === POSTER CLICK HANDLER (FIXED SWIPE!) ===
+  const handleRecommendationClick = (recItem) => {
+    onClose();
+    setTimeout(() => onOpenModal(recItem), 300); // Ensure modal closes first
+  };
+
+  // === LOADING ===
   if (isLoading || !details) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-80 z-[100] flex items-center justify-center">
@@ -200,7 +207,6 @@ export const Modal = ({
         className="bg-[var(--bg-secondary)] rounded-xl shadow-2xl max-w-5xl w-full max-h-screen overflow-y-auto focus:outline-none"
       >
         <div className="p-6 md:p-8 relative">
-          {/* Close Button */}
           <button 
             onClick={onClose}
             tabIndex="0"
@@ -211,17 +217,14 @@ export const Modal = ({
             ×
           </button>
 
-          {/* Player or Backdrop */}
+          {/* Player */}
           {showPlayer ? (
             <div className="relative bg-black rounded-lg overflow-hidden">
               {renderSources()}
               {playerError ? (
                 <div className="flex flex-col items-center justify-center h-96 text-center p-8">
-                  <p className="text-lg mb-4">All sources failed to load.</p>
-                  <button 
-                    onClick={() => setCurrentSourceIndex(0)}
-                    className="px-4 py-2 bg-[var(--brand-color)] rounded"
-                  >
+                  <p className="text-lg mb-4">All sources failed.</p>
+                  <button onClick={() => setCurrentSourceIndex(0)} className="px-4 py-2 bg-[var(--brand-color)] rounded">
                     Try Again
                   </button>
                 </div>
@@ -258,7 +261,7 @@ export const Modal = ({
                     <div className="flex items-center gap-4 my-2 text-sm text-[var(--text-secondary)]">
                       <span>{(details.release_date || details.first_air_date)?.split('-')[0]}</span>
                       {isTV ? (
-                        <span>{details.number_of_seasons} Season{ деталей.number_of_seasons > 1 ? 's' : ''}</span>
+                        <span>{details.number_of_seasons} Season{details.number_of_seasons > 1 ? 's' : ''}</span>
                       ) : (
                         <span>{Math.floor(details.runtime / 60)}h {details.runtime % 60}m</span>
                       )}
@@ -345,22 +348,20 @@ export const Modal = ({
               </div>
             )}
 
-            {/* Recommendations */}
+            {/* Recommendations (FIXED SWIPE!) */}
             {recommendations.length > 0 && (
               <div className="mt-8">
                 <h3 className="text-xl font-bold mb-3">More Like This</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {recommendations.slice(0, 10).map(rec => (
                     rec.poster_path && (
-                      <Poster
-                        key={rec.id}
-                        item={rec}
-                        onOpenModal={(item) => {
-                          onClose();
-                          setTimeout(() => onOpenModal(item), 300);
-                        }}
-                        isWatched={isWatched(rec.id)}
-                      />
+                      <div key={rec.id} onClick={() => handleRecommendationClick(rec)}>
+                        <Poster
+                          item={rec}
+                          onOpenModal={() => {}} // Prevent double trigger
+                          isWatched={isWatched(rec.id)}
+                        />
+                      </div>
                     )
                   ))}
                 </div>
