@@ -53,7 +53,7 @@ export const API_ENDPOINTS = {
   animeTopRated: `${tmdb("/discover/tv")}&with_keywords=${ANIME_KEYWORD}&sort_by=vote_average.desc&vote_count.gte=300`,
   animeNewReleases: `${tmdb("/discover/tv")}&with_keywords=${ANIME_KEYWORD}&sort_by=first_air_date.desc&air_date.lte=${CURRENT_DATE}`,
   animeByGenre: (genreId) => `${tmdb("/discover/tv")}&with_keywords=${ANIME_KEYWORD}&with_genres=${genreId}&sort_by=popularity.desc`,
-  animeIsekai: `${tmdb("/discover/tv")}&with_keywords=${ANIME_KEYWORD},${ISEKAI_KEYWORD}&sort_by=popularity.desc`, // FIXED!
+  animeIsekai: `${tmdb("/discover/tv")}&with_keywords=${ANIME_KEYWORD},${ISEKAI_KEYWORD}&sort_by=popularity.desc`, // FIXED
 
   search: (query, page = 1) => `${tmdb("/search/multi")}&query=${encodeURIComponent(query)}&page=${page}&include_adult=false`,
   details: (type, id) => `${tmdb(`/${type}/${id}`)}&append_to_response=videos,credits,external_ids,images,release_dates`,
@@ -72,7 +72,7 @@ export const EMBED_URLS = {
     tv: (id, s, e) => `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}`
   },
   vidsrc_me: {
-    movie: E(id) => `https://vidsrc.me/embed/movie/${id}`,
+    movie: (id) => `https://vidsrc.me/embed/movie/${id}`, // FIXED: E(id) → (id)
     tv: (id, s, e) => `https://vidsrc.me/embed/tv/${id}/${s}/${e}`
   },
   vidsrc: {
@@ -218,7 +218,7 @@ export const getEmbedUrl = (type, id, season, episode, imdb_id, mal_id) => {
     }
   }
 
-  return sources; // Array for auto-switching
+  return sources;
 };
 
 export const getFirstEmbedUrl = (...args) => {
