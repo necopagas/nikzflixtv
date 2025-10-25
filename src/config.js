@@ -53,7 +53,7 @@ export const API_ENDPOINTS = {
   animeTopRated: `${tmdb("/discover/tv")}&with_keywords=${ANIME_KEYWORD}&sort_by=vote_average.desc&vote_count.gte=300`,
   animeNewReleases: `${tmdb("/discover/tv")}&with_keywords=${ANIME_KEYWORD}&sort_by=first_air_date.desc&air_date.lte=${CURRENT_DATE}`,
   animeByGenre: (genreId) => `${tmdb("/discover/tv")}&with_keywords=${ANIME_KEYWORD}&with_genres=${genreId}&sort_by=popularity.desc`,
-  animeIsekai: `${tmdb("/discover/tv")}&with_keywords=${ANIME_KEYWORD},${ISEKAI_KEY internazionali}&sort_by=popularity.desc`,
+  animeIsekai: `${tmdb("/discover/tv")}&with_keywords=${ANIME_KEYWORD},${ISEKAI_KEYWORD}&sort_by=popularity.desc`, // FIXED!
 
   search: (query, page = 1) => `${tmdb("/search/multi")}&query=${encodeURIComponent(query)}&page=${page}&include_adult=false`,
   details: (type, id) => `${tmdb(`/${type}/${id}`)}&append_to_response=videos,credits,external_ids,images,release_dates`,
@@ -63,7 +63,6 @@ export const API_ENDPOINTS = {
 
 // --- EMBED SOURCES (2025 WORKING) ---
 export const EMBED_URLS = {
-  // TIER 1: FAST & CLEAN
   superembed: {
     movie: (id) => `https://www.superembed.stream/embed/movie/${id}`,
     tv: (id, s, e) => `https://www.superembed.stream/embed/tv/${id}/${s}/${e}`
@@ -73,11 +72,9 @@ export const EMBED_URLS = {
     tv: (id, s, e) => `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}`
   },
   vidsrc_me: {
-    movie: (id) => `https://vidsrc.me/embed/movie/${id}`,
+    movie: E(id) => `https://vidsrc.me/embed/movie/${id}`,
     tv: (id, s, e) => `https://vidsrc.me/embed/tv/${id}/${s}/${e}`
   },
-
-  // TIER 2: OFFICIAL DOMAINS
   vidsrc: {
     movie: (id) => `https://vidsrc.to/embed/movie/${id}`,
     tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}`
@@ -90,8 +87,6 @@ export const EMBED_URLS = {
     movie: (id) => `https://vidsrc.in/embed/movie/${id}`,
     tv: (id, s, e) => `https://vidsrc.in/embed/tv/${id}/${s}/${e}`
   },
-
-  // TIER 3: GOOD FALLBACKS
   flixhq: {
     movie: (id) => `https://flixhq.to/movie/${id}`,
     tv: (id, s, e) => `https://flixhq.to/tv/${id}/season-${s}-episode-${e}`
@@ -100,8 +95,6 @@ export const EMBED_URLS = {
     movie: (id) => `https://embed.smashystream.com/playitagaintom.php?tmdb=${id}`,
     tv: (id, s, e) => `https://embed.smashystream.com/playitagaintom.php?tmdb=${id}&season=${s}&episode=${e}`
   },
-
-  // TIER 4: LEGACY
   autoembed: {
     movie: (id) => `https://autoembed.pro/embed/movie/${id}`,
     tv: (id, s, e) => `https://autoembed.pro/embed/tv/${id}/${s}/${e}`
@@ -122,8 +115,6 @@ export const EMBED_URLS = {
     movie: (imdb_id) => imdb_id ? `https://player.videasy.net/movie/${imdb_id}` : null,
     tv: (imdb_id, s, e) => imdb_id ? `https://player.videasy.net/tv/${imdb_id}/${s}/${e}` : null
   },
-
-  // ANIME SOURCES (MAL ID)
   animepahe: {
     anime: (mal_id, episode = 1) => `https://animepahe.ru/play/${mal_id}/${episode}`
   },
@@ -138,7 +129,7 @@ export const EMBED_URLS = {
   }
 };
 
-// --- SOURCE ORDER (Best to Worst) ---
+// --- SOURCE ORDER ---
 export const SOURCE_ORDER = [
   'superembed', '2embed', 'vidsrc_me',
   'vidsrc', 'vidsrc_cc', 'vidsrc_in',
@@ -156,7 +147,7 @@ export const proxy = (url) => {
   return proxied;
 };
 
-// --- IPTV CHANNELS (Categorized) ---
+// --- IPTV CHANNELS ---
 export const IPTV_CHANNELS = {
   pinoy: [
     { name: "GMA 7", url: proxy("https://amg01006-abs-cbn-abscbn-gma-x7-dash-abscbnono-dzsx9.amagi.tv/index.mpd") },
@@ -194,13 +185,13 @@ export const CURATED_COLLECTIONS = [
   { title: "Top Anime", ids: [{ id: 94605, type: "tv" }, { id: 110427, type: "tv" }, { id: 40071, type: "tv" }] }
 ];
 
-// === AUTO SERVER SWITCH + GET URL ===
+// === AUTO SERVER SWITCH ===
 export const getEmbedUrl = (type, id, season, episode, imdb_id, mal_id) => {
   const isAnime = type === 'anime';
   const isMovie = type === 'movie';
   const isTV = type === 'tv';
 
-  const sources = SOURCE_ORDER.map(name => ({ name, url: null }));
+  const sources = [];
 
   for (const sourceName of SOURCE_ORDER) {
     const src = EMBED_URLS[sourceName];
@@ -210,7 +201,7 @@ export const getEmbedUrl = (type, id, season, episode, imdb_id, mal_id) => {
 
     if (isAnime && mal_id && src.anime) {
       if (sourceName === 'gogoanime') {
-        url = src.anime(mal_id, episode || 1, false); // sub first
+        url = src.anime(mal_id, episode || 1, false);
       } else if (sourceName === 'vidlink_anime') {
         url = src.anime(mal_id, episode || 1, 'sub');
       } else {
@@ -223,35 +214,14 @@ export const getEmbedUrl = (type, id, season, episode, imdb_id, mal_id) => {
     }
 
     if (url) {
-      const index = sources.findIndex(s => s.name === sourceName);
-      if (index !== -1) sources[index].url = url;
+      sources.push({ source: sourceName, url });
     }
   }
 
-  // Return array of { name, url } for auto-switching
-  return sources.filter(s => s.url).map(s => ({ source: s.name, url: s.url }));
+  return sources; // Array for auto-switching
 };
 
-// Optional: Get first working URL only
 export const getFirstEmbedUrl = (...args) => {
   const list = getEmbedUrl(...args);
   return list.length > 0 ? list[0] : null;
-};
-
-// Optional: Try dub if sub fails
-export const getAnimeEmbedUrl = (mal_id, episode = 1) => {
-  const sub = getEmbedUrl('anime', null, null, episode, null, mal_id);
-  if (sub.length > 0) return { ...sub[0], lang: 'sub' };
-
-  const dubSources = ['gogoanime', 'vidlink_anime'];
-  for (const src of dubSources) {
-    const embed = EMBED_URLS[src];
-    if (embed?.anime) {
-      const url = src === 'gogoanime'
-        ? embed.anime(mal_id, episode, true)
-        : embed.anime(mal_id, episode, 'dub');
-      if (url) return { source: src, url, lang: 'dub' };
-    }
-  }
-  return null;
 };
