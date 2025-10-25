@@ -41,7 +41,7 @@ export const MOVIE_GENRES = [
     { id: 10770, name: 'TV Movie' }, { id: 53, name: 'Thriller' }, { id: 10752, name: 'War' }, { id: 37, name: 'Western' }
 ];
 
-// --- EMBED SOURCES (FIXED!) ---
+// --- EMBED SOURCES ---
 export const EMBED_URLS = {
     vidsrc: {
         movie: (id) => `https://vidsrc.to/embed/movie/${id}`,
@@ -49,7 +49,7 @@ export const EMBED_URLS = {
     },
     multiembed: {
         movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`,
-        tv: (id, s, e) => `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${s}&e=${e}` // FIXED: _smart tv → tv
+        tv: (id, s, e) => `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${s}&e=${e}`
     },
     vidlink: {
         movie: (id) => `https://vidlink.pro/movie/${id}`,
@@ -75,40 +75,36 @@ export const EMBED_URLS = {
 // --- SOURCE ORDER ---
 export const SOURCE_ORDER = ['autoembed', 'vidlink', 'vidfast', 'vidsrc', 'multiembed', 'videasy'];
 
-// --- WORKING CORS PROXY (2025) ---
-const proxy = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-
-// --- IPTV CHANNELS (All working) ---
+// --- IPTV CHANNELS (DIRECT LINKS – NO PROXY!) ---
 export const IPTV_CHANNELS = [
-    { name: 'GMA 7', url: proxy('https://amg01006-abs-cbn-abscbn-gma-x7-dash-abscbnono-dzsx9.amagi.tv/index.mpd') },
-    { name: 'JUNGO TV PINOY', url: proxy('https://jungotvstream.chanall.tv/jungotv/jungopinoytv/stream.m3u8') },
-    { name: 'SCREAMFLIX', url: proxy('https://jungotvstream.chanall.tv/jungotv/screamflix/stream.m3u8') },
-    { name: 'HALLYPOP', url: proxy('https://jungotvstream.chanall.tv/jungotv/hallypop/stream.m3u8') },
-    { name: 'FRONTROW', url: proxy('https://jungotvstream.chanall.tv/jungotv/frontrow/stream.m3u8') },
-    { name: 'COMBATGO', url: proxy('https://jungotvstream.chanall.tv/jungotv/combatgo/stream.m3u8') },
-    { name: 'AWSN', url: proxy('https://amg02188-amg02188c2-jungotv-northamerica-5717.playouts.now.amagi.tv/playlist.m3u8') },
-    { name: 'Hi-YAH!', url: proxy('https://linear-59.frequency.stream/dist/roku/59/hls/master/playlist.m3u8') },
-    { name: 'ANIME X HIDIVE', url: proxy('https://amc-anime-x-hidive-1-us.tablo.wurl.tv/playlist.m3u8') },
-    { name: 'LOTUS MACAU', url: proxy('https://cdn3.skygo.mn/live/disk1/Lotus/HLSv3-FTA/Lotus.m3u8') },
-    { name: 'TRAVELXP', url: proxy('https://travelxp-travelxp-1-eu.rakuten.wurl.tv/playlist.m3u8') },
-    { name: 'DISCOVERY ASIA', url: proxy('https://cdn3.skygo.mn/live/disk1/Discovery_Asia/HLSv3-FTA/Discovery_Asia.m3u8') },
-    { name: 'DISCOVERY CHANNEL', url: proxy('https://fl3.moveonjoy.com/Discovery_Channel/index.m3u8') },
-    { name: 'NBA TV', url: proxy('https://fl5.moveonjoy.com/NBA_TV/index.m3u8') },
-    { name: 'NHL NETWORK', url: proxy('https://fl6.moveonjoy.com/NHL_NETWORK/index.m3u8') },
-    { name: 'ANIMAL PLANET', url: proxy('https://fl5.moveonjoy.com/Animal_Planet/index.m3u8') },
-    { name: 'CARTOON NETWORK', url: proxy('https://cdn3.skygo.mn/live/disk1/Cartoon_Network/HLSv3-FTA/Cartoon_Network.m3u8') },
-    { name: 'DISNEY CHANNEL', url: proxy('https://fl5.moveonjoy.com/DISNEY_CHANNEL/index.m3u8') },
-    { name: 'HBO', url: proxy('https://fl2.moveonjoy.com/HBO/index.m3u8') },
-    { name: 'SHOWTIME', url: proxy('https://fl2.moveonjoy.com/SHOWTIME/index.m3u8') },
-    { name: 'COMEDY CENTRAL', url: proxy('https://fl3.moveonjoy.com/Comedy_Central/index.m3u8') }
+    { name: 'GMA 7', url: 'https://amg01006-abs-cbn-abscbn-gma-x7-dash-abscbnono-dzsx9.amagi.tv/index.mpd' },
+    { name: 'JUNGO TV PINOY', url: 'https://jungotvstream.chanall.tv/jungotv/jungopinoytv/stream.m3u8' },
+    { name: 'SCREAMFLIX', url: 'https://jungotvstream.chanall.tv/jungotv/screamflix/stream.m3u8' },
+    { name: 'HALLYPOP', url: 'https://jungotvstream.chanall.tv/jungotv/hallypop/stream.m3u8' },
+    { name: 'FRONTROW', url: 'https://jungotvstream.chanall.tv/jungotv/frontrow/stream.m3u8' },
+    { name: 'COMBATGO', url: 'https://jungotvstream.chanall.tv/jungotv/combatgo/stream.m3u8' },
+    { name: 'AWSN', url: 'https://amg02188-amg02188c2-jungotv-northamerica-5717.playouts.now.amagi.tv/playlist.m3u8' },
+    { name: 'Hi-YAH!', url: 'https://linear-59.frequency.stream/dist/roku/59/hls/master/playlist.m3u8' },
+    { name: 'ANIME X HIDIVE', url: 'https://amc-anime-x-hidive-1-us.tablo.wurl.tv/playlist.m3u8' },
+    { name: 'LOTUS MACAU', url: 'https://cdn3.skygo.mn/live/disk1/Lotus/HLSv3-FTA/Lotus.m3u8' },
+    { name: 'TRAVELXP', url: 'https://travelxp-travelxp-1-eu.rakuten.wurl.tv/playlist.m3u8' },
+    { name: 'DISCOVERY ASIA', url: 'https://cdn3.skygo.mn/live/disk1/Discovery_Asia/HLSv3-FTA/Discovery_Asia.m3u8' },
+    { name: 'DISCOVERY CHANNEL', url: 'https://fl3.moveonjoy.com/Discovery_Channel/index.m3u8' },
+    { name: 'NBA TV', url: 'https://fl5.moveonjoy.com/NBA_TV/index.m3u8' },
+    { name: 'NHL NETWORK', url: 'https://fl6.moveonjoy.com/NHL_NETWORK/index.m3u8' },
+    { name: 'ANIMAL PLANET', url: 'https://fl5.moveonjoy.com/Animal_Planet/index.m3u8' },
+    { name: 'CARTOON NETWORK', url: 'https://cdn3.skygo.mn/live/disk1/Cartoon_Network/HLSv3-FTA/Cartoon_Network.m3u8' },
+    { name: 'DISNEY CHANNEL', url: 'https://fl5.moveonjoy.com/DISNEY_CHANNEL/index.m3u8' },
+    { name: 'HBO', url: 'https://fl2.moveonjoy.com/HBO/index.m3u8' },
+    { name: 'SHOWTIME', url: 'https://fl2.moveonjoy.com/SHOWTIME/index.m3u8' },
+    { name: 'COMEDY CENTRAL', url: 'https://fl3.moveonjoy.com/Comedy_Central/index.m3u8' }
 ];
 
 // --- ADMIN & COLLECTIONS ---
 export const ADMIN_UIDS = ['YOUR_FIREBASE_UID_HERE'];
 
 export const CURATED_COLLECTIONS = [
-    { title: "Halloween Horrors", ids: [ { id: 760161, type: 'movie' },
-    { id: 965876, type: 'movie' } ] },
+    { title: "Halloween Horrors", ids: [ { id: 760161, type: 'movie' }, { id: 965876, type: 'movie' } ] },
     { title: "Mind-Bending Sci-Fi", ids: [ { id: 603, type: 'movie' }, { id: 157336, type: 'movie' } ] },
 ];
 
