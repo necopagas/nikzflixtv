@@ -1,73 +1,108 @@
 // src/pages/IPTVPage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { IPTVPlayer } from '../components/IPTVPlayer';
-import { IPTV_CHANNELS } from '../config'; // Mo-load gikan sa gi-update nga src/config.js
+import { IPTV_CHANNELS } from '../config';
 
 export const IPTVPage = () => {
-  const [selectedUrl, setSelectedUrl] = useState(IPTV_CHANNELS[0]?.url);
-  const [nowPlaying, setNowPlaying] = useState(IPTV_CHANNELS[0]?.name);
+  const [selectedChannel, setSelectedChannel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filtered, setFiltered] = useState(IPTV_CHANNELS);
+  const [category, setCategory] = useState('all');
+  const [favorites, setFavorites] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('iptv_favorites') || '[]'); }
+    catch { return []; }
+  });
 
   useEffect(() => {
-    const f = IPTV_CHANNELS.filter(c => 
-      c.name.toLowerCase().includes(search.toLowerCase())
-    );
-    setFiltered(f);
-  }, [search]);
+    const last = localStorage.getItem('iptv_last_channel');
+    if (last) {
+      const ch = IPTV_CHANNELS.find(c => c.url === last);
+      if (ch) { setSelectedChannel(ch); return; }
+    }
+    setSelectedChannel(IPTV_CHANNELS[0]);
+  }, []);
+
+  useEffect(() => {
+    if (selectedChannel?.url) localStorage.setItem('iptv_last_channel', selectedChannel.url);
+  }, [selectedChannel?.url]);
+
+  useEffect(() => {
+    localStorage.setItem('iptv_favorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  const categories = useMemo(() => ['all', ...new Set(IPTV_CHANNELS.map(c => c.category).filter(Boolean))], []);
+
+  const filtered = useMemo(() => IPTV_CHANNELS.filter(ch => {
+    const matchesSearch = ch.name.toLowerCase().includes(search.toLowerCase());
+    const matchesCat = category === 'all' || ch.category === category;
+    return matchesSearch && matchesCat;
+  }), [search, category]);
 
   const play = (ch) => {
-    if (ch.url !== selectedUrl) {
+    if (ch.url !== selectedChannel?.url) {
       setLoading(true);
-      setSelectedUrl(ch.url);
-      setNowPlaying(ch.name);
+      setSelectedChannel(ch);
     }
   };
 
+  const toggleFavorite = (ch) => {
+    setFavorites(prev => prev.includes(ch.name) ? prev.filter(n => n !== ch.name) : [...prev, ch.name]);
+  };
+
+  const handleFallback = (url) => {
+    setSelectedChannel({ ...selectedChannel, url });
+  };
+
   return (
-    // Gigamit ang imong existing page padding para mo-fit sa layout
-    <div className="px-4 sm:px-8 md:px-16 pt-28 pb-20"> 
+    <div className="px-4 sm:px-8 md:px-16 pt-28 pb-20 min-h-screen">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-center text-[var(--brand-color)] mb-6">
+        <h1 className="text-5xl font-bold text-center text-[var(--brand-color)] mb-8 bg-gradient-to-r from-[var(--brand-color)] to-red-600 bg-clip-text text-transparent">
           Live TV
         </h1>
-        
-        {/* Player Section (Gigamit imong theme colors) */}
-        <div className="bg-[var(--bg-secondary)] rounded-xl overflow-hidden mb-6 shadow-2xl">
-          <div className="bg-gradient-to-r from-[var(--brand-color)] to-red-700 p-3">
-            <p className="text-sm">NOW PLAYING:</p>
-            <h2 className="text-xl font-bold">{nowPlaying}</h2>
+
+        <div className="bg-[var(--bg-secondary)] rounded-2xl overflow-hidden mb-8 shadow-2xl">
+          <div className="bg-gradient-to-r from-[var(--brand-color)] to-red-700 p-4">
+            <p className="text-sm opacity-90">NOW PLAYING</p>
+            <h2 className="text-2xl font-bold truncate">#{selectedChannel?.number} {selectedChannel?.name || 'Select a channel'}</h2>
           </div>
-          <IPTVPlayer 
-            url={selectedUrl} 
-            isLoading={loading} 
-            onCanPlay={() => setLoading(false)} 
+          <IPTVPlayer
+            channel={selectedChannel}
+            isLoading={loading}
+            onCanPlay={() => setLoading(false)}
+            onError={handleFallback}
           />
         </div>
-        
-        {/* Search Bar (Gigamit imong theme colors) */}
-        <input
-          type="text"
-          placeholder="Search channels..."
-          className="w-full max-w-md mx-auto block mb-6 p-3 rounded-lg bg-[var(--bg-secondary)] text-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-color)]"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        
-        {/* Channel List (Gigamit imong theme colors) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+
+        <div className="flex flex-wrap gap-3 mb-6 justify-center">
+          <input
+            type="text"
+            placeholder="Search channels..."
+            className="flex-1 min-w-[200px] max-w-md p-3 rounded-lg bg-[var(--bg-secondary)] text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--brand-color)]"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <select
+            className="p-3 rounded-lg bg-[var(--bg-secondary)] text-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-color)]"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat === 'all' ? 'All Channels' : cat}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {filtered.map(ch => (
             <button
               key={ch.name}
               onClick={() => play(ch)}
-              className={`p-4 rounded-lg font-bold transition-all ${
-                ch.url === selectedUrl 
-                  ? 'bg-[var(--brand-color)] text-white shadow-lg' 
-                  : 'bg-[var(--bg-secondary)] text-gray-300 hover:bg-[var(--bg-tertiary)]'
-              }`}
+              onDoubleClick={() => toggleFavorite(ch)}
+              className={`p-4 rounded-xl font-bold transition-all ${ch.url === selectedChannel?.url ? 'bg-[var(--brand-color)] text-white shadow-xl scale-105' : 'bg-[var(--bg-secondary)] text-gray-300 hover:bg-[var(--bg-tertiary)] hover:scale-105'}`}
             >
-              {ch.name}
+              <p className="text-xs opacity-70">#{ch.number}</p>
+              <p className="text-sm truncate">{ch.name}</p>
+              {favorites.includes(ch.name) && <span className="text-yellow-400 text-lg">★</span>}
             </button>
           ))}
         </div>
