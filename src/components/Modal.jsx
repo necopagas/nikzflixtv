@@ -1,375 +1,266 @@
 // src/components/Modal.jsx
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { fetchData } from '../utils/fetchData';
 import { API_ENDPOINTS, EMBED_URLS, SOURCE_ORDER, IMG_PATH, BACKDROP_PATH } from '../config';
 import { Poster } from './Poster';
 
-export const Modal = ({ 
-  item: initialItem, 
-  onClose, 
-  isItemInMyList, 
-  onToggleMyList, 
-  playOnOpen, 
-  onEpisodePlay, 
-  addToWatched, 
-  isWatched, 
-  onOpenModal, 
-  continueWatchingList 
-}) => {
-  const [item, setItem] = useState(initialItem); // FIXED: use updated item
-  const [details, setDetails] = useState(null);
-  const [recommendations, setRecommendations] = useState([]);
-  const [trailer, setTrailer] = useState(null);
-  const [selectedSeason, setSelectedSeason] = useState(1);
-  const [selectedEpisode, setSelectedEpisode] = useState(1);
-  const [currentSourceIndex, setCurrentSourceIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showPlayer, setShowPlayer] = useState(false);
-  const [playerError, setPlayerError] = useState(false);
+export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyList, playOnOpen, onEpisodePlay, addToWatched, isWatched, onOpenModal, continueWatchingList }) => {
+    const [item, setItem] = useState(initialItem);
+    const [details, setDetails] = useState(null);
+    const [recommendations, setRecommendations] = useState([]);
+    const [trailer, setTrailer] = useState(null);
+    const [selectedSeason, setSelectedSeason] = useState(1);
+    const [selectedEpisode, setSelectedEpisode] = useState(1);
+    const [currentSource, setCurrentSource] = useState(SOURCE_ORDER[0]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [showPlayer, setShowPlayer] = useState(false);
+    
+    const modalRef = useRef(null);
 
-  const modalRef = useRef(null);
-  const iframeRef = useRef(null);
-
-  const currentSource = SOURCE_ORDER[currentSourceIndex];
-  const media_type = item?.media_type || (item?.title ? 'movie' : 'tv'); // FIXED: use item, not initialItem
-  const isTV = media_type === 'tv';
-
-  // === AUTO SWITCH SOURCE ON ERROR ===
-  const handlePlayerError = useCallback(() => {
-    if (currentSourceIndex < SOURCE_ORDER.length - 1) {
-      setCurrentSourceIndex(prev => prev + 1);
-      setPlayerError(false);
-    } else {
-      setPlayerError(true);
-    }
-  }, [currentSourceIndex]);
-
-  useEffect(() => setPlayerError(false), [currentSourceIndex]);
-
-  // === PLAY HANDLER (FIXED!) ===
-  const handlePlay = () => {
-    setShowPlayer(true);
-    setCurrentSourceIndex(0);
-    addToWatched(item.id); // Use updated item
-
-    if (isTV) {
-      onEpisodePlay(item, selectedSeason, selectedEpisode);
-    } else {
-      onEpisodePlay(item, 1, 1);
-    }
-  };
-
-  // === KEYBOARD NAVIGATION ===
-  const handleKeyDown = (e, action) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      action();
-    }
-  };
-
-  // === FETCH DATA ===
-  useEffect(() => {
-    setIsLoading(true);
-    setItem(initialItem); // Reset to initial
-    setTrailer(null);
-    setCurrentSourceIndex(0);
-    setPlayerError(false);
-
-    setTimeout(() => modalRef.current?.focus(), 100);
-
-    const fetchDetails = async () => {
-      try {
-        const [detailsData, recsData] = await Promise.all([
-          fetchData(API_ENDPOINTS.details(media_type, initialItem.id)),
-          fetchData(API_ENDPOINTS.recommendations(media_type, initialItem.id))
-        ]);
-
-        const updatedItem = { ...initialItem, ...detailsData };
-        setItem(updatedItem); // FIXED: Update item with full details
-        setDetails(detailsData);
-
-        const officialTrailer = detailsData.videos?.results.find(
-          v => v.type === 'Trailer' && v.site === 'YouTube'
-        );
-        setTrailer(officialTrailer);
-        setRecommendations(recsData.results || []);
-
+    const handlePlay = () => {
+        setShowPlayer(true);
         if (isTV) {
-          const saved = continueWatchingList.find(i => i.id === initialItem.id);
-          if (saved?.season && saved?.episode) {
-            setSelectedSeason(saved.season);
-            setSelectedEpisode(saved.episode);
-          } else {
-            setSelectedSeason(1);
-            setSelectedEpisode(1);
-          }
+            onEpisodePlay(item, selectedSeason, selectedEpisode); 
+        } else {
+            onEpisodePlay(item, 1, 1); 
         }
-
-        if (playOnOpen) handlePlay();
-        else setShowPlayer(false);
-      } catch (error) {
-        console.error("Failed to fetch modal data:", error);
-      } finally {
-        setIsLoading(false);
-      }
+        addToWatched(item.id);
+    };
+    
+    const handleKeyDown = (e, action) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            action();
+        }
     };
 
-    fetchDetails();
-  }, [initialItem, playOnOpen, continueWatchingList, onEpisodePlay, addToWatched]);
+    useEffect(() => {
+        setIsLoading(true);
+        setItem(initialItem);
+        setTrailer(null);
 
-  // === SEASON & EPISODE HANDLERS ===
-  const handleSeasonChange = (season) => {
-    setSelectedSeason(season);
-    setSelectedEpisode(1);
-    setShowPlayer(false);
-  };
+        setTimeout(() => {
+            modalRef.current?.focus();
+        }, 100);
 
-  const handleEpisodeChange = (episode) => {
-    setSelectedEpisode(episode);
-    onEpisodePlay(item, selectedSeason, episode); // Use updated item
-    setShowPlayer(true);
-    setCurrentSourceIndex(0);
-  };
+        const mediaType = initialItem?.media_type || (initialItem?.title ? 'movie' : 'tv');
 
-  // === GET PLAYER URL (FIXED!) ===
-  const getPlayerUrl = () => {
-    if (!details || !currentSource) return null;
-    const src = EMBED_URLS[currentSource];
-    if (!src) return null;
+        Promise.all([
+            fetchData(API_ENDPOINTS.details(mediaType, initialItem.id)),
+            fetchData(API_ENDPOINTS.recommendations(mediaType, initialItem.id))
+        ]).then(([detailsData, recsData]) => {
+            setDetails(detailsData);
+            const officialTrailer = detailsData.videos?.results.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+            setTrailer(officialTrailer);
+            setRecommendations(recsData.results || []);
 
-    const imdb_id = details.external_ids?.imdb_id;
+            if (mediaType === 'tv') {
+                const savedProgress = continueWatchingList.find(i => i.id.toString() === initialItem.id.toString());
+                if (savedProgress?.season && savedProgress?.episode) {
+                    setSelectedSeason(savedProgress.season);
+                    setSelectedEpisode(savedProgress.episode);
+                } else {
+                    setSelectedSeason(1);
+                    setSelectedEpisode(1);
+                }
+            }
+            
+            if (playOnOpen) {
+                handlePlay();
+            } else {
+                setShowPlayer(false);
+            }
 
-    if (!isTV && src.movie) {
-      return imdb_id && currentSource === 'videasy' ? src.movie(imdb_id) : src.movie(item.id);
-    }
-    if (isTV && src.tv) {
-      return imdb_id && currentSource === 'videasy' 
-        ? src.tv(imdb_id, selectedSeason, selectedEpisode)
-        : src.tv(item.id, selectedSeason, selectedEpisode);
-    }
-    return null;
-  };
+        }).catch(error => {
+            console.error("Failed to fetch modal data:", error);
+        }).finally(() => {
+            setIsLoading(false);
+        });
 
-  // === RENDER SOURCES ===
-  const renderSources = () => (
-    <div className="flex flex-wrap items-center gap-2 mb-3">
-      <span className="font-semibold text-[var(--text-secondary)] text-sm">Source:</span>
-      {SOURCE_ORDER.map((source, idx) => (
-        <button
-          key={source}
-          onClick={() => setCurrentSourceIndex(idx)}
-          tabIndex="0"
-          onKeyDown={(e) => handleKeyDown(e, () => setCurrentSourceIndex(idx))}
-          className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-            currentSourceIndex === idx
-              ? 'bg-[var(--brand-color)] text-white shadow-md'
-              : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)]'
-          }`}
-        >
-          {source.charAt(0).toUpperCase() + source.slice(1).replace('_', '.')}
-        </button>
-      ))}
-      {currentSourceIndex < SOURCE_ORDER.length - 1 && (
-        <button
-          onClick={() => setCurrentSourceIndex(prev => prev + 1)}
-          className="ml-2 text-xs text-[var(--text-secondary)] hover:text-[var(--brand-color)]"
-        >
-          Next Server
-        </button>
-      )}
-    </div>
-  );
+    }, [initialItem, playOnOpen]); 
+    
+    const media_type = initialItem?.media_type || (initialItem?.title ? 'movie' : 'tv');
+    const isTV = media_type === 'tv';
+    
+    const handleSeasonChange = (seasonNumber) => {
+        setSelectedSeason(seasonNumber);
+        setSelectedEpisode(1);
+    };
 
-  // === POSTER CLICK HANDLER (FIXED SWIPE!) ===
-  const handleRecommendationClick = (recItem) => {
-    onClose();
-    setTimeout(() => onOpenModal(recItem), 300); // Ensure modal closes first
-  };
+    const handleEpisodeChange = (episodeNumber) => {
+        setSelectedEpisode(episodeNumber);
+        onEpisodePlay(item, selectedSeason, episodeNumber); 
+        setShowPlayer(true);
+    };
+    
+    const handleSourceChange = (source) => {
+        setCurrentSource(source);
+    };
 
-  // === LOADING ===
-  if (isLoading || !details) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-80 z-[100] flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-[var(--brand-color)] border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+    const handleRecommendationClick = (recItem) => {
+        onClose();
+        setTimeout(() => onOpenModal(recItem), 300);
+    };
 
-  return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-80 z-[100] flex items-center justify-center p-4 overflow-y-auto"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div 
-        ref={modalRef}
-        tabIndex="-1"
-        onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        className="bg-[var(--bg-secondary)] rounded-xl shadow-2xl max-w-5xl w-full max-h-screen overflow-y-auto focus:outline-none"
-      >
-        <div className="p-6 md:p-8 relative">
-          <button 
-            onClick={onClose}
-            tabIndex="0"
-            onKeyDown={(e) => handleKeyDown(e, onClose)}
-            className="absolute top-4 right-4 text-3xl text-[var(--text-secondary)] hover:text-white transition z-10"
-            aria-label="Close"
-          >
-            ×
-          </button>
+    const getPlayerUrl = () => {
+        const imdb_id = details?.external_ids?.imdb_id;
 
-          {/* Player */}
-          {showPlayer ? (
-            <div className="relative bg-black rounded-lg overflow-hidden">
-              {renderSources()}
-              {playerError ? (
-                <div className="flex flex-col items-center justify-center h-96 text-center p-8">
-                  <p className="text-lg mb-4">All sources failed.</p>
-                  <button onClick={() => setCurrentSourceIndex(0)} className="px-4 py-2 bg-[var(--brand-color)] rounded">
-                    Try Again
-                  </button>
-                </div>
-              ) : (
-                <iframe
-                  ref={iframeRef}
-                  src={getPlayerUrl()}
-                  width="100%"
-                  height="500"
-                  allowFullScreen
-                  title="Video Player"
-                  className="w-full"
-                  onError={handlePlayerError}
-                  onLoad={() => setPlayerError(false)}
-                />
-              )}
-            </div>
-          ) : (
-            <div 
-              className="h-64 md:h-96 bg-cover bg-center rounded-lg relative"
-              style={{ backgroundImage: `url(${BACKDROP_PATH}${details.backdrop_path})` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-secondary)] via-transparent to-transparent"></div>
-            </div>
-          )}
+        // --- GITANGGAL ANG 'videasy' BLOCK NGA NAG-CAUSE OG ERROR ---
+        
+        if (!isTV) return EMBED_URLS[currentSource]?.movie(item.id);
+        return EMBED_URLS[currentSource]?.tv(item.id, selectedSeason, selectedEpisode);
+    };
 
-          {/* Content */}
-          <div className="mt-6">
-            <div className="flex flex-col md:flex-row gap-6">
-              <div className="flex-1">
-                {!showPlayer && (
-                  <>
-                    <h1 className="text-2xl md:text-3xl font-bold text-white">{details.title || details.name}</h1>
-                    <div className="flex items-center gap-4 my-2 text-sm text-[var(--text-secondary)]">
-                      <span>{(details.release_date || details.first_air_date)?.split('-')[0]}</span>
-                      {isTV ? (
-                        <span>{details.number_of_seasons} Season{details.number_of_seasons > 1 ? 's' : ''}</span>
-                      ) : (
-                        <span>{Math.floor(details.runtime / 60)}h {details.runtime % 60}m</span>
-                      )}
-                    </div>
-                    <p className="text-[var(--text-primary)] mt-3 line-clamp-4">{details.overview}</p>
-                  </>
-                )}
-
-                <div className="flex gap-3 mt-4">
-                  {!showPlayer && (
-                    <button 
-                      onClick={handlePlay}
-                      tabIndex="0"
-                      onKeyDown={(e) => handleKeyDown(e, handlePlay)}
-                      className="px-6 py-2 bg-[var(--brand-color)] hover:bg-red-700 rounded font-bold transition"
-                    >
-                      Play
-                    </button>
-                  )}
-                  <button 
-                    onClick={() => onToggleMyList(item)}
+    const renderSources = () => (
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+            <span className="font-semibold text-[var(--text-secondary)]">Source:</span>
+            {SOURCE_ORDER.map(source => (
+                <button
+                    key={source}
+                    onClick={() => handleSourceChange(source)}
                     tabIndex="0"
-                    onKeyDown={(e) => handleKeyDown(e, () => onToggleMyList(item))}
-                    className="px-6 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)] rounded font-medium transition"
-                  >
-                    {isItemInMyList(item.id) ? 'Remove' : 'Add to List'}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Seasons & Episodes */}
-            {isTV && (
-              <div className="mt-8">
-                <h3 className="text-xl font-bold mb-3">Episodes</h3>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {details.seasons?.map(season => (
-                    <button
-                      key={season.season_number}
-                      onClick={() => handleSeasonChange(season.season_number)}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition ${
-                        selectedSeason === season.season_number
-                          ? 'bg-[var(--brand-color)] text-white'
-                          : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)]'
-                      }`}
-                    >
-                      {season.name}
-                    </button>
-                  ))}
-                </div>
-                <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
-                  {Array.from(
-                    { length: details.seasons?.find(s => s.season_number === selectedSeason)?.episode_count || 0 },
-                    (_, i) => i + 1
-                  ).map(ep => (
-                    <button
-                      key={ep}
-                      onClick={() => handleEpisodeChange(ep)}
-                      className={`aspect-square rounded text-sm font-medium transition ${
-                        selectedEpisode === ep
-                          ? 'bg-[var(--brand-color)] text-white'
-                          : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)]'
-                      }`}
-                    >
-                      {ep}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Trailer */}
-            {trailer && !showPlayer && (
-              <div className="mt-8">
-                <h3 className="text-xl font-bold mb-3">Trailer</h3>
-                <div className="aspect-video rounded-lg overflow-hidden">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${trailer.key}`}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Recommendations (FIXED SWIPE!) */}
-            {recommendations.length > 0 && (
-              <div className="mt-8">
-                <h3 className="text-xl font-bold mb-3">More Like This</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {recommendations.slice(0, 10).map(rec => (
-                    rec.poster_path && (
-                      <div key={rec.id} onClick={() => handleRecommendationClick(rec)}>
-                        <Poster
-                          item={rec}
-                          onOpenModal={() => {}} // Prevent double trigger
-                          isWatched={isWatched(rec.id)}
-                        />
-                      </div>
-                    )
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+                    onKeyDown={(e) => handleKeyDown(e, () => handleSourceChange(source))}
+                    // Consistent secondary button style
+                    className={`source-btn px-3 py-1 rounded-full text-sm transition-colors ${currentSource === source ? 'active bg-[var(--brand-color)] text-white font-bold' : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)]'}`}
+                >
+                    {source.replace('_', '.')}
+                </button>
+            ))}
         </div>
-      </div>
-    </div>
-  );
+    );
+
+    if (isLoading || !details) {
+        return <div className="fixed inset-0 bg-black bg-opacity-75 z-[100] flex items-center justify-center"><div className="player-loading"></div></div>;
+    }
+    
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-[100] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+            <div 
+                ref={modalRef} 
+                tabIndex="-1" 
+                onKeyDown={(e) => e.key === 'Escape' && onClose()}
+                className="modal-content-wrapper focus:outline-none"
+            >
+                <div className="modal-body p-8 relative">
+                    <button 
+                        onClick={onClose} 
+                        tabIndex="0"
+                        onKeyDown={(e) => handleKeyDown(e, onClose)}
+                        className="absolute top-4 right-4 text-2xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" // Style for close X
+                    >
+                        &times;
+                    </button>
+                    
+                    {showPlayer ? (
+                        <div className="aspect-video bg-black rounded-lg">
+                            {renderSources()}
+                            <iframe src={getPlayerUrl()} width="100%" height="100%" allowFullScreen="allowfullscreen" title="Video Player" className="rounded-b-lg"></iframe>
+                        </div>
+                    ) : (
+                        <div className="h-64 sm:h-96 bg-cover bg-center rounded-lg relative" style={{backgroundImage: `url(${BACKDROP_PATH}${details.backdrop_path})`}}>
+                            <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-secondary)] via-transparent to-transparent"></div>
+                        </div>
+                    )}
+
+                    <div className="flex flex-col sm:flex-row gap-8 mt-6">
+                        <div className="flex-1">
+                            {!showPlayer && (
+                                <>
+                                    <h1 className="text-3xl font-bold">{details.title || details.name}</h1>
+                                    <div className="flex items-center space-x-4 my-2 text-sm text-[var(--text-secondary)]">
+                                        <span>{details.release_date || details.first_air_date?.split('-')[0]}</span>
+                                        <span>{isTV ? `${details.number_of_seasons} Seasons` : `${Math.floor(details.runtime / 60)}h ${details.runtime % 60}m`}</span>
+                                    </div>
+                                    <p className="text-[var(--text-primary)] mb-4">{details.overview}</p>
+                                </>
+                            )}
+                            <div className="flex space-x-2">
+                                {!showPlayer && (
+                                    <button 
+                                        onClick={handlePlay} 
+                                        tabIndex="0"
+                                        onKeyDown={(e) => handleKeyDown(e, handlePlay)}
+                                        // Primary button style
+                                        className="px-6 py-2 bg-[var(--brand-color)] hover:bg-red-700 rounded font-semibold transition-colors"
+                                    >
+                                        Play
+                                    </button>
+                                )}
+                                <button 
+                                    onClick={() => onToggleMyList(item)} 
+                                    tabIndex="0"
+                                    onKeyDown={(e) => handleKeyDown(e, () => onToggleMyList(item))}
+                                    // Consistent secondary button style
+                                    className="px-6 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)] rounded font-semibold transition-colors"
+                                >
+                                    {isItemInMyList(item.id) ? 'Remove from List' : 'Add to My List'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {isTV && (
+                        <div className="episodes-section">
+                            <h3 className="section-title">Seasons & Episodes</h3>
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {details.seasons?.map(season => (
+                                    <button 
+                                        key={season.id} 
+                                        onClick={() => handleSeasonChange(season.season_number)} 
+                                        tabIndex="0"
+                                        onKeyDown={(e) => handleKeyDown(e, () => handleSeasonChange(season.season_number))}
+                                        // Consistent secondary style, active state uses brand color
+                                        className={`px-3 py-1 rounded-full transition-colors font-medium ${selectedSeason === season.season_number ? 'bg-[var(--brand-color)] text-white' : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)]'}`}
+                                    >
+                                        {season.name}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="episodes grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
+                                {Array.from({ length: details.seasons?.find(s => s.season_number === selectedSeason)?.episode_count || 0 }, (_, i) => i + 1).map(ep => (
+                                    <button 
+                                        key={ep} 
+                                        onClick={() => handleEpisodeChange(ep)} 
+                                        tabIndex="0"
+                                        onKeyDown={(e) => handleKeyDown(e, () => handleEpisodeChange(ep))}
+                                        // Uses CSS class 'episodes button' defined in App.css, which already uses variables
+                                        className={`aspect-square rounded ${selectedEpisode === ep ? 'active' : ''}`}
+                                    >
+                                        {ep}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {trailer && !showPlayer && (
+                        <div className="mt-8">
+                            <h3 className="section-title">Trailer</h3>
+                            <div className="aspect-video rounded-lg overflow-hidden">
+                                <iframe 
+                                    src={`https://www.youtube.com/embed/${trailer.key}`}
+                                    width="100%" 
+                                    height="100%" 
+                                    title="YouTube video player" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    allowFullScreen>
+                                </iframe>
+                            </div>
+                        </div>
+                    )}
+
+                    {recommendations.length > 0 && (
+                        <div className="recommendations-section">
+                            <h3 className="section-title">More Like This</h3>
+                            <div className="recommendations-grid">
+                                {recommendations.slice(0, 10).map(rec => (
+                                    rec.poster_path && <Poster key={rec.id} item={rec} onOpenModal={handleRecommendationClick} isWatched={isWatched(rec.id)} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 };
