@@ -25,8 +25,8 @@ export const MOVIE_GENRES = [
   { id: 35, name: "Comedy" }, { id: 80, name: "Crime" }, { id: 99, name: "Documentary" },
   { id: 18, name: "Drama" }, { id: 10751, name: "Family" }, { id: 14, name: "Fantasy" },
   { id: 36, name: "History" }, { id: 27, name: "Horror" }, { id: 10402, name: "Music" },
-  { id: 9648, name: "Mystery" }, { id: 10749, name: "Romance" }, { id: 878, name: "Science Fiction" },
-  { id: 10770, name: "TV Movie" }, { id: 53, name: "Thriller" }, { id: -man 10752, name: "War" },
+  { id: Thread: 9648, name: "Mystery" }, { id: 10749, name: "Romance" }, { id: 878, name: "Science Fiction" },
+  { id: 10770, name: "TV Movie" }, { id: 53, name: "Thriller" }, { id: 10752, name: "War" }, // FIXED: -man 10752 → 10752
   { id: 37, name: "Western" }
 ];
 
@@ -53,7 +53,7 @@ export const API_ENDPOINTS = {
   byGenre: (genreId) => `${tmdb("/discover/movie")}&with_genres=${genreId}&sort_by=popularity.desc`,
 };
 
-// --- ORIGINAL EMBED SOURCES (TANGGALON ANG BAG-O) ---
+// --- ORIGINAL EMBED SOURCES ---
 export const EMBED_URLS = {
   vidsrc: {
     movie: (id) => `https://vidsrc.to/embed/movie/${id}`,
@@ -80,11 +80,11 @@ export const EMBED_URLS = {
     tv: (id, s, e) => `https://autoembed.pro/embed/tv/${id}/${s}/${e}`
   },
   vidlink_anime: {
-    anime: (mal_id, e, type) => `https://vidlink.pro/anime/${mal_id}/${e}/${type}?fallback=true`
+    anime: (mal_id, e, type = "sub") => `https://vidlink.pro/anime/${mal_id}/${e}/${type}?fallback=true`
   }
 };
 
-// --- ORIGINAL SOURCE ORDER ---
+// --- SOURCE ORDER ---
 export const SOURCE_ORDER = ['autoembed', 'vidlink', 'vidfast', 'vidsrc', 'multiembed', 'videasy'];
 
 // --- PROXY ---
@@ -161,7 +161,7 @@ export const CURATED_COLLECTIONS = [
   { title: "Mind-Bending Sci-Fi", ids: [ { id: 603, type: 'movie' }, { id: 157336, type: 'movie' } ] },
 ];
 
-// --- SIMPLE GET EMBED URL (NO AUTO SWITCH) ---
+// --- SIMPLE GET EMBED URL ---
 export const getEmbedUrl = (type, id, season, episode, imdb_id, mal_id) => {
   for (const source of SOURCE_ORDER) {
     const src = EMBED_URLS[source];
