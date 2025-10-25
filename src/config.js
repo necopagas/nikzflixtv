@@ -10,7 +10,7 @@ const ANIME_KEYWORD = "210024";
 const ISEKAI_KEYWORD = "193808";
 const CURRENT_DATE = new Date().toISOString().split("T")[0];
 
-// --- GENRES ---
+// --- ANIME GENRES ---
 export const ANIME_GENRES = [
   { id: 10759, name: "Action & Adventure" },
   { id: 35, name: "Comedy" },
@@ -20,13 +20,14 @@ export const ANIME_GENRES = [
   { id: 99999, name: "Isekai" }
 ];
 
+// --- MOVIE GENRES ---
 export const MOVIE_GENRES = [
   { id: 28, name: "Action" }, { id: 12, name: "Adventure" }, { id: 16, name: "Animation" },
   { id: 35, name: "Comedy" }, { id: 80, name: "Crime" }, { id: 99, name: "Documentary" },
   { id: 18, name: "Drama" }, { id: 10751, name: "Family" }, { id: 14, name: "Fantasy" },
   { id: 36, name: "History" }, { id: 27, name: "Horror" }, { id: 10402, name: "Music" },
-  { id: Thread: 9648, name: "Mystery" }, { id: 10749, name: "Romance" }, { id: 878, name: "Science Fiction" },
-  { id: 10770, name: "TV Movie" }, { id: 53, name: "Thriller" }, { id: 10752, name: "War" }, // FIXED: -man 10752 → 10752
+  { id: 9648, name: "Mystery" }, { id: 10749, name: "Romance" }, { id: 878, name: "Science Fiction" },
+  { id: 10770, name: "TV Movie" }, { id: 53, name: "Thriller" }, { id: 10752, name: "War" },
   { id: 37, name: "Western" }
 ];
 
@@ -161,7 +162,7 @@ export const CURATED_COLLECTIONS = [
   { title: "Mind-Bending Sci-Fi", ids: [ { id: 603, type: 'movie' }, { id: 157336, type: 'movie' } ] },
 ];
 
-// --- SIMPLE GET EMBED URL ---
+// --- GET EMBED URL (Simple) ---
 export const getEmbedUrl = (type, id, season, episode, imdb_id, mal_id) => {
   for (const source of SOURCE_ORDER) {
     const src = EMBED_URLS[source];
