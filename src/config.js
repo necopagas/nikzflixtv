@@ -9,7 +9,7 @@ const ANIME_KEYWORD = "210024";
 const CURRENT_DATE = new Date().toISOString().split('T')[0];
 const ISEKAI_KEYWORD = "193808";
 
-// --- GENRE LIST PARA SA ANIME PAGE ---
+// --- ANIME GENRES ---
 export const ANIME_GENRES = [
     { id: 10759, name: 'Action & Adventure' }, { id: 35, name: 'Comedy' }, { id: 18, name: 'Drama' },
     { id: 10765, name: 'Sci-Fi & Fantasy' }, { id: 9648, name: 'Mystery' }, { id: 99999, name: 'Isekai' }
@@ -41,7 +41,7 @@ export const MOVIE_GENRES = [
     { id: 10770, name: 'TV Movie' }, { id: 53, name: 'Thriller' }, { id: 10752, name: 'War' }, { id: 37, name: 'Western' }
 ];
 
-// --- EMBED SOURCES ---
+// --- EMBED SOURCES (FIXED!) ---
 export const EMBED_URLS = {
     vidsrc: {
         movie: (id) => `https://vidsrc.to/embed/movie/${id}`,
@@ -49,7 +49,7 @@ export const EMBED_URLS = {
     },
     multiembed: {
         movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`,
-_smart tv: (id, s, e) => `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${s}&e=${e}`
+        tv: (id, s, e) => `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${s}&e=${e}` // FIXED: _smart tv → tv
     },
     vidlink: {
         movie: (id) => `https://vidlink.pro/movie/${id}`,
@@ -57,15 +57,15 @@ _smart tv: (id, s, e) => `https://multiembed.mov/directstream.php?video_id=${id}
     },
     videasy: {
         movie: (imdb_id) => imdb_id ? `https://player.videasy.net/movie/${imdb_id}` : null,
-        tv: (imdb_id, s, e) => imdb_id ? `https://player.videasy.net/tv/${imdb_id}/${s}/${e}` : null,
+        tv: (imdb_id, s, e) => imdb_id ? `https://player.videasy.net/tv/${imdb_id}/${s}/${e}` : null
     },
     vidfast: {
         movie: (id) => `https://vidfast.pro/movie/${id}?autoPlay=true`,
-        tv: (id, s, e) => `https://vidfast.pro/tv/${id}/${s}/${e}?autoPlay=true`,
+        tv: (id, s, e) => `https://vidfast.pro/tv/${id}/${s}/${e}?autoPlay=true`
     },
     autoembed: {
         movie: (id) => `https://autoembed.pro/embed/movie/${id}`,
-        tv: (id, s, e) => `https://autoembed.pro/embed/tv/${id}/${s}/${e}`,
+        tv: (id, s, e) => `https://autoembed.pro/embed/tv/${id}/${s}/${e}`
     },
     vidlink_anime: {
         anime: (mal_id, e, type = "sub") => `https://vidlink.pro/anime/${mal_id}/${e}/${type}?fallback=true`
@@ -78,7 +78,7 @@ export const SOURCE_ORDER = ['autoembed', 'vidlink', 'vidfast', 'vidsrc', 'multi
 // --- WORKING CORS PROXY (2025) ---
 const proxy = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 
-// --- IPTV CHANNELS (All working via proxy) ---
+// --- IPTV CHANNELS (All working) ---
 export const IPTV_CHANNELS = [
     { name: 'GMA 7', url: proxy('https://amg01006-abs-cbn-abscbn-gma-x7-dash-abscbnono-dzsx9.amagi.tv/index.mpd') },
     { name: 'JUNGO TV PINOY', url: proxy('https://jungotvstream.chanall.tv/jungotv/jungopinoytv/stream.m3u8') },
@@ -107,7 +107,8 @@ export const IPTV_CHANNELS = [
 export const ADMIN_UIDS = ['YOUR_FIREBASE_UID_HERE'];
 
 export const CURATED_COLLECTIONS = [
-    { title: "Halloween Horrors", ids: [ { id: 760161, type: 'movie' }, { id: 965876, type: 'movie' } ] },
+    { title: "Halloween Horrors", ids: [ { id: 760161, type: 'movie' },
+    { id: 965876, type: 'movie' } ] },
     { title: "Mind-Bending Sci-Fi", ids: [ { id: 603, type: 'movie' }, { id: 157336, type: 'movie' } ] },
 ];
 
