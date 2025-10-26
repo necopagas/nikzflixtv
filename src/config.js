@@ -77,6 +77,7 @@ export const SOURCE_ORDER = ['autoembed', 'vidlink', 'vidfast', 'vidsrc', 'multi
 
 // --- IPTV CHANNELS (DIRECT LINKS – NO PROXY!) ---
 export const IPTV_CHANNELS = [
+    // --- DAAN NGA CHANNELS ---
     { name: 'GMA 7', url: 'https://amg01006-abs-cbn-abscbn-gma-x7-dash-abscbnono-dzsx9.amagi.tv/index.mpd' },
     { name: 'JUNGO TV PINOY', url: 'https://jungotvstream.chanall.tv/jungotv/jungopinoytv/stream.m3u8' },
     { name: 'SCREAMFLIX', url: 'https://jungotvstream.chanall.tv/jungotv/screamflix/stream.m3u8' },
@@ -97,7 +98,29 @@ export const IPTV_CHANNELS = [
     { name: 'DISNEY CHANNEL', url: 'https://fl5.moveonjoy.com/DISNEY_CHANNEL/index.m3u8' },
     { name: 'HBO', url: 'https://fl2.moveonjoy.com/HBO/index.m3u8' },
     { name: 'SHOWTIME', url: 'https://fl2.moveonjoy.com/SHOWTIME/index.m3u8' },
-    { name: 'COMEDY CENTRAL', url: 'https://fl3.moveonjoy.com/Comedy_Central/index.m3u8' }
+    { name: 'COMEDY CENTRAL', url: 'https://fl3.moveonjoy.com/Comedy_Central/index.m3u8' },
+
+    // --- BAG-O NGA M3U8 CHANNELS ---
+    { name: 'ABS-CBN', url: 'http://filex.me:8080/net/net/1.m3u8', category: 'PH Channels' },
+    { name: 'GMA', url: 'http://filex.me:8080/net/net/2.m3u8', category: 'PH Channels' },
+    { name: 'TV5', url: 'http://filex.me:8080/net/net/3.m3u8', category: 'PH Channels' },
+    { name: 'CNN Philippines', url: 'http://filex.me:8080/net/net/4.m3u8', category: 'PH Channels' },
+    { name: 'PTV', url: 'http://filex.me:8080/net/net/5.m3u8', category: 'PH Channels' },
+    { name: 'IBC 13', url: 'http://filex.me:8080/net/net/6.m3u8', category: 'PH Channels' },
+    { name: 'Net 25', url: 'http://filex.me:8080/net/net/7.m3u8', category: 'PH Channels' },
+    { name: 'UNTV', url: 'http://filex.me:8080/net/net/8.m3u8', category: 'PH Channels' },
+    { name: 'GMA News TV', url: 'http://filex.me:8080/net/net/9.m3u8', category: 'PH Channels' },
+    { name: 'A2Z', url: 'http://filex.me:8080/net/net/10.m3u8', category: 'PH Channels' },
+    { name: 'ALL TV', url: 'http://filex.me:8080/net/net/11.m3u8', category: 'PH Channels' },
+    { name: 'RPN 9', url: 'http://filex.me:8080/net/net/12.m3u8', category: 'PH Channels' },
+    { name: 'Kapamilya Channel', url: 'http://filex.me:8080/net/net/13.m3u8', category: 'PH Channels' },
+    { name: 'Cine Mo!', url: 'http://filex.me:8080/net/net/14.m3u8', category: 'PH Channels' },
+    { name: 'Heart of Asia', url: 'http://filex.me:8080/net/net/15.m3u8', category: 'PH Channels' },
+    { name: 'One Sports', url: 'http://filex.me:8080/net/net/16.m3u8', category: 'PH Channels' },
+    { name: 'One News', url: 'http://filex.me:8080/net/net/17.m3u8', category: 'PH Channels' },
+    { name: 'DZMM Teleradyo', url: 'http://filex.me:8080/net/net/18.m3u8', category: 'PH Channels' },
+    { name: 'ANC', url: 'http://filex.me:8080/net/net/19.m3u8', category: 'PH Channels' },
+    { name: 'Solar Sports', url: 'http://filex.me:8080/net/net/20.m3u8', category: 'PH Channels' },
 ];
 
 // --- ADMIN & COLLECTIONS ---
