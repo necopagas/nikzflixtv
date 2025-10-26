@@ -19,8 +19,11 @@ export const IPTVPage = () => {
       const ch = IPTV_CHANNELS.find(c => c.url === last);
       if (ch) { setSelectedChannel(ch); return; }
     }
-    setSelectedChannel(IPTV_CHANNELS[0]);
-  }, []);
+    // I-set ang first channel as default kung walay last played
+    if (IPTV_CHANNELS.length > 0) {
+      setSelectedChannel(IPTV_CHANNELS[0]);
+    }
+  }, []); // Modagan ra ni kausa
 
   useEffect(() => {
     if (selectedChannel?.url) localStorage.setItem('iptv_last_channel', selectedChannel.url);
@@ -49,9 +52,11 @@ export const IPTVPage = () => {
     setFavorites(prev => prev.includes(ch.name) ? prev.filter(n => n !== ch.name) : [...prev, ch.name]);
   };
 
+  // --- FIX 1: Gamit ug functional update para malikayan ang stale state ---
   const handleFallback = (url) => {
-    setSelectedChannel({ ...selectedChannel, url });
+    setSelectedChannel(currentChannel => ({ ...currentChannel, url }));
   };
+  // --- END SA FIX 1 ---
 
   return (
     <div className="px-4 sm:px-8 md:px-16 pt-28 pb-20 min-h-screen">
@@ -95,7 +100,9 @@ export const IPTVPage = () => {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {filtered.map(ch => (
             <button
-              key={ch.name}
+              // --- FIX 2: Gamiton ang `ch.number` or `ch.url` kay unique ni ---
+              key={ch.number || ch.url} 
+              // --- END SA FIX 2 ---
               onClick={() => play(ch)}
               onDoubleClick={() => toggleFavorite(ch)}
               className={`p-4 rounded-xl font-bold transition-all ${ch.url === selectedChannel?.url ? 'bg-[var(--brand-color)] text-white shadow-xl scale-105' : 'bg-[var(--bg-secondary)] text-gray-300 hover:bg-[var(--bg-tertiary)] hover:scale-105'}`}

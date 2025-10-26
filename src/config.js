@@ -104,7 +104,9 @@ export const IPTV_CHANNELS = [
   // LIFESTYLE
   { name: 'HGTV', url: 'https://fl2.moveonjoy.com/HGTV/index.m3u8', category: 'Lifestyle', number: 23 },
   { name: 'MTV', url: 'https://fl2.moveonjoy.com/MTV/index.m3u8', category: 'Music', number: 24 },
-  { name: 'COMEDY CENTRAL', url: 'https://fl3.moveonjoy.com/Comedy_Central/index.m3u8', category: 'Entertainment', number: 25 }
+  { name: 'COMEDY CENTRAL', url: 'https://fl3.moveonjoy.com/Comedy_Central/index.m3u8', category: 'Entertainment', number: 25 },
+
+  // --- GITANGTANG NA ANG BAG-ONG MGA CHANNELS ---
 ];
 
 // --- ADMIN & COLLECTIONS ---
