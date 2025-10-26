@@ -12,11 +12,18 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/proxy/, '/raw')
       },
       
-      // IMONG DAAN: Proxy para sa Consumet API (gikan sa imong consumetApi.js)
-      '/api/proxy': {
-        target: 'https://api.consumet.org', // I-check ni kung mao ba ni imong target
+      // GI-UPDATE: Proxy para sa Consumet API (para sa Dev)
+      '/api/consumet': {
+        target: 'https://api.consumet.org', 
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/proxy/, '')
+        rewrite: (path) => path.replace(/^\/api\/consumet/, '')
+      },
+
+      // BAG-O: Proxy para sa XyraStream API (para sa Dev)
+      '/api/xyra': {
+        target: 'https://api.xyrastream.live',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/xyra/, '')
       }
     }
   }
