@@ -22,6 +22,9 @@ import { useContinueWatching } from './hooks/useContinueWatching';
 import { useTheme } from './hooks/useTheme';
 import { useWatchedHistory } from './hooks/useWatchedHistory';
 
+// --- I-IMPORT ANG BAG-ONG PAGE ---
+import { VideokePage } from './pages/VideokePage.jsx'; // <-- DUGANG NI
+
 export default function App() {
   const [modalItem, setModalItem] = useState(null);
   const [playOnOpen, setPlayOnOpen] = useState(false);
@@ -156,6 +159,9 @@ export default function App() {
           <Route path="/my-list" element={<MyListPage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
           <Route path="/live-tv" element={<IPTVPage />} />
           <Route path="/chat-room" element={<ChatRoomPage />} />
+
+          {/* --- I-DUGANG ANG BAG-ONG ROUTE --- */}
+          <Route path="/videoke" element={<VideokePage />} /> {/* <-- DUGANG NI */}
         </Routes>
       </main>
       <Footer />
@@ -188,4 +194,4 @@ export default function App() {
       )}
     </div>
   );
-}
+            }
