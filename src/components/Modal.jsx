@@ -77,6 +77,7 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
             setIsLoading(false);
         });
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialItem, playOnOpen]); 
     
     const media_type = initialItem?.media_type || (initialItem?.title ? 'movie' : 'tv');
@@ -103,12 +104,15 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
     };
 
     const getPlayerUrl = () => {
-        const imdb_id = details?.external_ids?.imdb_id;
-
-        // --- GITANGGAL ANG 'videasy' BLOCK NGA NAG-CAUSE OG ERROR ---
+        // const imdb_id = details?.external_ids?.imdb_id; // Keeping this here in case you re-add videasy
         
-        if (!isTV) return EMBED_URLS[currentSource]?.movie(item.id);
-        return EMBED_URLS[currentSource]?.tv(item.id, selectedSeason, selectedEpisode);
+        if (!isTV) {
+            const url = EMBED_URLS[currentSource]?.movie(item.id);
+            return url || null; // Return null if url is undefined
+        }
+        
+        const url = EMBED_URLS[currentSource]?.tv(item.id, selectedSeason, selectedEpisode);
+        return url || null; // Return null if url is undefined
     };
 
     const renderSources = () => (
@@ -133,8 +137,14 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
         return <div className="fixed inset-0 bg-black bg-opacity-75 z-[100] flex items-center justify-center"><div className="player-loading"></div></div>;
     }
     
+    const playerUrl = getPlayerUrl(); // Get the URL once
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-75 z-[100] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        // --- GI-UPDATE: Gidugang ang backdrop-blur-sm ug gi-adjust ang background opacity ---
+        <div 
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4" 
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
             <div 
                 ref={modalRef} 
                 tabIndex="-1" 
@@ -146,7 +156,7 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
                         onClick={onClose} 
                         tabIndex="0"
                         onKeyDown={(e) => handleKeyDown(e, onClose)}
-                        className="absolute top-4 right-4 text-2xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" // Style for close X
+                        className="absolute top-4 right-4 text-2xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors z-20" // Style for close X, ensure z-index
                     >
                         &times;
                     </button>
@@ -154,7 +164,13 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
                     {showPlayer ? (
                         <div className="aspect-video bg-black rounded-lg">
                             {renderSources()}
-                            <iframe src={getPlayerUrl()} width="100%" height="100%" allowFullScreen="allowfullscreen" title="Video Player" className="rounded-b-lg"></iframe>
+                            {playerUrl ? (
+                                <iframe src={playerUrl} width="100%" height="100%" allowFullScreen="allowfullscreen" title="Video Player" className="rounded-b-lg"></iframe>
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-center text-[var(--text-secondary)] rounded-b-lg">
+                                    <p>Sorry, the source '{currentSource}' is not available for this title.</p>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="h-64 sm:h-96 bg-cover bg-center rounded-lg relative" style={{backgroundImage: `url(${BACKDROP_PATH}${details.backdrop_path})`}}>

@@ -1,5 +1,5 @@
 // src/pages/IPTVPage.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react'; // <-- GIDUGANG ANG useCallback
 import { IPTVPlayer } from '../components/IPTVPlayer';
 import { IPTV_CHANNELS } from '../config';
 
@@ -48,15 +48,21 @@ export const IPTVPage = () => {
     }
   };
 
-  const toggleFavorite = (ch) => {
+  const toggleFavorite = (ch, e) => {
+    e.stopPropagation(); // Ayaw i-play ang channel inig click sa favorite
     setFavorites(prev => prev.includes(ch.name) ? prev.filter(n => n !== ch.name) : [...prev, ch.name]);
   };
 
-  // --- FIX 1: Gamit ug functional update para malikayan ang stale state ---
-  const handleFallback = (url) => {
+  // --- FIX: I-wrap sa useCallback ang event handlers ---
+  const onPlayerCanPlay = useCallback(() => {
+    setLoading(false);
+  }, []); // Stable function
+
+  const onPlayerError = useCallback((url) => {
+    // Ang 'url' gikan sa onError kay mao ang channel.fallback
     setSelectedChannel(currentChannel => ({ ...currentChannel, url }));
-  };
-  // --- END SA FIX 1 ---
+  }, []); // Stable function
+  // --- END SA FIX ---
 
   return (
     <div className="px-4 sm:px-8 md:px-16 pt-28 pb-20 min-h-screen">
@@ -73,8 +79,10 @@ export const IPTVPage = () => {
           <IPTVPlayer
             channel={selectedChannel}
             isLoading={loading}
-            onCanPlay={() => setLoading(false)}
-            onError={handleFallback}
+            // --- FIX: Gamiton ang stable functions ---
+            onCanPlay={onPlayerCanPlay}
+            onError={onPlayerError}
+            // --- END SA FIX ---
           />
         </div>
 
@@ -97,21 +105,44 @@ export const IPTVPage = () => {
           </select>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {filtered.map(ch => (
-            <button
-              // --- FIX 2: Gamiton ang `ch.number` or `ch.url` kay unique ni ---
-              key={ch.number || ch.url} 
-              // --- END SA FIX 2 ---
-              onClick={() => play(ch)}
-              onDoubleClick={() => toggleFavorite(ch)}
-              className={`p-4 rounded-xl font-bold transition-all ${ch.url === selectedChannel?.url ? 'bg-[var(--brand-color)] text-white shadow-xl scale-105' : 'bg-[var(--bg-secondary)] text-gray-300 hover:bg-[var(--bg-tertiary)] hover:scale-105'}`}
-            >
-              <p className="text-xs opacity-70">#{ch.number}</p>
-              <p className="text-sm truncate">{ch.name}</p>
-              {favorites.includes(ch.name) && <span className="text-yellow-400 text-lg">★</span>}
-            </button>
-          ))}
+        <div className="bg-[var(--bg-secondary)] rounded-xl shadow-lg overflow-hidden">
+          <div className="flex flex-col max-h-[70vh] overflow-y-auto">
+            {filtered.length > 0 ? filtered.map(ch => (
+              <button
+                key={ch.number || ch.url} 
+                onClick={() => play(ch)}
+                className={`flex items-center justify-between p-4 w-full text-left transition-colors ${
+                  ch.url === selectedChannel?.url 
+                    ? 'bg-[var(--brand-color)] text-white' 
+                    : 'text-gray-200 hover:bg-[var(--bg-tertiary)]'
+                } border-b border-b-[var(--border-color)] last:border-b-0`}
+              >
+                <div className="flex items-center gap-4">
+                  <span className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg text-xs font-bold ${
+                    ch.url === selectedChannel?.url ? 'bg-white/20' : 'bg-[var(--bg-tertiary)]'
+                  }`}>
+                    #{ch.number}
+                  </span>
+                  <span className="font-semibold truncate">{ch.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button onClick={(e) => toggleFavorite(ch, e)} className="text-xl p-1" title="Toggle Favorite">
+                    <span className={`${favorites.includes(ch.name) ? 'text-yellow-400' : 'text-gray-500 hover:text-yellow-400'}`}>★</span>
+                  </button>
+                  {ch.url === selectedChannel?.url && (
+                    <div className="hidden sm:flex items-center gap-1.5 text-white animate-pulse">
+                      <span className="live-dot bg-white"></span>
+                      <span className="text-sm font-semibold">Playing</span>
+                    </div>
+                  )}
+                </div>
+              </button>
+            )) : (
+              <p className="p-8 text-center text-[var(--text-secondary)]">
+                No channels found for "{search}".
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>

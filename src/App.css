@@ -1,4 +1,4 @@
-/* src/App.css - KUMPLETO UG SAKTO NGA VERSION */
+/* src/App.css - KUMPLETO NGA VERSION NGA NAAY UPGRADES */
 
 /* --- MODERN THEME VARIABLES --- */
 :root {
@@ -28,7 +28,10 @@
 body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    /* --- GI-UPDATE ANG FONT --- */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                 sans-serif;
     transition: background-color 0.3s, color 0.3s;
 }
 
@@ -699,17 +702,56 @@ body::-webkit-scrollbar-thumb {
 .chat-room-container .chat-messages::-webkit-scrollbar-thumb { background-color: #4a4a4a; border-radius: 10px; }
 
 
+/* ===============================================
+--- BAG-ONG STYLES (CHAT AVATAR & ROW ANIMATION) ---
+===============================================
+*/
+
+/* --- CHAT ROOM UI UPGRADE --- */
 .chat-room-container .chat-message {
     display: flex;
-    flex-direction: column;
+    flex-direction: row; /* GI-ILISAN GIKAN SA COLUMN */
     max-width: 75%;
     width: fit-content;
-    align-items: flex-start;
+    align-items: flex-end; /* I-align ang avatar sa ubos */
+    gap: 0.75rem; /* Space tali sa avatar ug message */
 }
 
 .chat-room-container .chat-message.current-user {
     align-self: flex-end;
-    align-items: flex-end;
+    flex-direction: row-reverse; /* I-baliktad para sa current user */
+}
+
+/* Avatar Style */
+.chat-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1rem;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    border: 2px solid var(--border-color);
+}
+
+.chat-room-container .chat-message.current-user .chat-avatar {
+    background: linear-gradient(90deg, #e50914, #f81d28);
+    color: white;
+    border: none;
+}
+
+/* Wrapper para sa Ngalan/Oras ug sa Bubble */
+.message-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-room-container .chat-message.current-user .message-body {
+    align-items: flex-end; /* I-align ang text sa Patoo */
 }
 
 .chat-room-container .message-details {
@@ -740,6 +782,7 @@ body::-webkit-scrollbar-thumb {
     padding: 0.75rem 1rem;
     border-radius: 18px;
     text-align: left;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Nagdugang og shadow */
 }
 .chat-room-container .message-content p {
     margin: 0;
@@ -795,6 +838,19 @@ body::-webkit-scrollbar-thumb {
     transform: scale(1.1) rotate(15deg);
     background-color: #c50812;
 }
+
+/* --- ROW FADE-IN ANIMATION --- */
+.row-container {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.row-container.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 
 /*
 =====================================================

@@ -1,3 +1,4 @@
+// src/pages/ChatRoomPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -64,18 +65,28 @@ export const ChatRoomPage = () => {
                         </div>
                     )}
 
+                    {/* --- GI-UPDATE ANG MESSAGE LOOP --- */}
                     {messages.map((msg) => (
                         <div key={msg.id} className={`chat-message ${msg.uid === currentUser.uid ? 'current-user' : ''}`}>
-                            <div className="message-details">
-                                {/* Ipakita ang displayName. Kung imo, "You" ang mugawas. */}
-                                <span className="message-sender">{msg.uid === currentUser.uid ? 'You' : (msg.displayName || 'User')}</span>
-                                <span className="message-timestamp">{renderTimestamp(msg.timestamp)}</span>
+                            {/* --- BAG-O: AVATAR --- */}
+                            <div className="chat-avatar" title={msg.displayName || 'User'}>
+                                {(msg.displayName || 'User').charAt(0)}
                             </div>
-                            <div className="message-content">
-                                <p>{msg.text}</p>
+                            
+                            {/* --- BAG-O: Wrapper para sa message body --- */}
+                            <div className="message-body">
+                                <div className="message-details">
+                                    <span className="message-sender">{msg.uid === currentUser.uid ? 'You' : (msg.displayName || 'User')}</span>
+                                    <span className="message-timestamp">{renderTimestamp(msg.timestamp)}</span>
+                                </div>
+                                <div className="message-content">
+                                    <p>{msg.text}</p>
+                                </div>
                             </div>
                         </div>
                     ))}
+                    {/* --- END SA UPDATE --- */}
+
                     <div ref={messagesEndRef} />
                 </div>
                 <form onSubmit={handleSendMessage} className="chat-form">

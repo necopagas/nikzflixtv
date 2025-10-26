@@ -2,7 +2,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Hls from 'hls.js';
 import { MediaPlayer } from 'dashjs';
-// --- GIDUGANG ANG FULLSCREEN ICONS ---
 import { PiArrowsOutSimple, PiArrowsInSimple, PiPictureInPicture, PiGear, PiX } from 'react-icons/pi';
 
 const detectStreamType = (url) => {
@@ -17,7 +16,7 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
   const dashRef = useRef(null);
-  const containerRef = useRef(null); // Reference para sa whole player container
+  const containerRef = useRef(null);
 
   const [showControls, setShowControls] = useState(false);
   const [showQualityMenu, setShowQualityMenu] = useState(false);
@@ -28,10 +27,9 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
   const [bufferHealth, setBufferHealth] = useState(0);
   const [bitrate, setBitrate] = useState(0);
   const [isSwitching, setIsSwitching] = useState(false);
-  // --- STATE PARA SA FULLSCREEN ---
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // --- FULLSCREEN FUNCTIONS ---
+  // --- Fullscreen functions (no change) ---
   const enterFullscreen = () => {
     const elem = containerRef.current;
     if (elem?.requestFullscreen) {
@@ -61,15 +59,12 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
     }
   };
 
-  // --- EFFECT PARA MO-UPDATE SA FULLSCREEN STATE KUNG MAG-CHANGE (e.g., press Esc) ---
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement || !!document.webkitFullscreenElement);
     };
-
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange); // Para sa Safari
-
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
@@ -77,7 +72,7 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
   }, []);
 
 
-  // --- Auto-show/hide controls (unchanged) ---
+  // --- Auto-show/hide controls (no change) ---
   useEffect(() => {
     let timer;
     const reset = () => {
@@ -89,7 +84,6 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
     if (container) {
       container.addEventListener('mousemove', reset);
       container.addEventListener('touchstart', reset);
-      // Ensure initial state shows controls briefly
       reset();
     }
     return () => {
@@ -101,6 +95,7 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
     };
   }, []);
 
+  // --- FIX: Ang cleanupPlayers stable na ---
   const cleanupPlayers = useCallback(() => {
     if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     if (dashRef.current) {
@@ -110,21 +105,22 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
     }
     const video = videoRef.current;
     if (video) { video.removeAttribute('src'); video.load(); }
-  }, []);
+  }, []); // Empty dependency array, safe na
 
+  // --- FIX: Ang initializePlayer stable na (tungod sa stable props) ---
   const initializePlayer = useCallback(() => {
-    cleanupPlayers();
+    cleanupPlayers(); // Limpyo daan
     const video = videoRef.current;
     if (!video || !channel?.url) {
-        onCanPlay?.(); // Ensure loading hides if no URL
+        onCanPlay?.();
         return;
     }
 
     const type = detectStreamType(channel.url);
     console.log(`Initializing ${type} player for ${channel.url}`);
+    let statsIntervalId = null; // Ip-define ang interval ID diri
 
     try {
-      // --- HLS Initialization ---
       if (type === 'hls') {
         if (Hls.isSupported()) {
           const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
@@ -135,8 +131,8 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
           hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
             console.log("HLS Manifest Parsed");
             setQualities([{ label: 'Auto', value: -1 }, ...hls.levels.map((l, i) => ({ label: `${l.height}p`, value: i }))]);
-            video.play().catch((e) => console.warn("HLS Autoplay prevented", e)); // Try to play
-            onCanPlay?.(); // Assume ready after manifest parse
+            video.play().catch((e) => console.warn("HLS Autoplay prevented", e));
+            onCanPlay?.(); // Tawagon *human* ma-parse
           });
 
           hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
@@ -147,36 +143,33 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
 
           hls.on(Hls.Events.ERROR, (event, data) => {
             console.error('HLS Error:', data);
-            if (data.fatal && channel.fallback && data.type === Hls.ErrorTypes.NETWORK_ERROR) { // Only fallback on network errors initially
+            // Gamiton ang 'channel.fallback' gikan sa dependency
+            if (data.fatal && channel.fallback && data.type === Hls.ErrorTypes.NETWORK_ERROR) {
               console.warn(`HLS Network Error, attempting fallback: ${channel.fallback}`);
-              setTimeout(() => onError?.(channel.fallback), 3000); // Trigger fallback after delay
+              // Tawagon ang 'onError' gikan sa dependency
+              setTimeout(() => onError?.(channel.fallback), 3000); 
             } else if (data.fatal) {
-                // For other fatal errors, maybe just try re-initializing?
                 console.warn("HLS Fatal error, re-initializing player...");
-                setTimeout(initializePlayer, 5000);
+                // Dili na nato i-call ang initializePlayer diri,
+                // ang fallback logic na ang mo-handle sa pag-re-init
             }
           });
 
-          // Stats interval
           const updateStats = () => {
-            // Check if hls instance still exists
             if(hlsRef.current) {
                 setLatency(hlsRef.current.latency?.toFixed(1));
-                // Use bufferInfo for more accurate buffer length
                 const bufferInfo = Hls.BufferHelper.bufferInfo(video, video.currentTime, 0.5);
                 setBufferHealth(bufferInfo.len?.toFixed(1));
             }
           };
-          const intervalId = setInterval(updateStats, 1000);
-          // Return cleanup for this interval
-           return () => clearInterval(intervalId);
+          statsIntervalId = setInterval(updateStats, 1000); // I-assign ang ID
 
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) { // Native HLS
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
           console.log("Using Native HLS");
           video.src = channel.url;
           video.play().catch((e) => console.warn("Native HLS Autoplay prevented", e));
           video.addEventListener('canplay', () => onCanPlay?.(), { once: true });
-           video.addEventListener('error', () => { // Handle native errors
+           video.addEventListener('error', () => {
                console.error("Native HLS Error");
                if (channel.fallback) {
                    console.warn(`Native HLS Error, attempting fallback: ${channel.fallback}`);
@@ -185,20 +178,18 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
            });
         } else {
              console.error("HLS not supported");
-             onCanPlay?.(); // Hide loading even if unsupported
+             onCanPlay?.();
         }
       }
-      // --- DASH Initialization ---
       else if (type === 'dash') {
         console.log("Initializing DASH Player");
         const player = MediaPlayer().create();
         dashRef.current = player;
-        player.initialize(video, channel.url, true); // Autoplay true
+        player.initialize(video, channel.url, true);
 
         player.on(MediaPlayer.events.STREAM_INITIALIZED, () => {
             console.log("DASH Stream Initialized");
             onCanPlay?.();
-            // TODO: Populate qualities for DASH if needed (player.getBitrateInfoListFor('video'))
         });
         player.on(MediaPlayer.events.ERROR, (e) => {
             console.error("DASH Error:", e);
@@ -206,19 +197,17 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
                 console.warn(`DASH Error, attempting fallback: ${channel.fallback}`);
                 onError?.(channel.fallback);
             } else {
-                 onCanPlay?.(); // Hide loading on error if no fallback
+                 onCanPlay?.();
             }
         });
-         // TODO: Add DASH stats listeners if needed (player.getDashMetrics())
       }
-      // --- Progressive/Direct File Initialization ---
       else if (type === 'progressive') {
         console.log("Initializing Progressive Player");
         video.src = channel.url;
-        video.load(); // Explicitly load
+        video.load();
         video.play().catch((e) => console.warn("Progressive Autoplay prevented", e));
         video.addEventListener('canplay', () => onCanPlay?.(), { once: true });
-        video.addEventListener('error', () => { // Handle errors
+        video.addEventListener('error', () => {
             console.error("Progressive Playback Error");
             if (channel.fallback) {
                  console.warn(`Progressive Error, attempting fallback: ${channel.fallback}`);
@@ -228,73 +217,83 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
             }
         });
       }
-      // --- Unsupported ---
        else {
            console.error("Unsupported stream type");
-           onCanPlay?.(); // Hide loading
+           onCanPlay?.();
        }
 
     } catch (err) {
       console.error('Player initialization failed:', err);
-      onCanPlay?.(); // Hide loading on failure
+      onCanPlay?.();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channel, cleanupPlayers, onCanPlay, onError]); // Dependencies updated
+    
+    // I-return ang cleanup function para sa stats interval
+    return () => {
+        if (statsIntervalId) {
+            clearInterval(statsIntervalId);
+        }
+    };
+  // Karon, ang dependencies ani kay stable na gikan sa parent
+  }, [channel, cleanupPlayers, onCanPlay, onError]);
 
-  useEffect(() => {
-    let intervalId;
-    if (hlsRef.current) {
-        // HLS stats update logic moved inside initializePlayer's HLS block
-    } else if (dashRef.current) {
-      // Setup DASH stats interval if needed
-      // intervalId = setInterval(() => { /* get DASH stats */ }, 1000);
-    }
-    return () => clearInterval(intervalId); // Cleanup interval
-  }, [channel?.url]); // Re-run stats interval setup if URL changes
 
+  // --- FIX: GI-ILISAN ANG MAIN useEffect ---
+  // Kini nga hook ang mo-handle sa pagtawag sa initializePlayer
+  // ug sa pag-cleanup
   useEffect(() => {
-    // Effect to handle initialization on mount and URL change
     if (channel?.url) {
       setIsSwitching(true);
-      // Short delay before initializing to allow UI update
+
+      let statsIntervalCleanup = null;
+      let switchingTimeout = null;
+
+      // Delay gamay ang initialization
       const initTimeout = setTimeout(() => {
-        const clearStatsInterval = initializePlayer(); // initializePlayer now returns the cleanup function for its interval
-        const switchingTimeout = setTimeout(() => setIsSwitching(false), 300); // Delay hiding spinner slightly
+        statsIntervalCleanup = initializePlayer(); // Modagan ang initializer
 
-        // Return a combined cleanup function
-        return () => {
-            clearTimeout(initTimeout);
-            clearTimeout(switchingTimeout);
-            if(typeof clearStatsInterval === 'function') {
-                 clearStatsInterval(); // Clean up HLS stats interval
-            }
-            cleanupPlayers(); // Clean up players on URL change or unmount
-        };
-      }, 50); // Small delay before init
-       return () => clearTimeout(initTimeout); // Clear init timeout if component unmounts quickly
+        // Delay ang pagtago sa spinner
+        switchingTimeout = setTimeout(() => {
+          setIsSwitching(false);
+        }, 300);
+
+      }, 50); // 50ms delay
+
+      // Kini ang cleanup function para sa useEffect
+      return () => {
+        clearTimeout(initTimeout); // I-cancel ang init kung mo-change dayon
+        if (switchingTimeout) {
+            clearTimeout(switchingTimeout); // I-cancel ang spinner timeout
+        }
+        if (typeof statsIntervalCleanup === 'function') {
+          statsIntervalCleanup(); // Limpyohon ang stats interval
+        }
+        cleanupPlayers(); // KINI ANG PINAKA-IMPORTANTE: Limpyohon ang player
+      };
     } else {
-         cleanupPlayers(); // Cleanup if URL becomes null
-         setIsSwitching(false);
-         onCanPlay?.(); // Ensure loading is hidden
+      // Kung walay URL, limpyo lang
+      cleanupPlayers();
+      setIsSwitching(false);
+      onCanPlay?.();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channel?.url]); // Depend only on URL string
+  // Ang dependency kay 'channel' (ang tibuok object) ug ang stable initializers/callbacks
+  }, [channel, initializePlayer, cleanupPlayers, onCanPlay]);
 
-  // Cleanup on unmount
+
+  // --- GITANGGAL ANG DAAN NGA `useEffect[channel?.url]` para sa stats kay redundant na ---
+
+  // Cleanup on unmount (importante gihapon)
   useEffect(() => {
       return cleanupPlayers;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on unmount
+  }, []); // Modagan ra ni kausa
 
 
   const switchQuality = (level) => {
     if (hlsRef.current) {
         console.log(`Switching HLS quality to level: ${level}`);
-        hlsRef.current.currentLevel = parseInt(level, 10); // Ensure it's a number
-        // Update state immediately for feedback, LEVEL_SWITCHED might take time
+        hlsRef.current.currentLevel = parseInt(level, 10);
         setCurrentQuality(level === -1 ? 'Auto' : qualities.find(q => q.value === level)?.label || '...');
     }
-    // TODO: Add DASH quality switching (player.setQualityFor('video', levelIndex))
     setShowQualityMenu(false);
   };
 
@@ -311,10 +310,10 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
         className="w-full h-full block"
         playsInline
         autoPlay
-        controls // Keep default controls as a fallback/alternative
+        controls // Keep default controls
       />
 
-      {/* --- CUSTOM OVERLAY CONTROLS --- */}
+      {/* --- CUSTOM OVERLAY CONTROLS (walay pagbag-o) --- */}
       <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         {/* Top Controls */}
         <div className="absolute top-0 left-0 right-0 p-3 flex justify-end text-white z-10">
@@ -322,13 +321,11 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
             <button onClick={() => setShowStats(s => !s)} className="p-2 rounded-full bg-black/50 hover:bg-white/20 transition-colors" title="Show/Hide Stats">
               <PiGear className="w-5 h-5" />
             </button>
-            {/* Picture in Picture Button */}
              {document.pictureInPictureEnabled && videoRef.current && !videoRef.current.disablePictureInPicture && (
                 <button onClick={() => videoRef.current?.requestPictureInPicture().catch(e => console.error("PiP Error:", e))} className="p-2 rounded-full bg-black/50 hover:bg-white/20 transition-colors" title="Picture-in-Picture">
                   <PiPictureInPicture className="w-5 h-5" />
                 </button>
              )}
-             {/* --- GIDUGANG NGA FULLSCREEN BUTTON --- */}
              <button onClick={toggleFullscreen} className="p-2 rounded-full bg-black/50 hover:bg-white/20 transition-colors" title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}>
                 {isFullscreen ? <PiArrowsInSimple className="w-5 h-5" /> : <PiArrowsOutSimple className="w-5 h-5" />}
              </button>
@@ -338,23 +335,22 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
         {/* Bottom Controls */}
         <div className="absolute bottom-0 left-0 right-0 p-3 text-white z-10">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="font-bold text-lg truncate max-w-[calc(100%-150px)]"> {/* Limit width */}
+            <h3 className="font-bold text-lg truncate max-w-[calc(100%-150px)]">
               {channel?.number ? `#${channel.number} ` : ''}{channel?.name || 'No Channel Selected'}
             </h3>
-            <div className="flex items-center gap-2 flex-shrink-0"> {/* Prevent shrinking */}
-              {latency !== null && !isNaN(latency) && ( // Check if latency is a valid number
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {latency !== null && !isNaN(latency) && (
                 <span className={`text-xs px-2 py-1 rounded ${latency < 5 ? 'bg-green-600' : latency < 15 ? 'bg-orange-600' : 'bg-red-600'}`}>
                   {latency < 5 ? 'LIVE' : `Delay: ${latency}s`}
                 </span>
               )}
-              {/* Quality Selector Button */}
-              {qualities.length > 1 && ( // Only show if multiple qualities exist
+              {qualities.length > 1 && (
                 <button onClick={() => setShowQualityMenu(s => !s)} className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded text-sm">
                   {currentQuality} <i className={`fas fa-chevron-${showQualityMenu ? 'down' : 'up'} ml-1 text-xs`}></i>
                 </button>
               )}
             </div>
-          </div> {/* <-- THIS IS THE MISSING CLOSING DIV */}
+          </div>
 
           {/* Quality Menu Popup */}
           {showQualityMenu && qualities.length > 1 && (

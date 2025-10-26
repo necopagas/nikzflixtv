@@ -1,3 +1,4 @@
+// src/components/Banner.jsx
 import React, { useState, useEffect } from 'react';
 import { fetchData } from '../utils/fetchData';
 import { API_ENDPOINTS, BACKDROP_PATH } from '../config';
@@ -117,7 +118,6 @@ export const Banner = ({ onOpenModal }) => {
             
             {/* Ang `.banner::after` (ang gradient) kay naa sa z-index: 1 
               mao nga naa siya sa TALIWALA sa video ug sa text.
-              Ato ning i-double check sa CSS.
             */}
 
             {/* --- KANI ANG CONTENT (z-10) --- */}
@@ -126,10 +126,18 @@ export const Banner = ({ onOpenModal }) => {
                 <p className="banner-desc text-md md:text-xl mb-8 max-w-md md:max-w-2xl">{truncatedDesc}</p>
                 
                 <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                    <button onClick={() => onOpenModal(item, true)} className="banner-button bg-white text-black px-8 py-3 rounded-md font-bold hover:bg-gray-200 flex items-center justify-center gap-2 text-lg">
+                    {/* --- GI-UPDATE ANG BUTTON STYLE --- */}
+                    <button 
+                        onClick={() => onOpenModal(item, true)} 
+                        className="banner-button bg-gradient-to-r from-[var(--brand-color)] to-red-600 text-white px-8 py-3 rounded-md font-bold shadow-lg hover:shadow-red-500/40 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 text-lg"
+                    >
                         <i className="fas fa-play"></i> Play
                     </button>
-                    <button onClick={() => onOpenModal(item)} className="banner-button bg-gray-700 bg-opacity-70 text-white px-8 py-3 rounded-md font-bold hover:bg-gray-600 flex items-center justify-center gap-2 text-lg">
+                    {/* --- GI-UPDATE ANG BUTTON STYLE --- */}
+                    <button 
+                        onClick={() => onOpenModal(item)} 
+                        className="banner-button bg-gray-700/70 backdrop-blur-sm text-white px-8 py-3 rounded-md font-bold hover:bg-gray-600/80 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 text-lg"
+                    >
                         <i className="fas fa-info-circle"></i> More Info
                     </button>
                 </div>
