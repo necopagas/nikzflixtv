@@ -6,7 +6,6 @@ import { MediaPlayer } from 'dashjs';
 import { PiArrowsOutSimple, PiArrowsInSimple, PiPictureInPicture, PiGear, PiX } from 'react-icons/pi';
 
 const detectStreamType = (url) => {
-  // ... (same as before) ...
     if (!url) return 'unknown';
     if (url.includes('.m3u8')) return 'hls';
     if (url.includes('.mpd')) return 'dash';
@@ -103,7 +102,6 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
   }, []);
 
   const cleanupPlayers = useCallback(() => {
-    // ... (same cleanup logic as before) ...
     if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     if (dashRef.current) {
       if (typeof dashRef.current.destroy === 'function') dashRef.current.destroy();
@@ -313,8 +311,6 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
         className="w-full h-full block"
         playsInline
         autoPlay
-        // --- GITANGGAL ANG muted ATTRIBUTE ---
-        // muted
         controls // Keep default controls as a fallback/alternative
       />
 
@@ -334,7 +330,7 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
              )}
              {/* --- GIDUGANG NGA FULLSCREEN BUTTON --- */}
              <button onClick={toggleFullscreen} className="p-2 rounded-full bg-black/50 hover:bg-white/20 transition-colors" title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}>
-                {isFullscreen ? <PiArrowsInSimple className="w-5 h-5" /> : <PiArrowsOutSimple className="w-5 h-G" />}
+                {isFullscreen ? <PiArrowsInSimple className="w-5 h-5" /> : <PiArrowsOutSimple className="w-5 h-5" />}
              </button>
           </div>
         </div>
@@ -358,6 +354,7 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
                 </button>
               )}
             </div>
+          </div> {/* <-- THIS IS THE MISSING CLOSING DIV */}
 
           {/* Quality Menu Popup */}
           {showQualityMenu && qualities.length > 1 && (
