@@ -1,18 +1,22 @@
 // src/utils/consumetApi.js
 
 const API_BASE_URL = 'https://api.consumet.org';
-// --- GIBALIK ANG XYRASTREAM NGA URL BASE SA IMONG FETCH EXAMPLE ---
 const XYRASTREAM_API_BASE_URL = 'https://api.xyrastream.live/v1/dramacool';
 const XYRASTREAM_API_KEY = "key1"; // Ang imong API key
 
+// I-check kung naa ta sa development environment (gikan sa Vite)
+const IS_DEV = import.meta.env.DEV;
+
 /**
  * Function to fetch data from the Consumet API.
+ * (Dynamic based on environment)
  */
 const fetchConsumetData = async (endpoint) => {
-    // --- GI-UPDATE PARA MOGAMIT OG PROXY ---
-    const targetUrl = `${API_BASE_URL}${endpoint}`;
-    const url = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
-    
+    // Kung DEV, gamit sa Vite proxy. Kung PROD, gamit sa Vercel proxy.
+    const url = IS_DEV 
+        ? `/api/consumet${endpoint}` // Para sa Vite (e.g., /api/consumet/utils/youtube/...)
+        : `/api/proxy?url=${encodeURIComponent(`${API_BASE_URL}${endpoint}`)}`; // Para sa Vercel
+
     try {
         const response = await fetch(url);
         if (!response.ok) {
@@ -28,12 +32,15 @@ const fetchConsumetData = async (endpoint) => {
 
 /**
  * Function to fetch data from the XyraStream API using POST.
- * (Base sa imong gi-provide nga example)
+ * (Dynamic based on environment)
  */
 const fetchXyraStreamData = async (endpoint, body) => {
-    // --- GI-UPDATE PARA MOGAMIT OG PROXY ---
     const targetUrl = `${XYRASTREAM_API_BASE_URL}${endpoint}`;
-    const url = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
+    
+    // Kung DEV, gamit sa Vite proxy. Kung PROD, gamit sa Vercel proxy.
+    const url = IS_DEV
+        ? `/api/xyra/v1/dramacool${endpoint}` // Para sa Vite (e.g., /api/xyra/v1/dramacool/search)
+        : `/api/proxy?url=${encodeURIComponent(targetUrl)}`; // Para sa Vercel
     
     try {
         const response = await fetch(url, {
@@ -54,48 +61,45 @@ const fetchXyraStreamData = async (endpoint, body) => {
 // --- General Search Function (Gigamit ang daan nga flixhq) ---
 export const searchMoviesAndTV = async (query) => {
     if (!query) return [];
-    // Kini mogamit sa api.consumet.org/movies/flixhq/
+    // Kini mogamit na sa sakto nga proxy (consumet)
     const response = await fetchConsumetData(`/movies/flixhq/${encodeURIComponent(query)}`);
     return response?.results || [];
 };
 
-// --- BAG-O NGA FUNCTION GIDUGANG ---
 /**
  * Searches YouTube via Consumet API.
  */
 export const searchYouTube = async (query) => {
     if (!query) return [];
-    // Mogamit ta sa Consumet API para sa YouTube search
+    // Kini mogamit na sa sakto nga proxy (consumet)
     const response = await fetchConsumetData(`/utils/youtube/search/${encodeURIComponent(query)}`);
-    // I-check kung ang 'results' kay array ba gyud
     return response?.results && Array.isArray(response.results) ? response.results : [];
 };
-// --- END SA BAG-O NGA FUNCTION ---
 
 
 // --- DRAMA/MOVIES FUNCTIONS (Gigamit ang XyraStream) ---
 
 export const searchDramas = async (query) => {
     if (!query) return [];
-    // Endpoint: /search
+    // Endpoint: /search (Mogamit na ni sa XyraStream proxy)
     const response = await fetchXyraStreamData('/search', { query });
     return response?.results || [];
 };
 
 export const getRecentDramas = async (page = 1) => {
-    // Endpoint: /recent-episodes
+    // Endpoint: /recent-episodes (Mogamit na ni sa XyraStream proxy)
     const response = await fetchXyraStreamData('/recent-episodes', { page });
     return response?.results || [];
 };
 
 export const getDramaDetails = async (dramaId) => {
     if (!dramaId) return null;
-    // Endpoint: /info
+    // Endpoint: /info (Mogamit na ni sa XyraStream proxy)
     return await fetchXyraStreamData('/info', { id: dramaId });
 };
 
 export const getDramaEpisodeSources = async (episodeId) => {
     if (!episodeId) return null;
-    // Endpoint: /watch
+    // Endpoint: /watch (Mogamit na ni sa XyraStream proxy)
     return await fetchXyraStreamData('/watch', { episodeId: episodeId });
 };
