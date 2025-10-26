@@ -59,6 +59,19 @@ export const searchMoviesAndTV = async (query) => {
     return response?.results || [];
 };
 
+// --- BAG-O NGA FUNCTION GIDUGANG ---
+/**
+ * Searches YouTube via Consumet API.
+ */
+export const searchYouTube = async (query) => {
+    if (!query) return [];
+    // Mogamit ta sa Consumet API para sa YouTube search
+    const response = await fetchConsumetData(`/utils/youtube/search/${encodeURIComponent(query)}`);
+    // I-check kung ang 'results' kay array ba gyud
+    return response?.results && Array.isArray(response.results) ? response.results : [];
+};
+// --- END SA BAG-O NGA FUNCTION ---
+
 
 // --- DRAMA/MOVIES FUNCTIONS (Gigamit ang XyraStream) ---
 
