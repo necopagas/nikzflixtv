@@ -1,8 +1,6 @@
 // src/utils/consumetApi.js
 
 const API_BASE_URL = 'https://api.consumet.org';
-const XYRASTREAM_API_BASE_URL = 'https://api.xyrastream.live/v1/dramacool';
-const XYRASTREAM_API_KEY = "key1"; // Ang imong API key
 
 // I-check kung naa ta sa development environment (gikan sa Vite)
 const IS_DEV = import.meta.env.DEV;
@@ -12,94 +10,91 @@ const IS_DEV = import.meta.env.DEV;
  * (Dynamic based on environment)
  */
 const fetchConsumetData = async (endpoint) => {
-    // Kung DEV, gamit sa Vite proxy. Kung PROD, gamit sa Vercel proxy.
-    const url = IS_DEV 
-        ? `/api/consumet${endpoint}` // Para sa Vite (e.g., /api/consumet/utils/youtube/...)
-        : `/api/proxy?url=${encodeURIComponent(`${API_BASE_URL}${endpoint}`)}`; // Para sa Vercel
+    const url = IS_DEV
+        ? `/api/consumet${endpoint}`
+        : `/api/proxy?url=${encodeURIComponent(`${API_BASE_URL}${endpoint}`)}`;
 
     try {
         const response = await fetch(url);
         if (!response.ok) {
-            throw new Error(`Consumet API Error: ${response.status} for URL: ${url}`);
+            // Return null instead of throwing error immediately, handle error in component
+            console.error(`Consumet API Error: ${response.status} for URL: ${url}`);
+            // Try parsing error if possible, otherwise return null
+            try {
+               const errorBody = await response.text();
+               // Check if it's HTML
+               if (errorBody.trim().startsWith('<!doctype')) {
+                   console.error("Consumet API returned HTML, possibly an error page or proxy issue.");
+                   return null; // Return null if HTML
+               }
+               // Try parsing as JSON if not HTML
+               return JSON.parse(errorBody); // Or handle specific JSON error structure
+            } catch (parseError) {
+               console.error("Could not parse Consumet API error response.");
+               return null; // Return null if parsing fails
+            }
         }
         return await response.json();
     } catch (error)
     {
         console.error("Failed to fetch from Consumet API:", error);
+        // Return null on network error or other fetch issues
         return null;
     }
 };
 
-/**
- * Function to fetch data from the XyraStream API using POST.
- * (Dynamic based on environment)
- */
-const fetchXyraStreamData = async (endpoint, body) => {
-    const targetUrl = `${XYRASTREAM_API_BASE_URL}${endpoint}`;
-    
-    // Kung DEV, gamit sa Vite proxy. Kung PROD, gamit sa Vercel proxy.
-    const url = IS_DEV
-        ? `/api/xyra/v1/dramacool${endpoint}` // Para sa Vite (e.g., /api/xyra/v1/dramacool/search)
-        : `/api/proxy?url=${encodeURIComponent(targetUrl)}`; // Para sa Vercel
-    
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', },
-            body: JSON.stringify({ ...body, api_key: XYRASTREAM_API_KEY, }),
-        });
-        if (!response.ok) {
-            throw new Error(`XyraStream API Error: ${response.status} for URL: ${url}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error(`Failed to fetch from XyraStream API at ${endpoint}:`, error);
-        return null;
-    }
-};
 
-// --- General Search Function (Gigamit ang daan nga flixhq) ---
-export const searchMoviesAndTV = async (query) => {
-    if (!query) return [];
-    // Kini mogamit na sa sakto nga proxy (consumet)
-    const response = await fetchConsumetData(`/movies/flixhq/${encodeURIComponent(query)}`);
-    return response?.results || [];
-};
+// --- GI-TANGGAL ANG searchMoviesAndTV ---
 
 /**
  * Searches YouTube via Consumet API.
  */
 export const searchYouTube = async (query) => {
     if (!query) return [];
-    // Kini mogamit na sa sakto nga proxy (consumet)
     const response = await fetchConsumetData(`/utils/youtube/search/${encodeURIComponent(query)}`);
+    // Add check if response is null
     return response?.results && Array.isArray(response.results) ? response.results : [];
 };
 
-
-// --- DRAMA/MOVIES FUNCTIONS (Gigamit ang XyraStream) ---
-
-export const searchDramas = async (query) => {
+// --- MANGA FUNCTIONS (using Consumet) ---
+export const searchManga = async (query) => {
     if (!query) return [];
-    // Endpoint: /search (Mogamit na ni sa XyraStream proxy)
-    const response = await fetchXyraStreamData('/search', { query });
+    const response = await fetchConsumetData(`/manga/mangadex/${encodeURIComponent(query)}`);
     return response?.results || [];
 };
 
-export const getRecentDramas = async (page = 1) => {
-    // Endpoint: /recent-episodes (Mogamit na ni sa XyraStream proxy)
-    const response = await fetchXyraStreamData('/recent-episodes', { page });
+export const getTrendingManga = async () => {
+    const response = await fetchConsumetData(`/manga/mangadex/trending`);
+     // Check for null response
     return response?.results || [];
 };
 
-export const getDramaDetails = async (dramaId) => {
-    if (!dramaId) return null;
-    // Endpoint: /info (Mogamit na ni sa XyraStream proxy)
-    return await fetchXyraStreamData('/info', { id: dramaId });
+ export const getMangaDetails = async (mangaId) => {
+    if (!mangaId) return null;
+    // Adjust endpoint based on API structure
+    const response = await fetchConsumetData(`/manga/mangadex/info/${mangaId}`);
+    return response; // Return the whole response or specific parts
 };
 
-export const getDramaEpisodeSources = async (episodeId) => {
-    if (!episodeId) return null;
-    // Endpoint: /watch (Mogamit na ni sa XyraStream proxy)
-    return await fetchXyraStreamData('/watch', { episodeId: episodeId });
+export const getChapterPages = async (chapterId) => {
+    if (!chapterId) return [];
+     // Adjust endpoint based on API structure
+    const response = await fetchConsumetData(`/manga/mangadex/read/${chapterId}`);
+     // Check for null response and expected structure
+    return response || [];
 };
+
+// --- ANIME FUNCTIONS (using Consumet - Example for Anime Details if needed later) ---
+// export const getAnimeDetailsConsumet = async (animeId) => {
+//     if (!animeId) return null;
+//     // Example using gogoanime, adjust provider/endpoint as needed
+//     const response = await fetchConsumetData(`/anime/gogoanime/info/${animeId}`);
+//     return response;
+// };
+
+// export const getAnimeEpisodeSourcesConsumet = async (episodeId) => {
+//     if (!episodeId) return null;
+//     // Example using gogoanime, adjust provider/endpoint as needed
+//     const response = await fetchConsumetData(`/anime/gogoanime/watch/${episodeId}`);
+//     return response;
+// };

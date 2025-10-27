@@ -1,7 +1,7 @@
 // src/pages/IPTVPage.jsx
-import React, { useState, useEffect, useMemo, useCallback } from 'react'; // <-- GIDUGANG ANG useCallback
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { IPTVPlayer } from '../components/IPTVPlayer';
-import { IPTV_CHANNELS } from '../config';
+import { IPTV_CHANNELS } from '../config'; // Import the channels
 
 export const IPTVPage = () => {
   const [selectedChannel, setSelectedChannel] = useState(null);
@@ -13,56 +13,75 @@ export const IPTVPage = () => {
     catch { return []; }
   });
 
+  // Find first channel or last played
   useEffect(() => {
-    const last = localStorage.getItem('iptv_last_channel');
-    if (last) {
-      const ch = IPTV_CHANNELS.find(c => c.url === last);
-      if (ch) { setSelectedChannel(ch); return; }
+    const lastUrl = localStorage.getItem('iptv_last_channel');
+    let initialChannel = null;
+    if (lastUrl) {
+      initialChannel = IPTV_CHANNELS.find(c => c.url === lastUrl);
     }
-    // I-set ang first channel as default kung walay last played
-    if (IPTV_CHANNELS.length > 0) {
-      setSelectedChannel(IPTV_CHANNELS[0]);
+    // If no last played or last played not found, use the first channel
+    if (!initialChannel && IPTV_CHANNELS.length > 0) {
+      initialChannel = IPTV_CHANNELS[0];
     }
-  }, []); // Modagan ra ni kausa
+    setSelectedChannel(initialChannel);
+    // Initial loading state handled by player's onCanPlay
+    // setLoading(!!initialChannel); // Set loading only if there's a channel to load
+  }, []); // Run only once
 
+  // Save last played channel
   useEffect(() => {
-    if (selectedChannel?.url) localStorage.setItem('iptv_last_channel', selectedChannel.url);
+    if (selectedChannel?.url) {
+      localStorage.setItem('iptv_last_channel', selectedChannel.url);
+    }
   }, [selectedChannel?.url]);
 
+  // Save favorites
   useEffect(() => {
     localStorage.setItem('iptv_favorites', JSON.stringify(favorites));
   }, [favorites]);
 
   const categories = useMemo(() => ['all', ...new Set(IPTV_CHANNELS.map(c => c.category).filter(Boolean))], []);
 
+  // Filter channels based on search and category
   const filtered = useMemo(() => IPTV_CHANNELS.filter(ch => {
     const matchesSearch = ch.name.toLowerCase().includes(search.toLowerCase());
     const matchesCat = category === 'all' || ch.category === category;
     return matchesSearch && matchesCat;
   }), [search, category]);
 
-  const play = (ch) => {
+  // Handle channel selection
+  const play = useCallback((ch) => {
     if (ch.url !== selectedChannel?.url) {
-      setLoading(true);
+      setLoading(true); // Show spinner immediately when clicking a new channel
       setSelectedChannel(ch);
     }
-  };
+  }, [selectedChannel?.url]);
 
-  const toggleFavorite = (ch, e) => {
-    e.stopPropagation(); // Ayaw i-play ang channel inig click sa favorite
+  // Toggle favorite status
+  const toggleFavorite = useCallback((ch, e) => {
+    e.stopPropagation();
     setFavorites(prev => prev.includes(ch.name) ? prev.filter(n => n !== ch.name) : [...prev, ch.name]);
-  };
+  }, []);
 
-  // --- FIX: I-wrap sa useCallback ang event handlers ---
+  // Player event handlers (stable with useCallback)
   const onPlayerCanPlay = useCallback(() => {
     setLoading(false);
-  }, []); // Stable function
+  }, []);
 
-  const onPlayerError = useCallback((url) => {
-    // Ang 'url' gikan sa onError kay mao ang channel.fallback
-    setSelectedChannel(currentChannel => ({ ...currentChannel, url }));
-  }, []); // Stable function
-  // --- END SA FIX ---
+  const onPlayerError = useCallback((fallbackUrl) => {
+    console.warn("Player error, attempting fallback:", fallbackUrl);
+    // Update the selected channel state with the fallback URL
+    // This will trigger the IPTVPlayer to re-initialize with the new URL
+    setSelectedChannel(currentChannel => {
+        if (currentChannel && currentChannel.url !== fallbackUrl) {
+            return { ...currentChannel, url: fallbackUrl };
+        }
+        // If fallback is same as current or no current channel, stop loading
+        setLoading(false);
+        return currentChannel;
+    });
+  }, []);
 
   return (
     <div className="px-4 sm:px-8 md:px-16 pt-28 pb-20 min-h-screen">
@@ -71,21 +90,25 @@ export const IPTVPage = () => {
           Live TV
         </h1>
 
+        {/* --- Player Section --- */}
         <div className="bg-[var(--bg-secondary)] rounded-2xl overflow-hidden mb-8 shadow-2xl">
           <div className="bg-gradient-to-r from-[var(--brand-color)] to-red-700 p-4">
             <p className="text-sm opacity-90">NOW PLAYING</p>
-            <h2 className="text-2xl font-bold truncate">#{selectedChannel?.number} {selectedChannel?.name || 'Select a channel'}</h2>
+            <h2 className="text-2xl font-bold truncate">
+              {selectedChannel?.number ? `#${selectedChannel.number} ` : ''}
+              {selectedChannel?.name || 'Select a channel'}
+            </h2>
           </div>
+          {/* Ensure IPTVPlayer receives the stable callbacks */}
           <IPTVPlayer
             channel={selectedChannel}
             isLoading={loading}
-            // --- FIX: Gamiton ang stable functions ---
             onCanPlay={onPlayerCanPlay}
             onError={onPlayerError}
-            // --- END SA FIX ---
           />
         </div>
 
+        {/* --- Controls and Channel List --- */}
         <div className="flex flex-wrap gap-3 mb-6 justify-center">
           <input
             type="text"
@@ -98,6 +121,7 @@ export const IPTVPage = () => {
             className="p-3 rounded-lg bg-[var(--bg-secondary)] text-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-color)]"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
+            aria-label="Filter channels by category" // Added aria-label
           >
             {categories.map(cat => (
               <option key={cat} value={cat}>{cat === 'all' ? 'All Channels' : cat}</option>
@@ -109,24 +133,24 @@ export const IPTVPage = () => {
           <div className="flex flex-col max-h-[70vh] overflow-y-auto">
             {filtered.length > 0 ? filtered.map(ch => (
               <button
-                key={ch.number || ch.url} 
+                key={ch.number || ch.url}
                 onClick={() => play(ch)}
                 className={`flex items-center justify-between p-4 w-full text-left transition-colors ${
-                  ch.url === selectedChannel?.url 
-                    ? 'bg-[var(--brand-color)] text-white' 
+                  ch.url === selectedChannel?.url
+                    ? 'bg-[var(--brand-color)] text-white font-bold' // Highlight active channel
                     : 'text-gray-200 hover:bg-[var(--bg-tertiary)]'
                 } border-b border-b-[var(--border-color)] last:border-b-0`}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 overflow-hidden"> {/* Added overflow-hidden */}
                   <span className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg text-xs font-bold ${
                     ch.url === selectedChannel?.url ? 'bg-white/20' : 'bg-[var(--bg-tertiary)]'
                   }`}>
                     #{ch.number}
                   </span>
-                  <span className="font-semibold truncate">{ch.name}</span>
+                  <span className="font-semibold truncate">{ch.name}</span> {/* Ensure title truncates */}
                 </div>
-                <div className="flex items-center gap-3">
-                  <button onClick={(e) => toggleFavorite(ch, e)} className="text-xl p-1" title="Toggle Favorite">
+                <div className="flex items-center gap-3 flex-shrink-0"> {/* Ensure buttons don't wrap */}
+                  <button onClick={(e) => toggleFavorite(ch, e)} className="text-xl p-1" aria-label={`Toggle favorite for ${ch.name}`}>
                     <span className={`${favorites.includes(ch.name) ? 'text-yellow-400' : 'text-gray-500 hover:text-yellow-400'}`}>★</span>
                   </button>
                   {ch.url === selectedChannel?.url && (
@@ -139,7 +163,7 @@ export const IPTVPage = () => {
               </button>
             )) : (
               <p className="p-8 text-center text-[var(--text-secondary)]">
-                No channels found for "{search}".
+                No channels found {search ? `for "${search}"` : ''} {category !== 'all' ? `in ${category}` : ''}.
               </p>
             )}
           </div>

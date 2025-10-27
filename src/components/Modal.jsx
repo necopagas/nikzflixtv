@@ -11,22 +11,22 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
     const [trailer, setTrailer] = useState(null);
     const [selectedSeason, setSelectedSeason] = useState(1);
     const [selectedEpisode, setSelectedEpisode] = useState(1);
-    const [currentSource, setCurrentSource] = useState(SOURCE_ORDER[0]);
+    const [currentSource, setCurrentSource] = useState(SOURCE_ORDER[0]); // Default to first source
     const [isLoading, setIsLoading] = useState(true);
     const [showPlayer, setShowPlayer] = useState(false);
-    
+
     const modalRef = useRef(null);
 
     const handlePlay = () => {
         setShowPlayer(true);
         if (isTV) {
-            onEpisodePlay(item, selectedSeason, selectedEpisode); 
+            onEpisodePlay(item, selectedSeason, selectedEpisode);
         } else {
-            onEpisodePlay(item, 1, 1); 
+            onEpisodePlay(item, 1, 1);
         }
         addToWatched(item.id);
     };
-    
+
     const handleKeyDown = (e, action) => {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -38,7 +38,9 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
         setIsLoading(true);
         setItem(initialItem);
         setTrailer(null);
+        setCurrentSource(SOURCE_ORDER[0]); // Reset to default source when item changes
 
+        // Focus modal for accessibility
         setTimeout(() => {
             modalRef.current?.focus();
         }, 100);
@@ -64,9 +66,10 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
                     setSelectedEpisode(1);
                 }
             }
-            
+
+            // Decide whether to show player immediately
             if (playOnOpen) {
-                handlePlay();
+                handlePlay(); // This also calls setShowPlayer(true)
             } else {
                 setShowPlayer(false);
             }
@@ -77,46 +80,56 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
             setIsLoading(false);
         });
 
+    // Re-run effect when initialItem or playOnOpen changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialItem, playOnOpen]); 
-    
+    }, [initialItem, playOnOpen]);
+
     const media_type = initialItem?.media_type || (initialItem?.title ? 'movie' : 'tv');
     const isTV = media_type === 'tv';
-    
+
     const handleSeasonChange = (seasonNumber) => {
         setSelectedSeason(seasonNumber);
         setSelectedEpisode(1);
+        // Do not automatically show player on season change, user might just be browsing
     };
 
     const handleEpisodeChange = (episodeNumber) => {
         setSelectedEpisode(episodeNumber);
-        onEpisodePlay(item, selectedSeason, episodeNumber); 
-        setShowPlayer(true);
+        onEpisodePlay(item, selectedSeason, episodeNumber);
+        setShowPlayer(true); // Show player when an episode is explicitly selected
+        setCurrentSource(SOURCE_ORDER[0]); // Reset to default source for new episode
     };
-    
+
     const handleSourceChange = (source) => {
         setCurrentSource(source);
     };
 
     const handleRecommendationClick = (recItem) => {
-        onClose();
-        setTimeout(() => onOpenModal(recItem), 300);
+        onClose(); // Close current modal
+        setTimeout(() => onOpenModal(recItem), 300); // Open new modal after slight delay
     };
 
     const getPlayerUrl = () => {
-        // const imdb_id = details?.external_ids?.imdb_id; // Keeping this here in case you re-add videasy
-        
-        if (!isTV) {
-            const url = EMBED_URLS[currentSource]?.movie(item.id);
-            return url || null; // Return null if url is undefined
+        if (!currentSource) return null; // Handle case where currentSource might be undefined
+
+        const sourceConfig = EMBED_URLS[currentSource];
+        if (!sourceConfig) return null; // Handle if source is not found in config
+
+        let url;
+        if (!isTV && typeof sourceConfig.movie === 'function') {
+            url = sourceConfig.movie(item.id);
+        } else if (isTV && typeof sourceConfig.tv === 'function') {
+            url = sourceConfig.tv(item.id, selectedSeason, selectedEpisode);
         }
-        
-        const url = EMBED_URLS[currentSource]?.tv(item.id, selectedSeason, selectedEpisode);
-        return url || null; // Return null if url is undefined
+        // Add anime logic if needed
+        // else if (media_type === 'anime' && typeof sourceConfig.anime === 'function') { ... }
+
+        return url || null; // Return null if url function doesn't exist or returns undefined
     };
 
+    // --- RENDER SOURCES FUNCTION (CONFIRMED PRESENT) ---
     const renderSources = () => (
-        <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="flex flex-wrap items-center gap-2 mb-4 px-8 pt-4 sm:px-0 sm:pt-0"> {/* Added padding for mobile */}
             <span className="font-semibold text-[var(--text-secondary)]">Source:</span>
             {SOURCE_ORDER.map(source => (
                 <button
@@ -124,7 +137,6 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
                     onClick={() => handleSourceChange(source)}
                     tabIndex="0"
                     onKeyDown={(e) => handleKeyDown(e, () => handleSourceChange(source))}
-                    // Consistent secondary button style
                     className={`source-btn px-3 py-1 rounded-full text-sm transition-colors ${currentSource === source ? 'active bg-[var(--brand-color)] text-white font-bold' : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)]'}`}
                 >
                     {source.replace('_', '.')}
@@ -132,42 +144,47 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
             ))}
         </div>
     );
+    // --- END RENDER SOURCES ---
 
     if (isLoading || !details) {
         return <div className="fixed inset-0 bg-black bg-opacity-75 z-[100] flex items-center justify-center"><div className="player-loading"></div></div>;
     }
-    
-    const playerUrl = getPlayerUrl(); // Get the URL once
+
+    const playerUrl = getPlayerUrl();
 
     return (
-        // --- GI-UPDATE: Gidugang ang backdrop-blur-sm ug gi-adjust ang background opacity ---
-        <div 
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4" 
+        <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
-            <div 
-                ref={modalRef} 
-                tabIndex="-1" 
+            <div
+                ref={modalRef}
+                tabIndex="-1"
                 onKeyDown={(e) => e.key === 'Escape' && onClose()}
                 className="modal-content-wrapper focus:outline-none"
             >
-                <div className="modal-body p-8 relative">
-                    <button 
-                        onClick={onClose} 
-                        tabIndex="0"
-                        onKeyDown={(e) => handleKeyDown(e, onClose)}
-                        className="absolute top-4 right-4 text-2xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors z-20" // Style for close X, ensure z-index
-                    >
-                        &times;
-                    </button>
-                    
+                {/* --- GI-MOVE ANG CLOSE BUTTON SA GAWAS SA modal-body para pirmi visible --- */}
+                 <button
+                    onClick={onClose}
+                    tabIndex="0"
+                    onKeyDown={(e) => handleKeyDown(e, onClose)}
+                    className="absolute top-2 right-2 md:-top-4 md:-right-4 text-3xl text-white bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-[var(--brand-color)] transition-all z-50 focus:outline-none focus:ring-2 focus:ring-white"
+                    aria-label="Close modal" // Added aria-label
+                >
+                    &times;
+                </button>
+
+                <div className="modal-body p-0 sm:p-8 relative overflow-y-auto"> {/* Adjusted padding */}
+                    {/* Close button removed from here */}
+
                     {showPlayer ? (
                         <div className="aspect-video bg-black rounded-lg">
+                            {/* --- SOURCE BUTTONS ARE RENDERED HERE --- */}
                             {renderSources()}
                             {playerUrl ? (
-                                <iframe src={playerUrl} width="100%" height="100%" allowFullScreen="allowfullscreen" title="Video Player" className="rounded-b-lg"></iframe>
+                                <iframe src={playerUrl} width="100%" height="100%" allowFullScreen="allowfullscreen" title="Video Player" className="rounded-b-lg border-0"></iframe>
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center text-center text-[var(--text-secondary)] rounded-b-lg">
+                                <div className="w-full h-[calc(100%-50px)] flex items-center justify-center text-center text-[var(--text-secondary)] rounded-b-lg">
                                     <p>Sorry, the source '{currentSource}' is not available for this title.</p>
                                 </div>
                             )}
@@ -175,72 +192,80 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
                     ) : (
                         <div className="h-64 sm:h-96 bg-cover bg-center rounded-lg relative" style={{backgroundImage: `url(${BACKDROP_PATH}${details.backdrop_path})`}}>
                             <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-secondary)] via-transparent to-transparent"></div>
+                            {/* --- Play button overlay --- */}
+                            <button
+                                onClick={handlePlay}
+                                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-white/30 backdrop-blur-sm text-white flex items-center justify-center text-4xl transition-all duration-300 hover:bg-white/50 hover:scale-110 focus:outline-none focus:ring-4 focus:ring-white/50"
+                                aria-label="Play trailer or video"
+                            >
+                                <i className="fas fa-play"></i>
+                            </button>
                         </div>
                     )}
 
-                    <div className="flex flex-col sm:flex-row gap-8 mt-6">
+                    {/* Details Section */}
+                    <div className="flex flex-col sm:flex-row gap-8 mt-6 px-4 pb-4 sm:px-0 sm:pb-0"> {/* Added padding for mobile */}
                         <div className="flex-1">
-                            {!showPlayer && (
+                            {!showPlayer && ( // Only show details fully if player is hidden
                                 <>
                                     <h1 className="text-3xl font-bold">{details.title || details.name}</h1>
                                     <div className="flex items-center space-x-4 my-2 text-sm text-[var(--text-secondary)]">
                                         <span>{details.release_date || details.first_air_date?.split('-')[0]}</span>
-                                        <span>{isTV ? `${details.number_of_seasons} Seasons` : `${Math.floor(details.runtime / 60)}h ${details.runtime % 60}m`}</span>
+                                        <span>{isTV ? `${details.number_of_seasons} Season${details.number_of_seasons > 1 ? 's' : ''}` : details.runtime ? `${Math.floor(details.runtime / 60)}h ${details.runtime % 60}m` : ''}</span>
                                     </div>
-                                    <p className="text-[var(--text-primary)] mb-4">{details.overview}</p>
+                                    <p className="text-[var(--text-primary)] mb-4 text-sm sm:text-base">{details.overview}</p>
                                 </>
                             )}
-                            <div className="flex space-x-2">
+                            <div className="flex flex-wrap gap-2 mt-4 sm:mt-0"> {/* Allow wrapping */}
                                 {!showPlayer && (
-                                    <button 
-                                        onClick={handlePlay} 
+                                    <button
+                                        onClick={handlePlay}
                                         tabIndex="0"
                                         onKeyDown={(e) => handleKeyDown(e, handlePlay)}
-                                        // Primary button style
-                                        className="px-6 py-2 bg-[var(--brand-color)] hover:bg-red-700 rounded font-semibold transition-colors"
+                                        className="px-6 py-2 bg-[var(--brand-color)] hover:bg-red-700 rounded font-semibold transition-colors flex items-center gap-2"
                                     >
-                                        Play
+                                       <i className="fas fa-play text-xs"></i> Play
                                     </button>
                                 )}
-                                <button 
-                                    onClick={() => onToggleMyList(item)} 
+                                <button
+                                    onClick={() => onToggleMyList(item)}
                                     tabIndex="0"
                                     onKeyDown={(e) => handleKeyDown(e, () => onToggleMyList(item))}
-                                    // Consistent secondary button style
-                                    className="px-6 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)] rounded font-semibold transition-colors"
+                                    className="px-6 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)] rounded font-semibold transition-colors flex items-center gap-2"
                                 >
-                                    {isItemInMyList(item.id) ? 'Remove from List' : 'Add to My List'}
+                                    <i className={`fas ${isItemInMyList(item.id) ? 'fa-check' : 'fa-plus'} text-xs`}></i>
+                                    {isItemInMyList(item.id) ? 'My List' : 'My List'}
                                 </button>
                             </div>
                         </div>
                     </div>
-                    
+
+                    {/* Episodes Section */}
                     {isTV && (
-                        <div className="episodes-section">
+                        <div className="episodes-section px-4 pb-4 sm:px-0 sm:pb-0"> {/* Added padding for mobile */}
                             <h3 className="section-title">Seasons & Episodes</h3>
                             <div className="flex flex-wrap gap-2 mb-4">
-                                {details.seasons?.map(season => (
-                                    <button 
-                                        key={season.id} 
-                                        onClick={() => handleSeasonChange(season.season_number)} 
+                                {details.seasons?.filter(s => s.season_number > 0).map(season => ( // Filter out season 0
+                                    <button
+                                        key={season.id}
+                                        onClick={() => handleSeasonChange(season.season_number)}
                                         tabIndex="0"
                                         onKeyDown={(e) => handleKeyDown(e, () => handleSeasonChange(season.season_number))}
-                                        // Consistent secondary style, active state uses brand color
-                                        className={`px-3 py-1 rounded-full transition-colors font-medium ${selectedSeason === season.season_number ? 'bg-[var(--brand-color)] text-white' : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)]'}`}
+                                        className={`px-3 py-1 rounded-full transition-colors font-medium text-sm ${selectedSeason === season.season_number ? 'bg-[var(--brand-color)] text-white' : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)]'}`}
                                     >
                                         {season.name}
                                     </button>
                                 ))}
                             </div>
-                            <div className="episodes grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
+                            <div className="episodes grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2"> {/* Adjusted columns */}
                                 {Array.from({ length: details.seasons?.find(s => s.season_number === selectedSeason)?.episode_count || 0 }, (_, i) => i + 1).map(ep => (
-                                    <button 
-                                        key={ep} 
-                                        onClick={() => handleEpisodeChange(ep)} 
+                                    <button
+                                        key={ep}
+                                        onClick={() => handleEpisodeChange(ep)}
                                         tabIndex="0"
                                         onKeyDown={(e) => handleKeyDown(e, () => handleEpisodeChange(ep))}
-                                        // Uses CSS class 'episodes button' defined in App.css, which already uses variables
-                                        className={`aspect-square rounded ${selectedEpisode === ep ? 'active' : ''}`}
+                                        className={`aspect-square rounded text-xs sm:text-sm ${selectedEpisode === ep && showPlayer ? 'active' : ''}`} // Active only if playing
+                                        title={`Episode ${ep}`}
                                     >
                                         {ep}
                                     </button>
@@ -248,25 +273,27 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
                             </div>
                         </div>
                     )}
-                    
+
+                    {/* Trailer Section */}
                     {trailer && !showPlayer && (
-                        <div className="mt-8">
+                        <div className="mt-8 px-4 pb-4 sm:px-0 sm:pb-0"> {/* Added padding for mobile */}
                             <h3 className="section-title">Trailer</h3>
                             <div className="aspect-video rounded-lg overflow-hidden">
-                                <iframe 
+                                <iframe
                                     src={`https://www.youtube.com/embed/${trailer.key}`}
-                                    width="100%" 
-                                    height="100%" 
-                                    title="YouTube video player" 
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    width="100%"
+                                    height="100%"
+                                    title="YouTube video player"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                     allowFullScreen>
                                 </iframe>
                             </div>
                         </div>
                     )}
 
+                    {/* Recommendations Section */}
                     {recommendations.length > 0 && (
-                        <div className="recommendations-section">
+                        <div className="recommendations-section px-4 pb-4 sm:px-0 sm:pb-0"> {/* Added padding for mobile */}
                             <h3 className="section-title">More Like This</h3>
                             <div className="recommendations-grid">
                                 {recommendations.slice(0, 10).map(rec => (

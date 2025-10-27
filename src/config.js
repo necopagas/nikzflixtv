@@ -8,6 +8,7 @@ export const BACKDROP_PATH = "https://image.tmdb.org/t/p/original";
 // Keywords
 const ANIME_KEYWORD = "210024";
 const ISEKAI_KEYWORD = "193808";
+const CHINESE_DRAMA_KEYWORD = "339110";
 const CURRENT_DATE = new Date().toISOString().split("T")[0];
 
 // --- ANIME GENRES ---
@@ -35,7 +36,10 @@ export const API_ENDPOINTS = {
   popular: tmdb("/movie/popular"),
   toprated: tmdb("/movie/top_rated"),
   tvshows: tmdb("/tv/popular"),
-  asianDramas: `${tmdb("/discover/tv")}&with_genres=18&with_origin_country=KR,JP,CN,TH&sort_by=popularity.desc`,
+
+  asianDramas: `${tmdb("/discover/tv")}&with_keywords=${CHINESE_DRAMA_KEYWORD}&sort_by=popularity.desc`,
+  dramaPopular: `${tmdb("/discover/tv")}&with_keywords=${CHINESE_DRAMA_KEYWORD}&sort_by=popularity.desc`,
+  dramaTopRated: `${tmdb("/discover/tv")}&with_keywords=${CHINESE_DRAMA_KEYWORD}&sort_by=vote_average.desc&vote_count.gte=50`,
 
   anime: `${tmdb("/discover/tv")}&with_keywords=${ANIME_KEYWORD}&sort_by=popularity.desc`,
   animePopular: `${tmdb("/discover/tv")}&with_keywords=${ANIME_KEYWORD}&sort_by=popularity.desc`,
@@ -45,6 +49,7 @@ export const API_ENDPOINTS = {
   animeIsekai: `${tmdb("/discover/tv")}&with_keywords=${ANIME_KEYWORD},${ISEKAI_KEYWORD}&sort_by=popularity.desc`,
 
   search: (query, page = 1) => `${tmdb("/search/multi")}&query=${encodeURIComponent(query)}&page=${page}`,
+  searchTv: (query, page = 1) => `${tmdb("/search/tv")}&query=${encodeURIComponent(query)}&page=${page}`,
   details: (type, id) => `${tmdb(`/${type}/${id}`)}&append_to_response=videos,credits,external_ids`,
   recommendations: (type, id) => tmdb(`/${type}/${id}/recommendations`),
   byGenre: (genreId) => `${tmdb("/discover/movie")}&with_genres=${genreId}&sort_by=popularity.desc`,
@@ -64,10 +69,6 @@ export const EMBED_URLS = {
     movie: (id) => `https://vidlink.pro/movie/${id}`,
     tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}`
   },
-  videasy: {
-    movie: (imdb_id) => imdb_id ? `https://player.videasy.net/movie/${imdb_id}` : null,
-    tv: (imdb_id, s, e) => imdb_id ? `https://player.videasy.net/tv/${imdb_id}/${s}/${e}` : null
-  },
   vidfast: {
     movie: (id) => `https://vidfast.pro/movie/${id}?autoPlay=true`,
     tv: (id, s, e) => `https://vidfast.pro/tv/${id}/${s}/${e}?autoPlay=true`
@@ -82,12 +83,9 @@ export const EMBED_URLS = {
 };
 
 // --- SOURCE ORDER ---
-export const SOURCE_ORDER = ['autoembed', 'vidlink', 'vidfast', 'vidsrc', 'multiembed', 'videasy'];
+export const SOURCE_ORDER = ['autoembed', 'vidlink', 'vidfast', 'vidsrc', 'multiembed'];
 
-// --- PROXY (GITANGGAL) ---
-// const proxy = (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`;
-
-// --- IPTV CHANNELS (WALAY PROXY - DIRECT URLS) ---
+// --- IPTV CHANNELS (NAAY SULOD) ---
 export const IPTV_CHANNELS = [
   // LOCAL
   { name: 'GMA 7', url: 'https://amg01006-abs-cbn-abscbn-gma-x7-dash-abscbnono-dzsx9.amagi.tv/index.mpd', fallback: 'https://amg01006-abs-cbn-abscbn-gma-x7-dash-abscbnono-dzsx9.amagi.tv/playlist.m3u8', category: 'Local', number: 1 },
@@ -127,43 +125,24 @@ export const IPTV_CHANNELS = [
   { name: 'HGTV', url: 'https://fl2.moveonjoy.com/HGTV/index.m3u8', category: 'Lifestyle', number: 23 },
   { name: 'MTV', url: 'https://fl2.moveonjoy.com/MTV/index.m3u8', category: 'Music', number: 24 },
   { name: 'COMEDY CENTRAL', url: 'https://fl3.moveonjoy.com/Comedy_Central/index.m3u8', category: 'Entertainment', number: 25 },
-
-  // --- GITANGTANG NA ANG BAG-ONG MGA CHANNELS ---
 ];
 
 // --- ADMIN & COLLECTIONS ---
 export const ADMIN_UIDS = ['YOUR_FIREBASE_UID_HERE'];
-
 export const CURATED_COLLECTIONS = [
   { title: "Halloween Horrors", ids: [ { id: 760161, type: 'movie' }, { id: 965876, type: 'movie' } ] },
   { title: "Mind-Bending Sci-Fi", ids: [ { id: 603, type: 'movie' }, { id: 157336, type: 'movie' } ] },
 ];
 
-// --- GET EMBED URL (Simple) ---
-// Note: This function is for movie/tv embeds, not related to IPTV
+// --- GET EMBED URL ---
 export const getEmbedUrl = (type, id, season, episode, imdb_id, mal_id) => {
   for (const source of SOURCE_ORDER) {
     const src = EMBED_URLS[source];
     if (!src) continue;
 
-    if (type === "movie" && src.movie) {
-      // Handle videasy needing imdb_id
-      if (source === 'videasy') {
-          return imdb_id ? src.movie(imdb_id) : null; // Return null if imdb_id needed but not provided
-      }
-      return src.movie(id);
-    }
-    if (type === "tv" && src.tv) {
-       // Handle videasy needing imdb_id
-      if (source === 'videasy') {
-          return imdb_id ? src.tv(imdb_id, season, episode) : null; // Return null if imdb_id needed but not provided
-      }
-      return src.tv(id, season, episode);
-    }
-    // Handle anime source if needed (assuming mal_id is available for anime)
-    if (type === "anime" && src.anime && mal_id) {
-       return src.anime(mal_id, episode || 1, "sub"); // Assuming episode is passed for anime
-    }
+    if (type === "movie" && src.movie) { return src.movie(id); }
+    if (type === "tv" && src.tv) { return src.tv(id, season, episode); }
+    if (type === "anime" && src.anime && mal_id) { return src.anime(mal_id, episode || 1, "sub"); }
   }
-  return null; // Return null if no suitable source found
+  return null;
 };

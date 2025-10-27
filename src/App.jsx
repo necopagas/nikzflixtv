@@ -14,8 +14,9 @@ import { IPTVPage } from './pages/IPTVPage';
 import { ChatRoomPage } from './pages/ChatRoomPage';
 import { AnimePage } from './pages/AnimePage';
 import { DramaPage } from './pages/DramaPage';
-import { DramaDetailPage } from './pages/DramaDetailPage';
-import { DramaPlayerPage } from './pages/DramaPlayerPage';
+// --- GI-TANGGAL ANG IMPORT KAY DILI NA MAGAMIT ---
+// import { DramaDetailPage } from './pages/DramaDetailPage';
+// import { DramaPlayerPage } from './pages/DramaPlayerPage';
 import { useAuth } from './context/AuthContext';
 import { useMyList } from './hooks/useMyList';
 import { useContinueWatching } from './hooks/useContinueWatching';
@@ -23,7 +24,7 @@ import { useTheme } from './hooks/useTheme';
 import { useWatchedHistory } from './hooks/useWatchedHistory';
 
 // --- I-IMPORT ANG BAG-ONG PAGE ---
-import { VideokePage } from './pages/VideokePage.jsx'; // <-- DUGANG NI
+import { VideokePage } from './pages/VideokePage.jsx';
 
 export default function App() {
   const [modalItem, setModalItem] = useState(null);
@@ -153,15 +154,19 @@ export default function App() {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/anime" element={<AnimePage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
-          <Route path="/drama" element={<DramaPage />} />
-          <Route path="/drama/:dramaId" element={<DramaDetailPage />} />
-          <Route path="/drama/watch/:episodeId" element={<DramaPlayerPage />} />
+          
+          {/* --- GI-UPDATE ANG DRAMA ROUTE --- */}
+          <Route path="/drama" element={<DramaPage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
+          
+          {/* --- GI-TANGGAL ANG MGA ROUTE NGA DILI NA MAGAMIT --- */}
+          {/* <Route path="/drama/:dramaId" element={<DramaDetailPage />} /> */}
+          {/* <Route path="/drama/watch/:episodeId" element={<DramaPlayerPage />} /> */}
+          
           <Route path="/my-list" element={<MyListPage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
           <Route path="/live-tv" element={<IPTVPage />} />
           <Route path="/chat-room" element={<ChatRoomPage />} />
 
-          {/* --- I-DUGANG ANG BAG-ONG ROUTE --- */}
-          <Route path="/videoke" element={<VideokePage />} /> {/* <-- DUGANG NI */}
+          <Route path="/videoke" element={<VideokePage />} />
         </Routes>
       </main>
       <Footer />
@@ -194,4 +199,4 @@ export default function App() {
       )}
     </div>
   );
-            }
+}

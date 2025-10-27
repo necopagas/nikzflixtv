@@ -142,7 +142,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                                 <input
                                     type="text"
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.g.target.value)}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
                                     className="search-input w-full border-2 border-transparent p-3 pl-12 rounded-full"
                                     placeholder="Search..."
                                 />
