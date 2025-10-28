@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+// Icons (use react-icons for consistent, lightweight icons)
+import { FaSearch, FaCog, FaMoon, FaSun, FaBars, FaTimes, FaPlay } from 'react-icons/fa';
 
 const useClock = () => {
     const [time, setTime] = useState(new Date());
@@ -59,20 +61,21 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
         <header className={`header fixed top-0 left-0 w-full px-4 sm:px-8 py-4 flex items-center justify-between z-50 transition-colors duration-300 ${isScrolled ? 'scrolled' : ''}`}>
             <div className="flex items-center space-x-4 md:space-x-8">
                 <a href="/" onClick={(e) => { e.preventDefault(); navigate('/'); }} className="flex items-center space-x-2 cursor-pointer">
-                    <i className="fa-solid fa-clapperboard text-red-600 text-2xl sm:text-3xl"></i>
+                    <FaPlay className="text-red-600 text-2xl sm:text-3xl" />
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-[#E50914]">NikzFlix</h1>
                 </a>
-                <nav className="hidden md:flex items-center space-x-6">
+            </div>
+
+            {/* Centered nav for wider screens */}
+            <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 top-4 z-50">
+                <nav className="flex items-center space-x-6">
                     <NavLink to="/" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Home</NavLink>
                     <NavLink to="/anime" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Anime</NavLink>
-                    {/* <NavLink to="/manga" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Manga</NavLink> */} {/* <-- REMOVED */}
                     <NavLink to="/drama" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Drama</NavLink>
                     <NavLink to="/my-list" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>My List</NavLink>
                     <NavLink to="/live-tv" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Live TV</NavLink>
-                    
-                    {/* --- DUGANG NGA LINK PARA SA DESKTOP --- */}
                     <NavLink to="/videoke" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Videoke</NavLink>
-                    
+                    <NavLink to="/vivamax" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Vivamax</NavLink>
                     <NavLink to="/chat-room" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Chat Room</NavLink>
                 </nav>
             </div>
@@ -82,7 +85,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                     <form onSubmit={handleSearch} className="flex items-center">
                         <div className="search-container relative flex items-center">
                             <button type="submit" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10">
-                                <i className="fa-solid fa-search"></i>
+                                <FaSearch />
                             </button>
                             <input
                                 type="text"
@@ -93,31 +96,31 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                             />
                         </div>
                     </form>
-                    <button type="button" onClick={onOpenSettings} className="theme-toggle" title="Settings"><i className="fas fa-cog"></i></button>
-                    <button type="button" onClick={toggleTheme} className="theme-toggle" title="Toggle Theme"><i className={`fas ${theme === 'light' ? 'fa-moon' : 'fa-sun'}`}></i></button>
+                    <button type="button" onClick={onOpenSettings} className="theme-toggle" title="Settings"><FaCog /></button>
+                    <button type="button" onClick={toggleTheme} className="theme-toggle" title="Toggle Theme">{theme === 'light' ? <FaMoon /> : <FaSun />}</button>
                     <div className="clock text-xl font-semibold whitespace-nowrap">{clock}</div>
                     <div className="relative">
                         {currentUser ? (
-                            <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center font-bold">
+                            <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="w-9 h-9 rounded-full bg-red-600 flex items-center justify-center font-bold text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-color)]">
                                 {currentUser.email.charAt(0).toUpperCase()}
                             </button>
                         ) : (
-                            <button onClick={() => navigate('/auth')} className="px-4 py-2 bg-[var(--brand-color)] rounded-md font-semibold">
+                            <button onClick={() => navigate('/auth')} className="px-3 py-1 bg-[var(--brand-color)] rounded-md font-semibold text-sm">
                                 Login
                             </button>
                         )}
                         {currentUser && isProfileOpen && (
-                            <div className="absolute right-0 mt-2 w-48 bg-[var(--bg-secondary)] rounded-md shadow-lg py-1 z-50">
-                                <div className="px-4 py-2 text-sm text-[var(--text-secondary)] border-b border-[var(--border-color)]">{currentUser.email}</div>
-                                <a href="#" onClick={navigateToProfile} className="block px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]">My Profile</a>
-                                <a href="#" onClick={handleLogout} className="block px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]">Logout</a>
+                            <div className="absolute right-0 mt-2 w-40 bg-[var(--bg-secondary)] rounded-md shadow-lg py-1 z-50 text-sm">
+                                <div className="px-3 py-2 text-xs text-[var(--text-secondary)] border-b border-[var(--border-color)]">{currentUser.email}</div>
+                                <button onClick={navigateToProfile} className="w-full text-left px-3 py-2 hover:bg-[var(--bg-tertiary)]">My Profile</button>
+                                <button onClick={handleLogout} className="w-full text-left px-3 py-2 hover:bg-[var(--bg-tertiary)]">Logout</button>
                             </div>
                         )}
                     </div>
                 </div>
 
                 <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden text-2xl z-[1001]">
-                    <i className={isMobileMenuOpen ? "fas fa-times" : "fas fa-bars"}></i>
+                    {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
                 </button>
             </div>
 
@@ -132,13 +135,14 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                     
                     {/* --- DUGANG NGA LINK PARA SA MOBILE --- */}
                     <NavLink to="/videoke" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Videoke</NavLink>
+                    <NavLink to="/vivamax" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Vivamax</NavLink>
                     
                     <NavLink to="/chat-room" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Chat Room</NavLink>
 
                     <div className="w-full px-4">
                         <form onSubmit={handleSearch} className="flex items-center">
                             <div className="search-container relative flex items-center w-full">
-                                <button type="submit" className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 z-10"><i className="fa-solid fa-search"></i></button>
+                                <button type="submit" className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 z-10"><FaSearch /></button>
                                 <input
                                     type="text"
                                     value={searchQuery}

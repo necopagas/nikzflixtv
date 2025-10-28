@@ -1,5 +1,6 @@
 // src/pages/ChatRoomPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
+import { FaPaperPlane } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useChat } from '../hooks/useChat';
@@ -97,8 +98,8 @@ export const ChatRoomPage = () => {
                         placeholder="Type your message here..."
                         className="chat-input"
                     />
-                    <button type="submit" className="chat-send-btn" title="Send Message">
-                        <i className="fas fa-paper-plane"></i>
+                    <button type="submit" className="chat-send-btn" title="Send Message" aria-label="Send message">
+                        <FaPaperPlane />
                     </button>
                 </form>
             </div>

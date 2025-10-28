@@ -1,4 +1,6 @@
 import React from 'react';
+import { usePreviewsSetting } from '../hooks/usePreviewsSetting';
+import { useSettings } from '../context/SettingsContext';
 
 export const SettingsModal = ({
     onClose,
@@ -8,6 +10,9 @@ export const SettingsModal = ({
     onClearWatchedHistory,
     onClearMyList
 }) => {
+    // prefer context hook
+    const { previewsEnabled, toggle } = usePreviewsSetting();
+    const settings = useSettings();
     const handleClearData = (clearFunction, type) => {
         if (window.confirm(`Are you sure you want to clear your ${type}? This action cannot be undone.`)) {
             clearFunction();
@@ -53,6 +58,22 @@ export const SettingsModal = ({
                             className="px-4 py-1 rounded-full bg-[var(--bg-primary)] font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg-tertiary)] focus:ring-[var(--brand-color)]" // Added focus style
                         >
                             {theme === 'light' ? 'Dark' : 'Light'}
+                        </button>
+                    </div>
+                </div>
+
+                {/* --- Preview Toggle --- */}
+                <div className="mb-6">
+                    <h3 className="text-lg font-semibold mb-3 text-[var(--text-primary)]">Previews</h3>
+                    <div className="flex items-center justify-between bg-[var(--bg-tertiary)] p-3 rounded-md">
+                        <label htmlFor="preview-toggle" className="text-[var(--text-secondary)]">Enable Hover Previews</label>
+                        <button
+                            id="preview-toggle"
+                            onClick={() => settings.togglePreviews()}
+                            className="px-4 py-1 rounded-full bg-[var(--bg-primary)] font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg-tertiary)] focus:ring-[var(--brand-color)]"
+                            aria-pressed={!!settings.previewsEnabled}
+                        >
+                            {settings.previewsEnabled ? 'On' : 'Off'}
                         </button>
                     </div>
                 </div>

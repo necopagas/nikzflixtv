@@ -1,8 +1,9 @@
 // src/components/Banner.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { fetchData } from '../utils/fetchData';
 import { API_ENDPOINTS, BACKDROP_PATH } from '../config';
 import ReactPlayer from 'react-player';
+import { FaPlay, FaInfoCircle } from 'react-icons/fa';
 
 export const Banner = ({ onOpenModal }) => {
     const [items, setItems] = useState([]);
@@ -31,46 +32,35 @@ export const Banner = ({ onOpenModal }) => {
         }
     }, [items]);
 
+    const bannerTimerRef = useRef();
     useEffect(() => {
         if (item) {
-            setTrailerKey(null); 
-            setShowVideo(false); 
+            setTrailerKey(null);
+            setShowVideo(false);
 
             const media_type = item.media_type || (item.title ? 'movie' : 'tv');
 
             fetchData(API_ENDPOINTS.details(media_type, item.id))
                 .then(detailsData => {
-                    
-                    // --- GI-UPDATE NGA VIDEO SEARCH LOGIC ---
                     const videos = detailsData.videos?.results || [];
-                    
-                    // 1. Unahon pangita ang "Trailer"
                     let foundVideo = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube');
-                    
-                    // 2. Kung walay "Trailer", pangitaon ang "Teaser"
-                    if (!foundVideo) {
-                        foundVideo = videos.find(v => v.type === 'Teaser' && v.site === 'YouTube');
-                    }
-                    
-                    // 3. Kung wala gihapon, kuhaon ang UNANG video nga gikan sa YouTube
-                    if (!foundVideo) {
-                        foundVideo = videos.find(v => v.site === 'YouTube');
-                    }
-                    
+                    if (!foundVideo) foundVideo = videos.find(v => v.type === 'Teaser' && v.site === 'YouTube');
+                    if (!foundVideo) foundVideo = videos.find(v => v.site === 'YouTube');
                     if (foundVideo) {
                         setTrailerKey(foundVideo.key);
-                        setTimeout(() => setShowVideo(true), 1000);
+                        // small delay before overlay appears when items change
+                        bannerTimerRef.current = setTimeout(() => setShowVideo(true), 1000);
                     } else {
-                        // Kung wala gyud video, siguruha nga null
                         setTrailerKey(null);
                     }
                 })
                 .catch(err => {
-                    console.error("Failed to fetch trailer", err);
+                    console.error('Failed to fetch trailer', err);
                     setTrailerKey(null);
                 });
         }
-    }, [item]); 
+        return () => clearTimeout(bannerTimerRef.current);
+    }, [item]);
 
     if (!item) {
         return <div className="w-full h-[90vh] skeleton"></div>;
@@ -86,7 +76,7 @@ export const Banner = ({ onOpenModal }) => {
             style={{ backgroundImage: `url(${BACKDROP_PATH}${item.backdrop_path})` }}
         >
             {/* --- KANI ANG TRAILER PLAYER (z-0) --- */}
-            <div className="absolute top-0 left-0 w-full h-full z-0 overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-full z-0 overflow-hidden" onMouseEnter={() => { clearTimeout(bannerTimerRef.current); setShowVideo(true); }} onMouseLeave={() => { setShowVideo(false); }}>
                 {trailerKey && (
                     <ReactPlayer
                         url={`https://www.youtube.com/watch?v=${trailerKey}`}
@@ -125,20 +115,20 @@ export const Banner = ({ onOpenModal }) => {
                 <h1 className="banner-title text-4xl md:text-7xl font-extrabold mb-4 max-w-3xl">{item.title || item.name}</h1>
                 <p className="banner-desc text-md md:text-xl mb-8 max-w-md md:max-w-2xl">{truncatedDesc}</p>
                 
-                <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                    <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                     {/* --- GI-UPDATE ANG BUTTON STYLE --- */}
                     <button 
                         onClick={() => onOpenModal(item, true)} 
                         className="banner-button bg-gradient-to-r from-[var(--brand-color)] to-red-600 text-white px-8 py-3 rounded-md font-bold shadow-lg hover:shadow-red-500/40 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 text-lg"
                     >
-                        <i className="fas fa-play"></i> Play
+                        <FaPlay /> Play
                     </button>
                     {/* --- GI-UPDATE ANG BUTTON STYLE --- */}
                     <button 
                         onClick={() => onOpenModal(item)} 
                         className="banner-button bg-gray-700/70 backdrop-blur-sm text-white px-8 py-3 rounded-md font-bold hover:bg-gray-600/80 hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 text-lg"
                     >
-                        <i className="fas fa-info-circle"></i> More Info
+                        <FaInfoCircle /> More Info
                     </button>
                 </div>
             </div>

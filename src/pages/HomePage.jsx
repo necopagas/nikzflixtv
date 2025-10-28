@@ -131,7 +131,8 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
     return (
         <>
             <Banner onOpenModal={onOpenModal} />
-            <div className="px-4 sm:px-8 md:px-16 pb-20">
+            <div className="bg-[#0b0b0b] text-white min-h-screen">
+              <div className="px-4 sm:px-8 md:px-16 pb-20">
                 <GenreFilter
                     genres={MOVIE_GENRES}
                     selectedGenre={selectedGenre}
@@ -200,6 +201,7 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
 
                 <Row title="Anime" items={anime} onOpenModal={onOpenModal} isWatched={isWatched} isLarge />
                 <Row title="Asian Dramas" items={asianDramas} onOpenModal={onOpenModal} isWatched={isWatched} /> 
+              </div>
             </div>
         </>
     );

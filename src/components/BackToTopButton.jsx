@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FaArrowUp } from 'react-icons/fa';
 
 export const BackToTopButton = () => {
     const [isVisible, setIsVisible] = useState(false);
@@ -30,7 +31,7 @@ export const BackToTopButton = () => {
             className={`back-to-top ${isVisible ? 'visible' : ''}`}
             title="Go to top"
         >
-            <i className="fas fa-arrow-up"></i>
+            <FaArrowUp />
         </button>
     );
 };

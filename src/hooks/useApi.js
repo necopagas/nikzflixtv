@@ -11,9 +11,12 @@ export const useApi = (endpoint, param) => {
         const endpointOrFn = API_ENDPOINTS[endpoint];
 
         if (typeof endpointOrFn === 'function') {
-            apiUrl = endpointOrFn(param); // Tawagon ang function kung naay parameter
+            apiUrl = endpointOrFn(param);
         } else if (typeof endpointOrFn === 'string') {
-            apiUrl = endpointOrFn; // Gamiton ang string kung wala
+            apiUrl = endpointOrFn;
+        } else if (typeof endpoint === 'string' && (endpoint.startsWith('/') || endpoint.startsWith('http')) ) {
+            // allow passing a direct URL (e.g. /api/vivamax?page=1 or full tmdb URL)
+            apiUrl = endpoint;
         } else {
             setItems([]);
             setLoading(false);

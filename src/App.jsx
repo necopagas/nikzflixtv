@@ -25,6 +25,7 @@ import { useWatchedHistory } from './hooks/useWatchedHistory';
 
 // --- I-IMPORT ANG BAG-ONG PAGE ---
 import { VideokePage } from './pages/VideokePage.jsx';
+import { VivamaxPage } from './pages/VivamaxPage.jsx';
 
 export default function App() {
   const [modalItem, setModalItem] = useState(null);
@@ -167,6 +168,7 @@ export default function App() {
           <Route path="/chat-room" element={<ChatRoomPage />} />
 
           <Route path="/videoke" element={<VideokePage />} />
+          <Route path="/vivamax" element={<VivamaxPage onOpenModal={handleOpenModal} isWatched={isWatched} />} />
         </Routes>
       </main>
       <Footer />

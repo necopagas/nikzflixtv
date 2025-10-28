@@ -1,84 +1,130 @@
-// src/components/Row.jsx
-import React, { useRef } from 'react';
+﻿// src/components/Row.jsx
+import React, { useRef, useMemo, useState, useEffect } from 'react';
+import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { Poster } from './Poster';
 import { useApi } from '../hooks/useApi';
-import { useIntersectionObserver } from '../hooks/useIntersectionObserver'; // <-- DUGANG NGA IMPORT
+import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 
-export const Row = ({ title, endpoint, param, items: propItems, onOpenModal, isWatched, isLarge = false, isLoading: propIsLoading = false }) => {
-    const scrollContainerRef = useRef(null); // Gi-ilisan ang ngalan para klaro
-    
-    // --- DUGANG: Intersection Observer para sa animation ---
-    const [rowRef, isVisible] = useIntersectionObserver({ 
-        threshold: 0.1, 
-        triggerOnce: true 
-    });
-    // --- END SA DUGANG ---
+export const Row = ({ title, endpoint, param, items: propItems, onOpenModal, isWatched, isLarge = false, isLoading: propIsLoading = false, query = '' }) => {
+    const scrollContainerRef = useRef(null);
+    const [rowRef, isVisible] = useIntersectionObserver({ threshold: 0.1, triggerOnce: true });
 
     const { items: apiItems, loading: apiLoading } = useApi(endpoint, param);
-
     const items = endpoint ? apiItems : propItems;
     const isLoading = endpoint ? apiLoading : propIsLoading;
 
+    const visibleItems = useMemo(() => {
+        if (!query) return items || [];
+        const s = query.trim().toLowerCase();
+        return (items || []).filter(item => {
+            const t = (item.title || item.name || '').toString().toLowerCase();
+            return t.includes(s) || (item.overview || '').toLowerCase().includes(s);
+        });
+    }, [items, query]);
+
     const scroll = (scrollOffset) => {
         if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollBy({
-                left: scrollOffset,
-                behavior: 'smooth'
-            });
+            scrollContainerRef.current.scrollBy({ left: scrollOffset, behavior: 'smooth' });
         }
     };
 
-    if (!isLoading && items.length === 0) {
-        return null;
-    }
+    const handleKeyDown = (e) => {
+        if (!scrollContainerRef.current) return;
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            scroll(-300);
+        } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            scroll(300);
+        }
+    };
+
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+
+    useEffect(() => {
+        const el = scrollContainerRef.current;
+        if (!el) return;
+        const update = () => {
+            setCanScrollLeft(el.scrollLeft > 10);
+            setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 10);
+        };
+        update();
+        el.addEventListener('scroll', update);
+        window.addEventListener('resize', update);
+        return () => {
+            el.removeEventListener('scroll', update);
+            window.removeEventListener('resize', update);
+        };
+    }, [items]);
+
+    if (!isLoading && (!items || items.length === 0)) return null;
 
     return (
-        // --- GI-UPDATE: Gidugang ang ref ug classes para sa animation ---
-        <div 
-            ref={rowRef} 
-            className={`row-container my-10 ${isVisible ? 'is-visible' : ''}`}
-        >
-            <h2 className="text-3xl font-bold mb-4">{title}</h2>
+        <div ref={rowRef} className={`row-container py-4 ${isVisible ? 'is-visible' : ''}`}>
+            <div className="px-6 max-w-7xl mx-auto">
+                <h2 className="text-2xl md:text-3xl font-bold mb-2">{title}</h2>
+            </div>
+
             <div className="relative group">
-                 <button 
-                     onClick={() => scroll(-500)}
-                     className="scroll-arrow left-arrow opacity-0 group-hover:opacity-100 disabled:opacity-0 disabled:cursor-default"
-                     aria-label={`Scroll ${title} left`}
-                 >
-                     <i className="fas fa-chevron-left"></i>
-                 </button>
-                <div 
-                    ref={scrollContainerRef} // Gigamit ang bag-ong ref name
-                    className={`row-posters flex overflow-x-scroll overflow-y-hidden space-x-4 p-2 ${isLarge ? 'h-96' : 'h-64'}`}
-                    tabIndex={0} 
+                <button
+                    onClick={() => {
+                        const el = scrollContainerRef.current;
+                        if (!el) return;
+                        const step = Math.round(el.clientWidth * 0.8);
+                        scroll(-step);
+                    }}
+                    aria-label={`Scroll ${title} left`}
+                    className={`absolute left-0 top-1/2 -translate-y-1/2 z-20 w-12 h-24 flex items-center justify-center bg-black/50 hover:bg-black/75 transition-colors duration-200 opacity-0 group-hover:opacity-100 disabled:opacity-30 disabled:pointer-events-none`}
+                    disabled={!canScrollLeft}
+                >
+                    <FaChevronLeft className="text-white text-2xl" />
+                </button>
+
+                <div
+                    ref={scrollContainerRef}
+                    className={`row-posters flex snap-x snap-mandatory touch-pan-x overflow-x-scroll overflow-y-visible space-x-4 pl-6 pr-6 py-4 -mx-6 ${isLarge ? 'h-[400px]' : 'h-[300px]'}`}
+                    tabIndex={0}
                     aria-label={`${title} carousel`}
-                    role="region" 
+                    role="region"
+                    onKeyDown={handleKeyDown}
                 >
                     {isLoading ? (
                         Array.from({ length: 10 }).map((_, i) => (
-                            <div key={`skeleton-${title}-${i}`} className={`flex-shrink-0 skeleton ${isLarge ? 'w-64' : 'w-40'} rounded-md`}></div>
+                            <div key={`skeleton-${title}-${i}`} className={`flex-shrink-0 ${isLarge ? 'w-64' : 'w-40'} snap-start skeleton rounded-md`}></div>
                         ))
+                    ) : visibleItems.length === 0 ? (
+                        <div className="flex items-center justify-center w-full text-gray-400">No results</div>
                     ) : (
-                        items.map(item => (
-                             <Poster 
-                                key={item.id} 
-                                item={item} 
-                                onOpenModal={onOpenModal} 
-                                isWatched={isWatched(item.id)}
-                                isLarge={isLarge} 
-                                season={item.season}
-                                episode={item.episode}
-                             />
+                        visibleItems.map(item => (
+                            <div key={item.id} className={`flex-shrink-0 ${isLarge ? 'w-64' : 'w-40'} snap-start`}>
+                                <Poster
+                                    item={item}
+                                    onOpenModal={onOpenModal}
+                                    isWatched={isWatched && isWatched(item.id)}
+                                    isLarge={isLarge}
+                                    season={item.season}
+                                    episode={item.episode}
+                                    query={query}
+                                />
+                            </div>
                         ))
                     )}
                 </div>
-                 <button 
-                     onClick={() => scroll(500)}
-                     className="scroll-arrow right-arrow opacity-0 group-hover:opacity-100 disabled:opacity-0 disabled:cursor-default"
-                     aria-label={`Scroll ${title} right`}
-                 >
-                     <i className="fas fa-chevron-right"></i>
-                 </button>
+
+                <button
+                    onClick={() => {
+                        const el = scrollContainerRef.current;
+                        if (!el) return;
+                        const step = Math.round(el.clientWidth * 0.8);
+                        scroll(step);
+                    }}
+                    aria-label={`Scroll ${title} right`}
+                    className={`absolute right-0 top-1/2 -translate-y-1/2 z-20 w-12 h-24 flex items-center justify-center bg-black/50 hover:bg-black/75 transition-colors duration-200 opacity-0 group-hover:opacity-100 disabled:opacity-30 disabled:pointer-events-none`}
+                    disabled={!canScrollRight}
+                >
+                    <FaChevronRight className="text-white text-2xl" />
+                </button>
             </div>
         </div>
     );

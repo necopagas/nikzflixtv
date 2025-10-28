@@ -10,8 +10,10 @@ const IS_DEV = import.meta.env.DEV;
  * (Dynamic based on environment)
  */
 const fetchConsumetData = async (endpoint) => {
+    // During development we use the Vite dev server proxy at /api/proxy
+    // which is configured in vite.config.js to forward to https://api.consumet.org
     const url = IS_DEV
-        ? `/api/consumet${endpoint}`
+        ? `/api/proxy${endpoint}`
         : `/api/proxy?url=${encodeURIComponent(`${API_BASE_URL}${endpoint}`)}`;
 
     try {

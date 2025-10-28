@@ -17,13 +17,30 @@ export const VideokePage = () => {
             const ytResults = await searchYouTube(query);
             
             // I-normalize nato ang data gikan sa YouTube
-            const formattedResults = ytResults.map(item => ({
-                id: item.id,
-                title: item.title,
-                source: 'YouTube',
-                embedUrl: `https://www.youtube.com/embed/${item.id}`,
-                description: item.channel?.name || 'YouTube Video'
-            }));
+            const formattedResults = ytResults.map(item => {
+                // Consumet / YouTube search results may provide id in different shapes
+                // e.g. item.id (string) or item.id.videoId or item.videoId
+                const rawId = item?.id;
+                const videoId = (typeof rawId === 'string' && rawId)
+                    || rawId?.videoId
+                    || item?.videoId
+                    || item?.video?.id
+                    || item?.id?.id;
+
+                if (!videoId) {
+                    console.warn('Skipping YouTube item without video id:', item);
+                    return null;
+                }
+
+                return {
+                    id: videoId,
+                    title: item.title || item.snippet?.title || 'YouTube Video',
+                    source: 'YouTube',
+                    // Use modest branding and disable related videos; do not autoplay by default
+                    embedUrl: `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`,
+                    description: item.channel?.name || item.snippet?.channelTitle || 'YouTube Video'
+                };
+            }).filter(Boolean);
 
             setResults(formattedResults);
 

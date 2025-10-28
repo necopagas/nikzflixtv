@@ -1,5 +1,6 @@
 // src/components/Modal.jsx
 import React, { useState, useEffect, useRef } from 'react';
+import { FaPlay, FaPlus, FaCheck } from 'react-icons/fa';
 import { fetchData } from '../utils/fetchData';
 import { API_ENDPOINTS, EMBED_URLS, SOURCE_ORDER, IMG_PATH, BACKDROP_PATH } from '../config';
 import { Poster } from './Poster';
@@ -198,7 +199,7 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
                                 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-white/30 backdrop-blur-sm text-white flex items-center justify-center text-4xl transition-all duration-300 hover:bg-white/50 hover:scale-110 focus:outline-none focus:ring-4 focus:ring-white/50"
                                 aria-label="Play trailer or video"
                             >
-                                <i className="fas fa-play"></i>
+                                <FaPlay />
                             </button>
                         </div>
                     )}
@@ -224,7 +225,7 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
                                         onKeyDown={(e) => handleKeyDown(e, handlePlay)}
                                         className="px-6 py-2 bg-[var(--brand-color)] hover:bg-red-700 rounded font-semibold transition-colors flex items-center gap-2"
                                     >
-                                       <i className="fas fa-play text-xs"></i> Play
+                                       <FaPlay className="text-xs" /> Play
                                     </button>
                                 )}
                                 <button
@@ -233,8 +234,8 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
                                     onKeyDown={(e) => handleKeyDown(e, () => onToggleMyList(item))}
                                     className="px-6 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)] rounded font-semibold transition-colors flex items-center gap-2"
                                 >
-                                    <i className={`fas ${isItemInMyList(item.id) ? 'fa-check' : 'fa-plus'} text-xs`}></i>
-                                    {isItemInMyList(item.id) ? 'My List' : 'My List'}
+                                    {isItemInMyList(item.id) ? <FaCheck className="text-xs" /> : <FaPlus className="text-xs" />}
+                                    My List
                                 </button>
                             </div>
                         </div>
