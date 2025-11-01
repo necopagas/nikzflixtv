@@ -1,0 +1,15 @@
+# Ignore build outputs and generated assets
+node_modules/
+dist/
+android/
+android/app/src/main/assets/
+android/**/public/**
+build/
+public/assets/
+*.min.js
+package-lock.json
+
+# Ignore IDE and OS files
+.vscode/
+.DS_Store
+Thumbs.db

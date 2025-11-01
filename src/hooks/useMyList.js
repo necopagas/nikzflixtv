@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { db } from '../firebase';
-import { doc, setDoc, deleteDoc, collection, getDocs, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, collection, onSnapshot } from 'firebase/firestore';
 
 export const useMyList = () => {
     const { currentUser } = useAuth();

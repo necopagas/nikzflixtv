@@ -1,5 +1,6 @@
 // src/pages/DramaPlayerPage.jsx
 import React, { useState, useEffect } from 'react';
+import { useWatchedHistory } from '../hooks/useWatchedHistory';
 import { useParams, Link } from 'react-router-dom';
 import ReactPlayer from 'react-player';
 // --- GIBALIK ANG DAAN NGA IMPORT ---
@@ -7,6 +8,7 @@ import { getDramaEpisodeSources } from '../utils/consumetApi';
 
 export const DramaPlayerPage = () => {
     const { episodeId } = useParams();
+    const { addToWatched } = useWatchedHistory();
     // --- GIBALIK ANG DAAN NGA STATE ---
     const [sources, setSources] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +55,12 @@ export const DramaPlayerPage = () => {
                             height="100%"
                             controls
                             playing
+                            onEnded={() => {
+                                try {
+                                    // mark episode as watched when playback ends
+                                    if (episodeId) addToWatched(episodeId);
+                                } catch (err) { console.warn('Failed to mark watched:', err); }
+                            }}
                         />
                     </div>
                 )}

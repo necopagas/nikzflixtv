@@ -1,6 +1,9 @@
 // src/components/Modal.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { FaPlay, FaPlus, FaCheck } from 'react-icons/fa';
+// --- DIRI NIMO GIDUGANG ANG FaShare ---
+import { FaPlay, FaPlus, FaCheck, FaShare } from 'react-icons/fa'; 
+// --- DIRI NIMO GI-IMPORT ANG CAPACITOR SHARE ---
+import { Share } from '@capacitor/share';
 import { fetchData } from '../utils/fetchData';
 import { API_ENDPOINTS, EMBED_URLS, SOURCE_ORDER, IMG_PATH, BACKDROP_PATH } from '../config';
 import { Poster } from './Poster';
@@ -34,6 +37,28 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
             action();
         }
     };
+
+    // --- ANIA ANG BAG-O NGA FUNCTION PARA SA SHARE ---
+    const handleShare = async () => {
+        try {
+            // Siguraduha nga naay details una
+            if (!details) {
+                console.log("Details not yet loaded for sharing.");
+                return; 
+            }
+            
+            await Share.share({
+                title: details.title || details.name,
+                text: `Check out ${details.title || details.name} on NikzFlix!`,
+                url: window.location.href, // I-share ang current URL sa app
+                dialogTitle: 'Share with friends',
+            });
+        } catch (error) {
+            // Handle share error (e.g., user cancelled)
+            console.error('Error sharing', error);
+        }
+    };
+    // --- END SA BAG-O NGA FUNCTION ---
 
     useEffect(() => {
         setIsLoading(true);
@@ -217,6 +242,7 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
                                     <p className="text-[var(--text-primary)] mb-4 text-sm sm:text-base">{details.overview}</p>
                                 </>
                             )}
+                            {/* --- DIRI GIDUGANG ANG SHARE BUTTON --- */}
                             <div className="flex flex-wrap gap-2 mt-4 sm:mt-0"> {/* Allow wrapping */}
                                 {!showPlayer && (
                                     <button
@@ -237,6 +263,19 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
                                     {isItemInMyList(item.id) ? <FaCheck className="text-xs" /> : <FaPlus className="text-xs" />}
                                     My List
                                 </button>
+                                
+                                {/* --- ANIA ANG BAG-O NGA SHARE BUTTON --- */}
+                                <button
+                                    onClick={handleShare}
+                                    tabIndex="0"
+                                    onKeyDown={(e) => handleKeyDown(e, handleShare)}
+                                    className="px-6 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)] rounded font-semibold transition-colors flex items-center gap-2"
+                                    title="Share"
+                                >
+                                    <FaShare className="text-xs" /> 
+                                    Share
+                                </button>
+                                {/* --- END SA SHARE BUTTON --- */}
                             </div>
                         </div>
                     </div>

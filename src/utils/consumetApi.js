@@ -31,10 +31,10 @@ const fetchConsumetData = async (endpoint) => {
                }
                // Try parsing as JSON if not HTML
                return JSON.parse(errorBody); // Or handle specific JSON error structure
-            } catch (parseError) {
-               console.error("Could not parse Consumet API error response.");
-               return null; // Return null if parsing fails
-            }
+                } catch (parseError) {
+                    console.error("Could not parse Consumet API error response.", parseError);
+                    return null; // Return null if parsing fails
+                }
         }
         return await response.json();
     } catch (error)

@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { IMG_PATH, API_ENDPOINTS } from '../config';
 import { getGenreNamesByIds } from '../utils/genreUtils';
+import { escapeRegex } from '../utils/text';
 import { FaPlay, FaInfoCircle, FaCheck } from 'react-icons/fa';
 import ReactPlayer from 'react-player';
 import { fetchData } from '../utils/fetchData';
@@ -16,13 +17,12 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
     const [previewKey, setPreviewKey] = useState(null);
     const [showPreview, setShowPreview] = useState(false);
     const [imgLoaded, setImgLoaded] = useState(false);
-    const [lowResLoaded, setLowResLoaded] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [lqipData, setLqipData] = useState(null);
     const previewTimerRef = useRef(null);
     const hoverDebounceRef = useRef(null);
     // prefer context
-    const { previewsEnabled } = usePreviewsSetting();
+    usePreviewsSetting(); // hook kept for side-effect / preference wiring (settings used below)
     const settings = useSettings();
     const isPreviewCapable = typeof window !== 'undefined' ? (settings?.previewsEnabled && window.matchMedia && window.matchMedia('(hover: hover)').matches && window.innerWidth >= 640) : false;
 
@@ -54,11 +54,11 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
                 reader.onloadend = () => {
                     if (cancelled) return;
                     const b64 = reader.result;
-                    try { sessionStorage.setItem(key, b64); } catch (e) { /* ignore storage errors */ }
+                    try { sessionStorage.setItem(key, b64); } catch { /* ignore storage errors */ }
                     setLqipData(b64);
                 };
                 reader.readAsDataURL(blob);
-            } catch (err) {
+            } catch {
                 // ignore LQIP on failure
             }
         })();
@@ -119,13 +119,14 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
     const displayTitle = item.title || item.name || 'Untitled';
     const widthClass = isLarge ? 'w-64' : 'w-40';
 
-    // Highlight matched query substrings in titles (safe regex escape)
+    // Highlight matched query substrings in titles (use helper)
     const renderHighlighted = (text) => {
         const q = (query || '').trim();
         if (!q) return text;
         try {
-            const escaped = q.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
-            const parts = text.split(new RegExp(`(${escaped})`, 'ig'));
+            // We'll build parts using a safe regex and render spans
+            const escaped = escapeRegex(q);
+            const parts = String(text).split(new RegExp(`(${escaped})`, 'ig'));
             return parts.map((part, i) => (
                 part.toLowerCase() === q.toLowerCase() ? (
                     <span key={i} className="text-yellow-300">{part}</span>
@@ -133,7 +134,7 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
                     <span key={i}>{part}</span>
                 )
             ));
-        } catch (err) {
+        } catch {
             return text;
         }
     };
@@ -183,7 +184,6 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
                             src={lowResUrl}
                             alt={displayTitle}
                             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-out transform ${imgLoaded ? 'opacity-0' : 'opacity-100 blur-2xl scale-105'}`}
-                            onLoad={() => setLowResLoaded(true)}
                             aria-hidden
                         />
                     )}

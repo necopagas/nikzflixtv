@@ -1,5 +1,4 @@
 import React from 'react';
-import { usePreviewsSetting } from '../hooks/usePreviewsSetting';
 import { useSettings } from '../context/SettingsContext';
 
 export const SettingsModal = ({
@@ -10,8 +9,6 @@ export const SettingsModal = ({
     onClearWatchedHistory,
     onClearMyList
 }) => {
-    // prefer context hook
-    const { previewsEnabled, toggle } = usePreviewsSetting();
     const settings = useSettings();
     const handleClearData = (clearFunction, type) => {
         if (window.confirm(`Are you sure you want to clear your ${type}? This action cannot be undone.`)) {

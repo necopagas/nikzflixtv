@@ -1,5 +1,5 @@
 // src/pages/ShortDramaPage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 export const ShortDramaPage = () => {
     const [query, setQuery] = useState('Korean short drama CC'); // Default search query
@@ -7,17 +7,17 @@ export const ShortDramaPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const searchDramas = async () => {
+    // Make searchDramas accept an explicit query param so it's stable for useCallback
+    const searchDramas = useCallback(async (q) => {
+        const term = q;
         setIsLoading(true);
         setError(null);
         setResults([]); // Clear previous results
 
         try {
             // 1. Search Internet Archive
-            const archiveUrl = `https://archive.org/advancedsearch.php?q=${encodeURIComponent(query)}+collection:moviesandfilms+mediatype:movies&fl[]=identifier,title,description,year&sort[]=titleSorter+asc&rows=12&page=1&output=json`;
-            // Use a CORS proxy if needed, otherwise fetch directly
-            // const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(archiveUrl)}`;
-            const response = await fetch(archiveUrl); // Try direct fetch first
+            const archiveUrl = `https://archive.org/advancedsearch.php?q=${encodeURIComponent(term)}+collection:moviesandfilms+mediatype:movies&fl[]=identifier,title,description,year&sort[]=titleSorter+asc&rows=12&page=1&output=json`;
+            const response = await fetch(archiveUrl);
 
             if (!response.ok) {
                 throw new Error(`Archive.org fetch failed: ${response.statusText}`);
@@ -34,38 +34,37 @@ export const ShortDramaPage = () => {
             })) || [];
 
             // 2. Search YouTube CC (Simulated - Replace with actual API call later if needed)
-            // Note: Direct YouTube API search from frontend might require API keys and has quotas.
-            // A backend might be better for this.
             const sampleYT = [
                 { id: 'dQw4w9WgXcQ', title: 'Sample Korean Short: First Love (CC)', embedUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0', description: 'Creative Commons • 15 min romance', source: 'YouTube (Sample)' },
-                // Add more samples or integrate a real search if possible
             ];
 
-            // Filter sample YT results based on query (simple example)
+            const lowered = term.toLowerCase();
             const filteredYT = sampleYT.filter(v => 
-               v.title.toLowerCase().includes(query.toLowerCase().split(' ')[0]) || // Check first word
-               v.description.toLowerCase().includes(query.toLowerCase())
+               v.title.toLowerCase().includes(lowered.split(' ')[0]) ||
+               v.description.toLowerCase().includes(lowered)
             );
-
 
             setResults([...archiveResults, ...filteredYT]); // Combine results
 
         } catch (err) {
             console.error("Error searching dramas:", err);
             setError(`Failed to fetch results. ${err.message}. Try adding a CORS proxy?`);
-            setResults([]); // Clear results on error
+            setResults([]);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
     // Initial search on component load
+    // We intentionally run this once on mount; call with explicit query
+     
+    
     useEffect(() => {
-        searchDramas();
-    }, []); // Empty dependency array means run once on mount
+        searchDramas(query);
+    }, [searchDramas, query]); // Re-run when query changes
 
     const handleSearchClick = () => {
-        searchDramas();
+        searchDramas(query);
     };
 
     const handleInputChange = (event) => {
@@ -74,7 +73,7 @@ export const ShortDramaPage = () => {
 
     const handleKeyDown = (event) => {
          if (event.key === 'Enter') {
-             searchDramas();
+             searchDramas(query);
          }
     };
 

@@ -38,34 +38,18 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
 
   // --- Fullscreen functions (no change) ---
-  const enterFullscreen = () => {
+  // fullscreen handled inline in toggleFullscreen
+
+  const toggleFullscreen = useCallback(() => {
     const elem = containerRef.current;
-    if (elem?.requestFullscreen) {
-      elem.requestFullscreen().catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
-    } else if (elem?.webkitRequestFullscreen) { /* Safari */
-      elem.webkitRequestFullscreen();
-    } else if (elem?.msRequestFullscreen) { /* IE11 */
-      elem.msRequestFullscreen();
+    if (!document.fullscreenElement && elem?.requestFullscreen) {
+      elem.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+      setIsFullscreen(false);
     }
-  };
-
-  const exitFullscreen = () => {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) { /* Safari */
-      document.webkitExitFullscreen();
-    } else if (document.msExitFullscreen) { /* IE11 */
-      document.msExitFullscreen();
-    }
-  };
-
-  const toggleFullscreen = () => {
-    if (!isFullscreen) {
-      enterFullscreen();
-    } else {
-      exitFullscreen();
-    }
-  };
+  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -119,30 +103,34 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
 
   // Keyboard shortcuts: space (play/pause), left/right (seek), up/down (volume), m (mute), f (fullscreen), c (captions)
   // Control helpers must be declared before the keyboard useEffect to avoid TDZ errors
-  const togglePlay = () => {
+  const togglePlay = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) video.play().catch(() => {});
     else video.pause();
-  };
+  }, []);
 
-  const toggleMute = () => setMuted((m) => !m);
+  const toggleMute = useCallback(() => setMuted((m) => !m), []);
 
-  const seek = (seconds) => {
+  const seek = useCallback((seconds) => {
     const video = videoRef.current;
     if (!video) return;
     video.currentTime = Math.max(0, Math.min((video.duration || 0), video.currentTime + seconds));
-  };
+  }, []);
 
-  const toggleCaptions = () => {
+  const toggleCaptions = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
     const tracks = video.textTracks || [];
-    for (let i = 0; i < tracks.length; i++) {
-      tracks[i].mode = captionsEnabled ? 'disabled' : 'showing';
-    }
-    setCaptionsEnabled((c) => !c);
-  };
+    // Toggle based on previous value
+    setCaptionsEnabled((prev) => {
+      const next = !prev;
+      for (let i = 0; i < tracks.length; i++) {
+        tracks[i].mode = next ? 'showing' : 'disabled';
+      }
+      return next;
+    });
+  }, []);
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -240,7 +228,7 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
           hls.loadSource(channel.url);
           hls.attachMedia(video);
 
-          hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
             console.log("HLS Manifest Parsed");
             setQualities([{ label: 'Auto', value: -1 }, ...hls.levels.map((l, i) => ({ label: `${l.height}p`, value: i }))]);
             video.play().catch((e) => console.warn("HLS Autoplay prevented", e));

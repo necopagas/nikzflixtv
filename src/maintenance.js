@@ -1,3 +1,4 @@
+/* eslint-disable */
 // src/maintenance.js (Run with node maintenance.js)
 const fs = require('fs');
 const https = require('https');

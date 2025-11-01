@@ -26,7 +26,7 @@ export const useIntersectionObserver = (options) => {
                 observer.unobserve(currentRef);
             }
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     }, [ref, options]);
 
     return [ref, isIntersecting, entry];

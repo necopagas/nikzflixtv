@@ -17,7 +17,7 @@ import { DramaPage } from './pages/DramaPage';
 // --- GI-TANGGAL ANG IMPORT KAY DILI NA MAGAMIT ---
 // import { DramaDetailPage } from './pages/DramaDetailPage';
 // import { DramaPlayerPage } from './pages/DramaPlayerPage';
-import { useAuth } from './context/AuthContext';
+// removed unused useAuth import
 import { useMyList } from './hooks/useMyList';
 import { useContinueWatching } from './hooks/useContinueWatching';
 import { useTheme } from './hooks/useTheme';
@@ -26,6 +26,15 @@ import { useWatchedHistory } from './hooks/useWatchedHistory';
 // --- I-IMPORT ANG BAG-ONG PAGE ---
 import { VideokePage } from './pages/VideokePage.jsx';
 import { VivamaxPage } from './pages/VivamaxPage.jsx';
+
+const scaryMessages = [
+  "INITIALIZING SYSTEM OVERRIDE...",
+  "FIREWALL BREACHED. SECURITY PROTOCOLS BYPASSED.",
+  "TRACKING USER LOCATION... [GEOLOCATION API ACTIVE]",
+  "USER DATA PACKET INTERCEPTION: nikzflix_userdata.zip",
+  "[▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓] 100% - DATA CAPTURED.",
+  "FINAL WARNING: IMMEDIATE DISCONNECTION REQUIRED.",
+];
 
 export default function App() {
   const [modalItem, setModalItem] = useState(null);
@@ -38,16 +47,7 @@ export default function App() {
   const [lineIndex, setLineIndex] = useState(0);
   const soundPlayed = useRef(false);
 
-  const scaryMessages = [
-    "INITIALIZING SYSTEM OVERRIDE...",
-    "FIREWALL BREACHED. SECURITY PROTOCOLS BYPASSED.",
-    "TRACKING USER LOCATION... [GEOLOCATION API ACTIVE]",
-    "USER DATA PACKET INTERCEPTION: nikzflix_userdata.zip",
-    "[▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓] 100% - DATA CAPTURED.",
-    "FINAL WARNING: IMMEDIATE DISCONNECTION REQUIRED.",
-  ];
-
-  const { myList, isItemInMyList, toggleMyList, clearMyList } = useMyList();
+  const { isItemInMyList, toggleMyList, clearMyList } = useMyList();
   const { continueWatchingList, setItemProgress, clearContinueWatching } = useContinueWatching();
   const { theme, toggleTheme } = useTheme();
   const { isWatched, addToWatched, clearWatchedHistory } = useWatchedHistory();

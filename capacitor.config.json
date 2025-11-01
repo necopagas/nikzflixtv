@@ -1,0 +1,5 @@
+{
+  "appId": "app.vecel.netflixtv",
+  "appName": "nikzflixtv",
+  "webDir": "dist"
+}

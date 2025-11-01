@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const SettingsContext = createContext(null);
@@ -19,7 +20,7 @@ export const SettingsProvider = ({ children }) => {
         const parsed = JSON.parse(raw);
         if (typeof parsed.previewsEnabled === 'boolean') setPreviewsEnabled(parsed.previewsEnabled);
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
   }, []);
@@ -27,7 +28,9 @@ export const SettingsProvider = ({ children }) => {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ previewsEnabled }));
-    } catch (e) {}
+    } catch {
+      // ignore write errors
+    }
   }, [previewsEnabled]);
 
   const togglePreviews = () => setPreviewsEnabled(v => !v);
@@ -40,5 +43,3 @@ export const SettingsProvider = ({ children }) => {
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 };
-
-export default SettingsContext;
