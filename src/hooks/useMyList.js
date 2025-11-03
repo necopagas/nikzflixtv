@@ -82,11 +82,18 @@ export const useMyList = () => {
 
     const clearMyList = async () => {
         if (currentUser) {
-            // Para ma-clear, i-delete tagsa2 ang document
-            myList.forEach(async (item) => {
-                const itemRef = doc(db, 'users', currentUser.uid, 'myList', item.id.toString());
-                await deleteDoc(itemRef);
-            });
+            try {
+                // Use Promise.all instead of forEach to properly wait for all deletions
+                const deletePromises = myList.map(async (item) => {
+                    const itemRef = doc(db, 'users', currentUser.uid, 'myList', item.id.toString());
+                    return await deleteDoc(itemRef);
+                });
+                await Promise.all(deletePromises);
+                setMyList([]);
+            } catch (error) {
+                console.error('Error clearing my list:', error);
+                throw error; // Let the caller handle the error
+            }
         } else {
             setMyList([]);
         }

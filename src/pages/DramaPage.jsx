@@ -6,6 +6,7 @@ import { API_ENDPOINTS } from '../config';
 import { Poster } from '../components/Poster';
 import { Row } from '../components/Row';
 import AdsterraBanner from '../AdsterraBanner';
+import { AdsterraSmartlink } from '../components/AdsterraSmartlink';
 
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
@@ -109,7 +110,10 @@ export const DramaPage = ({ onOpenModal, isWatched }) => {
                         isWatched={isWatched}
                         isLarge
                     />
-                    <AdsterraBanner />
+                    
+                    {/* Smartlink Ad */}
+                    <AdsterraSmartlink />
+                    
                     <Row
                         // --- GI-ILISAN ANG TITLE DIRI ---
                         title="Highly Rated Dramas" // <-- Ania ang gi-usab
@@ -117,6 +121,9 @@ export const DramaPage = ({ onOpenModal, isWatched }) => {
                         onOpenModal={onOpenModal}
                         isWatched={isWatched}
                     />
+                    
+                    {/* Native Banner */}
+                    <AdsterraBanner />
                 </>
             )}
         </div>

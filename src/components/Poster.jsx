@@ -154,6 +154,8 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
                         src={imageUrl}
                         alt={displayTitle}
                         loading="lazy"
+                        decoding="async"
+                        fetchpriority={isLarge ? "high" : "low"}
                         onLoad={() => setImgLoaded(true)}
                         onError={(e) => { e.target.onerror = null; e.target.src='/no-image.svg'; setImgLoaded(true); }}
                     />

@@ -24,7 +24,19 @@ export const Row = ({ title, endpoint, param, items: propItems, onOpenModal, isW
 
     const scroll = (scrollOffset) => {
         if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollBy({ left: scrollOffset, behavior: 'smooth' });
+            // Use transform for smoother animation on mobile
+            const isMobile = window.innerWidth < 768;
+            if (isMobile) {
+                scrollContainerRef.current.scrollBy({ 
+                    left: scrollOffset, 
+                    behavior: 'auto' // Instant on mobile for better performance
+                });
+            } else {
+                scrollContainerRef.current.scrollBy({ 
+                    left: scrollOffset, 
+                    behavior: 'smooth' 
+                });
+            }
         }
     };
 
@@ -92,9 +104,11 @@ export const Row = ({ title, endpoint, param, items: propItems, onOpenModal, isW
                     {isLoading ? (
                         Array.from({ length: 10 }).map((_, i) => (
                             <div key={`skeleton-${title}-${i}`} className={`flex-shrink-0 ${isLarge ? 'w-64' : 'w-40'} snap-start`}>
-                                <div className="skeleton rounded-lg overflow-hidden">
-                                    <div className={`${isLarge ? 'h-96' : 'h-60'} bg-gradient-to-br from-gray-800 to-gray-900 animate-pulse`}>
+                                <div className="skeleton rounded-lg overflow-hidden relative">
+                                    <div className={`${isLarge ? 'h-96' : 'h-60'} bg-gradient-to-br from-gray-800 to-gray-900 relative overflow-hidden`}>
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                                        {/* Shimmer effect */}
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-700/30 to-transparent animate-shimmer" style={{ animationDuration: '2s' }}></div>
                                     </div>
                                 </div>
                             </div>

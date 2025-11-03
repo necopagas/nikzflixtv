@@ -1,10 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { Modal } from './components/Modal';
 import { BackToTopButton } from './components/BackToTopButton';
 import { SettingsModal } from './components/SettingsModal';
+// Lazy load seasonal effects for better performance
+const SnowEffect = lazy(() => import('./components/SnowEffect').then(m => ({ default: m.SnowEffect })));
+const ChristmasLights = lazy(() => import('./components/ChristmasLights').then(m => ({ default: m.ChristmasLights })));
+const HalloweenEffects = lazy(() => import('./components/HalloweenEffects').then(m => ({ default: m.HalloweenEffects })));
+const NewYearEffects = lazy(() => import('./components/NewYearEffects').then(m => ({ default: m.NewYearEffects })));
 import { HomePage } from './pages/HomePage';
 import { SearchPage } from './pages/SearchPage';
 import { AuthPage } from './pages/AuthPage';
@@ -22,10 +27,14 @@ import { useMyList } from './hooks/useMyList';
 import { useContinueWatching } from './hooks/useContinueWatching';
 import { useTheme } from './hooks/useTheme';
 import { useWatchedHistory } from './hooks/useWatchedHistory';
+import { useChristmasTheme } from './hooks/useChristmasTheme';
 
 // --- I-IMPORT ANG BAG-ONG PAGE ---
 import { VideokePage } from './pages/VideokePage.jsx';
 import { VivamaxPage } from './pages/VivamaxPage.jsx';
+
+// --- ADSTERRA ADS ---
+import { AdsterraSocialBar } from './components/AdsterraSocialBar';
 
 const scaryMessages = [
   "INITIALIZING SYSTEM OVERRIDE...",
@@ -51,6 +60,7 @@ export default function App() {
   const { continueWatchingList, setItemProgress, clearContinueWatching } = useContinueWatching();
   const { theme, toggleTheme } = useTheme();
   const { isWatched, addToWatched, clearWatchedHistory } = useWatchedHistory();
+  const { isChristmasMode, isHalloweenMode, isNewYearMode } = useChristmasTheme();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -173,6 +183,21 @@ export default function App() {
       </main>
       <Footer />
       <BackToTopButton />
+
+      {/* Adsterra Social Bar - Sticky bottom (Zone: 27867027) */}
+      <AdsterraSocialBar />
+
+      {/* Seasonal Effects - Lazy loaded for performance */}
+      <Suspense fallback={null}>
+        {isChristmasMode && (
+          <>
+            <ChristmasLights />
+            <SnowEffect />
+          </>
+        )}
+        {isHalloweenMode && <HalloweenEffects />}
+        {isNewYearMode && <NewYearEffects />}
+      </Suspense>
 
       {modalItem && (
         <Modal

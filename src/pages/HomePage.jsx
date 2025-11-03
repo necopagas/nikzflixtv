@@ -6,6 +6,7 @@ import { Banner } from '../components/Banner';
 import { GenreFilter } from '../components/GenreFilter';
 import { Row } from '../components/Row';
 import AdsterraBanner from '../AdsterraBanner';
+import { AdsterraSmartlink } from '../components/AdsterraSmartlink';
 // --- GIDUGANG ANG CURATED_COLLECTIONS IMPORT ---
 import { API_ENDPOINTS, MOVIE_GENRES, CURATED_COLLECTIONS } from '../config'; 
 import { fetchData } from '../utils/fetchData';
@@ -185,7 +186,10 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
                 )}
                 
                 <Row title="Trending Now" items={trending} onOpenModal={onOpenModal} isWatched={isWatched} />
-                <AdsterraBanner />
+                
+                {/* Smartlink Ad (Zone: 27694335) */}
+                <AdsterraSmartlink />
+                
                 <Row title="Popular Movies" items={popular} onOpenModal={onOpenModal} isWatched={isWatched} />
                 
                 {(continueWatchingList.length > 0 || continueWatchingLoading) && (
@@ -193,6 +197,10 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
                 )}
 
                 <Row title="Top Rated Movies" items={topRated} onOpenModal={onOpenModal} isWatched={isWatched} />
+                
+                {/* Smartlink Ad (Zone: 27694335) */}
+                <AdsterraSmartlink />
+                
                 <Row title="Popular TV Shows" items={tvShows} onOpenModal={onOpenModal} isWatched={isWatched} />
 
                 {(myList.length > 0 || myListLoading) && (
@@ -200,7 +208,10 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
                 )}
 
                 <Row title="Anime" items={anime} onOpenModal={onOpenModal} isWatched={isWatched} isLarge />
-                <Row title="Asian Dramas" items={asianDramas} onOpenModal={onOpenModal} isWatched={isWatched} /> 
+                <Row title="Asian Dramas" items={asianDramas} onOpenModal={onOpenModal} isWatched={isWatched} />
+                
+                {/* Native Banner at bottom */}
+                <AdsterraBanner />
               </div>
             </div>
         </>

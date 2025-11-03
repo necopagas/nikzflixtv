@@ -28,17 +28,9 @@ export default function AdsterraBanner() {
   useEffect(() => {
     if (!visible || scriptsLoaded || !containerRef.current) return;
 
-    const AD_SCRIPTS = [
-      {
-        src: 'https://gainedspotsspun.com/61/b8/02/61b80217fd398dccf27a4a8ef563b396.js',
-        type: 'banner'
-      },
-      {
-        src: 'https://gainedspotsspun.com/23/83/40/238340cef35e12605e283ef1a601c2fe.js',
-        type: 'native'
-      }
-    ];
-
+    // YOUR ACTUAL ADSTERRA NATIVE BANNER
+    const NATIVE_BANNER_CODE = '0b8e16ce5c5d7303bb2755058f2e65b4';
+    
     let timeoutId = null;
 
     const injectScripts = () => {
@@ -48,61 +40,49 @@ export default function AdsterraBanner() {
         return;
       }
 
-      console.info('[AdsterraBanner] Injecting ad scripts...');
+      console.info('[AdsterraBanner] Injecting native banner...');
       setAdStatus('loading');
       
-      let loadedCount = 0;
+      // Check if already loaded
+      const existing = containerRef.current.querySelector(`script[src*="${NATIVE_BANNER_CODE}"]`);
+      if (existing) {
+        console.info('[AdsterraBanner] Already loaded');
+        setScriptsLoaded(true);
+        setAdStatus('loaded');
+        return;
+      }
+
+      // Create container div
+      const adDiv = document.createElement('div');
+      adDiv.id = `container-${NATIVE_BANNER_CODE}`;
+      containerRef.current.appendChild(adDiv);
+
+      // Create script
+      const script = document.createElement('script');
+      script.async = true;
+      script.setAttribute('data-cfasync', 'false');
+      script.src = `//gainedspotsspun.com/${NATIVE_BANNER_CODE}/invoke.js`;
       
-      AD_SCRIPTS.forEach((adConfig, index) => {
-        const { src, type } = adConfig;
-        
-        // Check if script already exists globally
-        const existing = document.querySelector(`script[src="${src}"]`);
-        if (existing) {
-          console.info('[AdsterraBanner] Script already loaded:', src);
-          loadedCount++;
-          if (loadedCount === AD_SCRIPTS.length) {
-            setScriptsLoaded(true);
-            setAdStatus('loaded');
-          }
-          return;
-        }
+      script.onload = () => {
+        console.info('[AdsterraBanner] ✓ Native banner loaded');
+        setScriptsLoaded(true);
+        setAdStatus('loaded');
+      };
+      
+      script.onerror = () => {
+        console.error('[AdsterraBanner] ✗ Failed to load');
+        setAdStatus('error');
+      };
 
-        const script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = src;
-        script.async = true;
-        script.setAttribute('data-ad-script', index);
-        script.setAttribute('data-ad-type', type);
-        
-        script.onload = () => {
-          console.info('[AdsterraBanner] ✓ Loaded:', src, `(${type})`);
-          loadedCount++;
-          if (loadedCount === AD_SCRIPTS.length) {
-            setScriptsLoaded(true);
-            setAdStatus('loaded');
-          }
-        };
-        
-        script.onerror = () => {
-          console.error('[AdsterraBanner] ✗ Failed to load:', src);
-          loadedCount++;
-          if (loadedCount === AD_SCRIPTS.length) {
-            setAdStatus('error');
-          }
-        };
-
-        // Append to container
-        containerRef.current.appendChild(script);
-      });
+      containerRef.current.appendChild(script);
       
       // Set global telemetry
       if (typeof window !== 'undefined') {
-        window.__nikz_ads_loaded = AD_SCRIPTS.map(s => s.src);
+        window.__nikz_ads_loaded = [script.src];
         window.__nikz_ads_timestamp = new Date().toISOString();
       }
 
-      // Fallback timeout - mark as loaded after 5 seconds even if scripts don't trigger onload
+      // Fallback timeout
       setTimeout(() => {
         if (!scriptsLoaded) {
           console.info('[AdsterraBanner] Timeout reached, marking as loaded');
@@ -112,7 +92,7 @@ export default function AdsterraBanner() {
       }, 5000);
     };
 
-    // Load after 500ms delay (reduced from 1000ms)
+    // Load after 500ms delay
     timeoutId = setTimeout(injectScripts, 500);
 
     // Also load on first scroll/click
@@ -160,9 +140,13 @@ export default function AdsterraBanner() {
             id="nikz-ad-container"
           >
             {adStatus === 'loading' && (
-              <div className="flex flex-col items-center gap-2 py-4">
-                <div className="w-8 h-8 border-3 border-gray-600 border-t-red-500 rounded-full animate-spin" />
-                <span className="text-xs text-gray-400 animate-pulse">Loading ads...</span>
+              <div className="flex flex-col items-center gap-3 py-4">
+                <div className="relative w-12 h-12">
+                  <div className="absolute inset-0 rounded-full border-4 border-gray-700/30"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-red-500 animate-spin"></div>
+                  <div className="absolute inset-2 rounded-full border-4 border-transparent border-t-red-400 animate-spin" style={{ animationDuration: '0.8s', animationDirection: 'reverse' }}></div>
+                </div>
+                <span className="text-sm text-gray-400 font-medium animate-pulse">Loading ads...</span>
               </div>
             )}
             {adStatus === 'error' && (

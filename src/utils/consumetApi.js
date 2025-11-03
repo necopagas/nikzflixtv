@@ -49,13 +49,71 @@ const fetchConsumetData = async (endpoint) => {
 // --- GI-TANGGAL ANG searchMoviesAndTV ---
 
 /**
- * Searches YouTube via Consumet API.
+ * Searches YouTube via Invidious API (alternative free YouTube API)
  */
 export const searchYouTube = async (query) => {
     if (!query) return [];
-    const response = await fetchConsumetData(`/utils/youtube/search/${encodeURIComponent(query)}`);
-    // Add check if response is null
-    return response?.results && Array.isArray(response.results) ? response.results : [];
+    
+    try {
+        console.log('Starting YouTube search for:', query);
+        
+        // Use Invidious public instance for YouTube search
+        const invidiousInstances = [
+            'https://invidious.snopyta.org',
+            'https://yewtu.be',
+            'https://inv.riverside.rocks',
+            'https://invidious.fdn.fr',
+            'https://inv.vern.cc'
+        ];
+        
+        let results = [];
+        
+        for (const instance of invidiousInstances) {
+            try {
+                console.log(`Trying instance: ${instance}`);
+                const url = `${instance}/api/v1/search?q=${encodeURIComponent(query)}&type=video`;
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                console.log(`Response status from ${instance}:`, response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log(`Got ${data.length} results from ${instance}`);
+                    
+                    results = data.map(item => ({
+                        id: item.videoId,
+                        title: item.title,
+                        videoId: item.videoId,
+                        channel: {
+                            name: item.author
+                        },
+                        snippet: {
+                            channelTitle: item.author
+                        }
+                    }));
+                    
+                    if (results.length > 0) {
+                        console.log('Success! Returning results from', instance);
+                        break; // Break if successful
+                    }
+                }
+            } catch (err) {
+                console.log(`Failed to fetch from ${instance}:`, err.message);
+                continue;
+            }
+        }
+        
+        console.log('Final results:', results);
+        return results;
+    } catch (error) {
+        console.error('YouTube search error:', error);
+        return [];
+    }
 };
 
 // --- MANGA FUNCTIONS (using Consumet) ---

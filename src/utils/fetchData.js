@@ -12,6 +12,7 @@ export const fetchData = async (url) => {
         return await response.json();
     } catch (error) {
         console.error(`Fetch failed for ${url}:`, error);
-        throw error;
+        // Return empty results instead of throwing to prevent app crashes
+        return { results: [] };
     }
 };

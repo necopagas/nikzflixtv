@@ -39,11 +39,31 @@
     --border-color: rgba(0, 0, 0, 0.1);
 }
 
-/* === SMOOTH ANIMATIONS & TRANSITIONS === */
+/* === PERFORMANCE OPTIMIZATIONS === */
 * {
-    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
-    transition-duration: var(--transition-base);
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    /* Remove universal transitions - too heavy */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Enable hardware acceleration for transforms */
+.poster,
+.banner-button,
+.episode-button,
+.genre-button,
+button,
+.modal,
+.header {
+    will-change: transform;
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
 }
 
 body {
@@ -52,9 +72,19 @@ body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
                  'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
                  sans-serif;
-    transition: background-color var(--transition-smooth), color var(--transition-smooth);
     overflow-x: hidden;
     min-height: 100vh;
+    /* Smooth momentum scrolling for iOS */
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Optimize scrolling containers */
+.row-posters,
+.episode-list,
+.genre-list {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    will-change: scroll-position;
 }
 
 /* === FADE IN ANIMATION === */
@@ -146,7 +176,19 @@ body::-webkit-scrollbar-thumb:hover {
 .row-posters {
     -ms-overflow-style: none;
     scrollbar-width: none;
-    scroll-behavior: smooth;
+    /* Optimized scrolling */
+    scroll-behavior: auto; /* Instant scroll on mobile */
+    overscroll-behavior-x: contain;
+    /* Performance */
+    transform: translateZ(0);
+    will-change: scroll-position;
+}
+
+/* Smooth scroll on desktop only */
+@media (min-width: 768px) {
+    .row-posters {
+        scroll-behavior: smooth;
+    }
 }
 
 /* Edge gradient overlays for rows to indicate overflow */
@@ -173,25 +215,45 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 .poster {
-    transition: all var(--transition-smooth);
+    /* Optimized for smooth performance */
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 10;
-    will-change: transform;
     border-radius: 8px;
     overflow: hidden;
+    /* Hardware acceleration */
+    transform: translateZ(0);
+    will-change: transform;
 }
+
 .poster:hover {
-    transform: scale(1.15);
+    transform: scale(1.12) translateZ(0);
     z-index: 20;
     box-shadow: 0 12px 40px rgba(228, 9, 20, 0.4), 0 0 0 2px rgba(228, 9, 20, 0.3);
 }
-.row:hover .poster {
-    transform: translateX(-20%);
+
+/* Remove complex hover effects for mobile performance */
+@media (min-width: 768px) {
+    .row:hover .poster {
+        transform: translateX(-20%) translateZ(0);
+    }
+    .row .poster:hover ~ .poster {
+        transform: translateX(20%) translateZ(0);
+    }
+    .row .poster:hover {
+        transform: scale(1.15) !important;
+    }
 }
-.row .poster:hover ~ .poster {
-    transform: translateX(20%);
-}
-.row .poster:hover {
-    transform: scale(1.15) !important;
+
+/* Simpler hover on mobile */
+@media (max-width: 767px) {
+    .poster:hover {
+        transform: scale(1.05) translateZ(0);
+    }
+    .row:hover .poster,
+    .row .poster:hover ~ .poster {
+        transform: none;
+    }
 }
 
 .banner::after {
@@ -248,15 +310,54 @@ body::-webkit-scrollbar-thumb:hover {
     border-radius: 10px;
 }
 
+.player-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 60px;
+    height: 60px;
+}
+
 .player-loading::after {
     content: '';
-    width: 45px;
-    height: 45px;
-    border: 4px solid rgba(228,9,20,0.3);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(228,9,20,0.15);
     border-radius: 50%;
     border-top-color: var(--brand-color);
-    animation: spin 1s linear infinite;
+    border-right-color: var(--brand-color);
+    animation: spin-smooth 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+    box-shadow: 0 0 20px rgba(228,9,20,0.3);
 }
+
+@keyframes spin-smooth {
+    0% {
+        transform: rotate(0deg);
+        border-top-color: var(--brand-color);
+        border-right-color: transparent;
+    }
+    50% {
+        border-top-color: transparent;
+        border-right-color: var(--brand-color);
+    }
+    100% {
+        transform: rotate(360deg);
+        border-top-color: var(--brand-color);
+        border-right-color: transparent;
+    }
+}
+
+@keyframes spin-reverse {
+    to {
+        transform: translate(-50%, -50%) rotate(-360deg);
+    }
+}
+
 @keyframes spin {
     to {
         transform: rotate(360deg);
@@ -307,9 +408,16 @@ body::-webkit-scrollbar-thumb:hover {
     border-radius: 0.5rem;
 }
 @keyframes shimmer {
-    100% {
-        background-position: 200% 0;
+    0% {
+        transform: translateX(-100%);
     }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.animate-shimmer {
+    animation: shimmer 2s ease-in-out infinite;
 }
 
 .episodes button {
@@ -1153,3 +1261,395 @@ body::-webkit-scrollbar-thumb:hover {
         font-size: 150%; /* 24px base */
     }
 }
+/* === MOBILE PERFORMANCE OPTIMIZATIONS === */
+@media (max-width: 767px) {
+    /* Reduce animations on mobile */
+    .poster,
+    .banner-button,
+    .episode-button,
+    .genre-button {
+        transition-duration: 0.15s;
+    }
+    
+    /* Disable complex transforms on mobile */
+    .row:hover .poster,
+    .row .poster:hover ~ .poster {
+        transform: none !important;
+    }
+    
+    /* Simpler shadows */
+    .poster:hover {
+        box-shadow: 0 8px 24px rgba(228, 9, 20, 0.3);
+    }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .poster:hover {
+        transform: scale(1.02);
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    /* Disable hover effects on touch devices */
+    .poster:hover {
+        transform: scale(1);
+    }
+    
+    /* Make clickable areas larger */
+    .banner-button,
+    .episode-button,
+    .genre-button {
+        min-height: 44px;
+        padding: 12px 20px;
+    }
+}
+
+/* === CHRISTMAS THEME MODE === */
+.christmas-mode {
+    --brand-color: #c41e3a; /* Christmas red */
+    --brand-hover: #ff1a24;
+    background: radial-gradient(ellipse at top, rgba(10, 50, 10, 0.3) 0%, var(--bg-primary) 50%);
+}
+
+.christmas-mode .header {
+    background: linear-gradient(180deg, 
+        rgba(196, 30, 58, 0.95) 0%, 
+        rgba(20, 21, 25, 0.9) 100%
+    );
+    border-bottom: 2px solid rgba(34, 139, 34, 0.5);
+    box-shadow: 0 4px 20px rgba(255, 215, 0, 0.1);
+}
+
+.christmas-mode .banner {
+    border: 2px solid rgba(34, 139, 34, 0.3);
+    box-shadow: 
+        0 0 40px rgba(255, 215, 0, 0.15),
+        0 0 60px rgba(34, 139, 34, 0.1),
+        inset 0 0 80px rgba(196, 30, 58, 0.05);
+}
+
+.christmas-mode .poster {
+    border: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+.christmas-mode .poster:hover {
+    box-shadow: 
+        0 0 25px rgba(34, 139, 34, 0.5),
+        0 0 50px rgba(255, 215, 0, 0.3),
+        0 0 75px rgba(196, 30, 58, 0.2);
+    border: 2px solid rgba(255, 215, 0, 0.5);
+    transform: scale(1.12) rotateY(5deg);
+}
+
+.christmas-mode .banner-button {
+    background: linear-gradient(135deg, #c41e3a 0%, #228b22 100%);
+    box-shadow: 0 4px 15px rgba(34, 139, 34, 0.4);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.christmas-mode .banner-button:hover {
+    background: linear-gradient(135deg, #ff1a24 0%, #32cd32 100%);
+    box-shadow: 
+        0 6px 25px rgba(255, 215, 0, 0.6),
+        0 0 40px rgba(255, 255, 255, 0.3);
+    transform: scale(1.05) translateY(-2px);
+}
+
+/* Christmas decorative elements */
+.christmas-mode .row-title::before {
+    content: '🎄 ';
+    animation: bounce-light 2s ease-in-out infinite;
+}
+
+.christmas-mode .row-title::after {
+    content: ' ⭐';
+    animation: twinkle 1.5s ease-in-out infinite;
+}
+
+.christmas-mode .banner-title::before {
+    content: '🎅 ';
+}
+
+.christmas-mode .banner-title::after {
+    content: ' 🎁';
+}
+
+@keyframes christmas-glow {
+    0%, 100% {
+        text-shadow: 
+            0 0 10px rgba(255, 215, 0, 0.8),
+            0 0 20px rgba(34, 139, 34, 0.6),
+            0 0 30px rgba(196, 30, 58, 0.4);
+    }
+    33% {
+        text-shadow: 
+            0 0 20px rgba(196, 30, 58, 1),
+            0 0 40px rgba(255, 215, 0, 0.8),
+            0 0 60px rgba(34, 139, 34, 0.6);
+    }
+    66% {
+        text-shadow: 
+            0 0 20px rgba(34, 139, 34, 1),
+            0 0 40px rgba(196, 30, 58, 0.8),
+            0 0 60px rgba(255, 215, 0, 0.6);
+    }
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+@keyframes bounce-light {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+.christmas-mode h1,
+.christmas-mode h2,
+.christmas-mode .row-title {
+    animation: christmas-glow 3s ease-in-out infinite;
+}
+
+/* Christmas Lights Animation */
+@keyframes bulb-twinkle {
+    0%, 100% { 
+        opacity: 1; 
+        filter: brightness(1.2);
+    }
+    50% { 
+        opacity: 0.6; 
+        filter: brightness(0.8);
+    }
+}
+
+.christmas-light-bulb {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.christmas-light-bulb::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: inherit;
+    filter: blur(4px);
+    opacity: 0.6;
+    z-index: -1;
+}
+
+@keyframes christmas-glow {
+    0%, 100% {
+        text-shadow: 
+            0 0 10px rgba(255, 215, 0, 0.9),
+            0 0 20px rgba(34, 139, 34, 0.7),
+            0 0 30px rgba(196, 30, 58, 0.5);
+    }
+    33% {
+        text-shadow: 
+            0 0 15px rgba(196, 30, 58, 1),
+            0 0 30px rgba(255, 215, 0, 0.9),
+            0 0 45px rgba(34, 139, 34, 0.7);
+    }
+    66% {
+        text-shadow: 
+            0 0 15px rgba(34, 139, 34, 1),
+            0 0 30px rgba(196, 30, 58, 0.9),
+            0 0 45px rgba(255, 215, 0, 0.7);
+    }
+}
+
+@keyframes twinkle {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1) rotate(0deg); 
+    }
+    50% { 
+        opacity: 0.7; 
+        transform: scale(1.15) rotate(5deg); 
+    }
+}
+
+@keyframes bounce-light {
+    0%, 100% { 
+        transform: translateY(0) scale(1); 
+    }
+    50% { 
+        transform: translateY(-4px) scale(1.05); 
+    }
+}
+
+.christmas-mode h1,
+.christmas-mode h2,
+.christmas-mode .row-title {
+    animation: christmas-glow 4s ease-in-out infinite;
+}
+
+/* === HALLOWEEN THEME MODE === */
+.halloween-mode {
+    --brand-color: #ff6600;
+    --brand-hover: #ff8800;
+    background: radial-gradient(ellipse at top, rgba(50, 10, 10, 0.4) 0%, var(--bg-primary) 50%);
+}
+
+.halloween-mode .header {
+    background: linear-gradient(180deg, 
+        rgba(255, 102, 0, 0.9) 0%, 
+        rgba(20, 21, 25, 0.9) 100%
+    );
+    border-bottom: 2px solid rgba(139, 0, 139, 0.4);
+}
+
+.halloween-mode .banner {
+    border: 2px solid rgba(139, 0, 139, 0.3);
+    box-shadow: 0 0 40px rgba(255, 102, 0, 0.2);
+}
+
+.halloween-mode .poster:hover {
+    box-shadow: 
+        0 0 25px rgba(255, 102, 0, 0.6),
+        0 0 50px rgba(139, 0, 139, 0.4);
+    border: 2px solid rgba(255, 102, 0, 0.4);
+}
+
+.halloween-mode .row-title::before {
+    content: '🎃 ';
+}
+
+.halloween-mode .row-title::after {
+    content: ' 👻';
+}
+
+/* Festive scrollbar */
+.christmas-mode ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #c41e3a 0%, #228b22 50%, #ffd700 100%);
+    border-radius: 10px;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+}
+
+.christmas-mode ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #ff1a24 0%, #32cd32 50%, #ffed00 100%);
+}
+
+.christmas-mode ::-webkit-scrollbar-track {
+    background: rgba(10, 50, 10, 0.3);
+}
+
+/* Sparkle effect on cards */
+.christmas-mode .modal-content,
+.christmas-mode .settings-modal {
+    background: 
+        linear-gradient(135deg, rgba(20, 21, 25, 0.95) 0%, rgba(30, 31, 38, 0.95) 100%);
+    border: 2px solid rgba(255, 215, 0, 0.2);
+    box-shadow: 
+        0 0 30px rgba(34, 139, 34, 0.2),
+        inset 0 0 100px rgba(196, 30, 58, 0.05);
+}
+
+@keyframes spooky-glow {
+    0%, 100% {
+        text-shadow: 
+            0 0 12px rgba(255, 102, 0, 0.9),
+            0 0 24px rgba(139, 0, 139, 0.7),
+            0 0 36px rgba(255, 102, 0, 0.5);
+    }
+    50% {
+        text-shadow: 
+            0 0 18px rgba(139, 0, 139, 1),
+            0 0 36px rgba(255, 102, 0, 0.9),
+            0 0 54px rgba(139, 0, 139, 0.7);
+    }
+}
+
+.halloween-mode h1,
+.halloween-mode h2,
+.halloween-mode .row-title {
+    animation: spooky-glow 2s ease-in-out infinite;
+}
+
+/* === NEW YEAR THEME MODE === */
+.newyear-mode {
+    --brand-color: #FFD700;
+    --brand-hover: #FFA500;
+    background: radial-gradient(ellipse at top, rgba(30, 30, 60, 0.4) 0%, var(--bg-primary) 50%);
+}
+
+.newyear-mode .header {
+    background: linear-gradient(180deg, 
+        rgba(255, 215, 0, 0.9) 0%, 
+        rgba(20, 21, 25, 0.9) 100%
+    );
+    border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+}
+
+.newyear-mode .banner {
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    box-shadow: 
+        0 0 40px rgba(255, 215, 0, 0.2),
+        0 0 60px rgba(255, 255, 255, 0.1);
+}
+
+.newyear-mode .poster:hover {
+    box-shadow: 
+        0 0 25px rgba(255, 215, 0, 0.6),
+        0 0 50px rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 215, 0, 0.5);
+}
+
+.newyear-mode .row-title::before {
+    content: '🎆 ';
+}
+
+.newyear-mode .row-title::after {
+    content: ' 🎉';
+}
+
+@keyframes celebration-glow {
+    0%, 100% {
+        text-shadow: 
+            0 0 12px rgba(255, 215, 0, 1),
+            0 0 24px rgba(255, 255, 255, 0.9),
+            0 0 36px rgba(255, 105, 180, 0.6);
+    }
+    50% {
+        text-shadow: 
+            0 0 18px rgba(255, 255, 255, 1),
+            0 0 36px rgba(255, 215, 0, 0.9),
+            0 0 54px rgba(255, 105, 180, 0.8);
+    }
+}
+
+.newyear-mode h1,
+.newyear-mode h2,
+.newyear-mode .row-title {
+    animation: celebration-glow 2s ease-in-out infinite;
+}
+
+/* Smooth theme transitions */
+body {
+    transition: background 0.5s ease, filter 0.3s ease;
+}
+
+.christmas-mode,
+.halloween-mode,
+.newyear-mode {
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+

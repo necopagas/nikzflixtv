@@ -1,9 +1,24 @@
 // src/pages/IPTVPage.jsx
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { IPTVPlayer } from '../components/IPTVPlayer';
-import { IPTV_CHANNELS } from '../config'; // Import the channels
+import { useIPTVSync } from '../hooks/useIPTVSync'; // Auto-sync hook
+import { useChannelHealth } from '../hooks/useChannelHealth'; // Health check hook
+import { FaSync, FaHeartbeat, FaCircle } from 'react-icons/fa';
 
 export const IPTVPage = () => {
+  // Use auto-sync hook (syncs once per hour)
+  const { channels, isSyncing, syncStatus, syncChannels, hasUpdates } = useIPTVSync(true);
+  
+  // Use health check hook
+  const { 
+    healthMap, 
+    isChecking, 
+    progress, 
+    checkAllChannels, 
+    getStats, 
+    getHealth 
+  } = useChannelHealth(channels, false); // Don't auto-check on mount
+  
   const [selectedChannel, setSelectedChannel] = useState(null);
   // Start not-loading by default; we only show the spinner when there's an actual channel to load
   const [loading, setLoading] = useState(false);
@@ -16,19 +31,21 @@ export const IPTVPage = () => {
 
   // Find first channel or last played
   useEffect(() => {
+    if (channels.length === 0) return;
+    
     const lastUrl = localStorage.getItem('iptv_last_channel');
     let initialChannel = null;
     if (lastUrl) {
-      initialChannel = IPTV_CHANNELS.find(c => c.url === lastUrl);
+      initialChannel = channels.find(c => c.url === lastUrl);
     }
     // If no last played or last played not found, use the first channel
-    if (!initialChannel && IPTV_CHANNELS.length > 0) {
-      initialChannel = IPTV_CHANNELS[0];
+    if (!initialChannel && channels.length > 0) {
+      initialChannel = channels[0];
     }
     setSelectedChannel(initialChannel);
     // Show loading spinner only if we actually have a channel to load
     setLoading(!!initialChannel);
-  }, []); // Run only once
+  }, [channels]); // Re-run when channels update
 
   // Safety: if loading doesn't resolve (player didn't call onCanPlay), clear spinner after 10s
   useEffect(() => {
@@ -53,14 +70,14 @@ export const IPTVPage = () => {
     localStorage.setItem('iptv_favorites', JSON.stringify(favorites));
   }, [favorites]);
 
-  const categories = useMemo(() => ['all', ...new Set(IPTV_CHANNELS.map(c => c.category).filter(Boolean))], []);
+  const categories = useMemo(() => ['all', ...new Set(channels.map(c => c.category).filter(Boolean))], [channels]);
 
   // Filter channels based on search and category
-  const filtered = useMemo(() => IPTV_CHANNELS.filter(ch => {
+  const filtered = useMemo(() => channels.filter(ch => {
     const matchesSearch = ch.name.toLowerCase().includes(search.toLowerCase());
     const matchesCat = category === 'all' || ch.category === category;
     return matchesSearch && matchesCat;
-  }), [search, category]);
+  }), [channels, search, category]);
 
   // Handle channel selection
   const play = useCallback((ch) => {
@@ -98,9 +115,90 @@ export const IPTVPage = () => {
   return (
     <div className="px-4 sm:px-8 md:px-16 pt-28 pb-20 min-h-screen">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-5xl font-bold text-center text-[var(--brand-color)] mb-8 bg-gradient-to-r from-[var(--brand-color)] to-red-600 bg-clip-text text-transparent">
-          Live TV
-        </h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-5xl font-bold text-center text-[var(--brand-color)] bg-gradient-to-r from-[var(--brand-color)] to-red-600 bg-clip-text text-transparent">
+            Live TV
+          </h1>
+          
+          <div className="flex items-center gap-3">
+            {/* Health Check Button */}
+            <button
+              onClick={checkAllChannels}
+              disabled={isChecking}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all ${
+                isChecking 
+                  ? 'bg-blue-600 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-500'
+              }`}
+              title="Check channel health"
+            >
+              <FaHeartbeat className={isChecking ? 'animate-pulse' : ''} />
+              <span className="hidden lg:inline">
+                {isChecking 
+                  ? `Checking ${progress.current}/${progress.total}...` 
+                  : 'Check Health'
+                }
+              </span>
+            </button>
+            
+            {/* Sync Button */}
+            <button
+              onClick={syncChannels}
+              disabled={isSyncing}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all ${
+                isSyncing 
+                  ? 'bg-gray-600 cursor-not-allowed' 
+                  : hasUpdates
+                  ? 'bg-yellow-600 hover:bg-yellow-500 animate-pulse'
+                  : syncStatus === 'success'
+                  ? 'bg-green-600 hover:bg-green-500'
+                  : 'bg-[var(--brand-color)] hover:bg-red-600'
+              }`}
+            title={hasUpdates ? 'Channel updates available!' : 'Sync IPTV channels'}
+          >
+            <FaSync className={isSyncing ? 'animate-spin' : ''} />
+            <span className="hidden sm:inline">
+              {isSyncing ? 'Syncing...' : hasUpdates ? `${channels.length} Channels (Updates!)` : `${channels.length} Channels`}
+            </span>
+          </button>
+          </div>
+        </div>
+
+        {/* Health Stats Bar */}
+        {getStats.checked > 0 && (
+          <div className="bg-[var(--bg-secondary)] rounded-xl p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <FaCircle className="text-green-500 text-xs" />
+                <span className="text-sm">
+                  <strong className="text-green-500">{getStats.online}</strong> Online
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FaCircle className="text-red-500 text-xs" />
+                <span className="text-sm">
+                  <strong className="text-red-500">{getStats.offline}</strong> Offline
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FaCircle className="text-yellow-500 text-xs" />
+                <span className="text-sm">
+                  <strong className="text-yellow-500">{getStats.timeout}</strong> Timeout
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FaCircle className="text-gray-500 text-xs" />
+                <span className="text-sm">
+                  <strong className="text-gray-500">{getStats.unchecked}</strong> Unchecked
+                </span>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-[var(--brand-color)]">{getStats.percentage}%</div>
+              <div className="text-xs opacity-70">Health Score</div>
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-6 md:grid-cols-3 mb-6">
           {/* Player (wide) */}
@@ -144,7 +242,17 @@ export const IPTVPage = () => {
 
             <div className="bg-[var(--bg-secondary)] rounded-xl shadow-lg overflow-hidden">
               <div className="flex flex-col max-h-[70vh] overflow-y-auto">
-                {filtered.length > 0 ? filtered.map(ch => (
+                {filtered.length > 0 ? filtered.map(ch => {
+                  const health = getHealth(ch.url);
+                  const statusColor = health?.status === 'online' 
+                    ? 'text-green-500' 
+                    : health?.status === 'offline' 
+                    ? 'text-red-500' 
+                    : health?.status === 'timeout' 
+                    ? 'text-yellow-500' 
+                    : 'text-gray-500';
+                  
+                  return (
                   <button
                     key={ch.number || ch.url}
                     onClick={() => play(ch)}
@@ -160,7 +268,15 @@ export const IPTVPage = () => {
                       }`}>
                         #{ch.number}
                       </span>
-                      <span className="font-semibold truncate">{ch.name}</span>
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <FaCircle className={`text-xs ${statusColor} ${health?.status === 'online' ? 'animate-pulse' : ''}`} />
+                        <span className="font-semibold truncate">{ch.name}</span>
+                        {health?.latency && (
+                          <span className="text-xs text-gray-400 hidden lg:inline">
+                            {health.latency}ms
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
                       <button onClick={(e) => toggleFavorite(ch, e)} className="text-xl p-1" aria-label={`Toggle favorite for ${ch.name}`}>
@@ -174,7 +290,8 @@ export const IPTVPage = () => {
                       )}
                     </div>
                   </button>
-                )) : (
+                );
+                }) : (
                   <p className="p-8 text-center text-[var(--text-secondary)]">
                     No channels found {search ? `for "${search}"` : ''} {category !== 'all' ? `in ${category}` : ''}.
                   </p>

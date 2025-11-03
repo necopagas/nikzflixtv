@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Row } from '../components/Row';
 import AdsterraBanner from '../AdsterraBanner';
+import { AdsterraSmartlink } from '../components/AdsterraSmartlink';
 import { GenreFilter } from '../components/GenreFilter';
 import { ANIME_GENRES } from '../config';
 
@@ -58,7 +59,10 @@ export const AnimePage = ({ onOpenModal, isWatched }) => {
                         isWatched={isWatched}
                         isLarge
                     />
-                    <AdsterraBanner />
+                    
+                    {/* Smartlink Ad */}
+                    <AdsterraSmartlink />
+                    
                     <Row
                         title="Top Rated Anime"
                         endpoint="animeTopRated"
@@ -71,6 +75,9 @@ export const AnimePage = ({ onOpenModal, isWatched }) => {
                         onOpenModal={onOpenModal}
                         isWatched={isWatched}
                     />
+                    
+                    {/* Native Banner */}
+                    <AdsterraBanner />
                 </>
             )}
         </div>

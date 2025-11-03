@@ -61,5 +61,26 @@ export default defineConfig(({ command, mode }) => ({
         rewrite: (p) => p.replace(/^\/api\/proxy/, '')
       }
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Core vendor chunks
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-icons': ['react-icons/fa', 'react-icons/md'],
+          // Seasonal effects in separate chunks (lazy loaded)
+          'seasonal-christmas': [
+            './src/components/SnowEffect.jsx',
+            './src/components/ChristmasLights.jsx'
+          ],
+          'seasonal-other': [
+            './src/components/HalloweenEffects.jsx',
+            './src/components/NewYearEffects.jsx'
+          ]
+        }
+      }
+    },
+    chunkSizeWarningLimit: 600
   }
 }));

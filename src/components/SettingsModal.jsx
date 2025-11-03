@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSettings } from '../context/SettingsContext';
-import { FaCog, FaPalette, FaVideo, FaLanguage, FaDatabase, FaKeyboard, FaInfoCircle, FaDownload, FaShieldAlt, FaLock } from 'react-icons/fa';
+import { FaCog, FaPalette, FaVideo, FaLanguage, FaDatabase, FaKeyboard, FaInfoCircle, FaDownload, FaShieldAlt, FaLock, FaSnowflake } from 'react-icons/fa';
+import { useChristmasTheme } from '../hooks/useChristmasTheme';
 
 export const SettingsModal = ({
     onClose,
@@ -11,6 +12,14 @@ export const SettingsModal = ({
     onClearMyList
 }) => {
     const settings = useSettings();
+    const { 
+        selectedTheme, 
+        activeTheme,
+        setTheme, 
+        isChristmasMusicEnabled, 
+        toggleChristmasMusic,
+        isChristmasMode
+    } = useChristmasTheme();
     const [activeTab, setActiveTab] = useState('general');
     const [videoQuality, setVideoQuality] = useState(localStorage.getItem('videoQuality') || 'auto');
     const [autoplay, setAutoplay] = useState(localStorage.getItem('autoplay') !== 'false');
@@ -285,6 +294,51 @@ export const SettingsModal = ({
                                     >
                                         {theme === 'light' ? 'Switch to Dark' : 'Switch to Light'}
                                     </button>
+                                </div>
+                            </SettingCard>
+
+                            <SettingCard title="🎉 Seasonal Themes" icon={FaSnowflake}>
+                                <div className="space-y-3">
+                                    <label className="text-sm text-gray-400">Select Theme:</label>
+                                    <select
+                                        value={selectedTheme}
+                                        onChange={(e) => setTheme(e.target.value)}
+                                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-red-500 focus:outline-none"
+                                    >
+                                        <option value="auto">🔄 Auto (By Season)</option>
+                                        <option value="none">🎨 Original Theme</option>
+                                        <option value="halloween">🎃 Halloween</option>
+                                        <option value="christmas">🎄 Christmas</option>
+                                        <option value="newyear">🎆 New Year</option>
+                                    </select>
+                                    
+                                    {/* Show current active theme */}
+                                    <div className="p-2 bg-gray-800/50 rounded text-xs">
+                                        <span className="text-gray-400">Currently Active: </span>
+                                        <span className="text-white font-semibold">
+                                            {activeTheme === 'halloween' && '🎃 Halloween'}
+                                            {activeTheme === 'christmas' && '🎄 Christmas'}
+                                            {activeTheme === 'newyear' && '🎆 New Year'}
+                                            {activeTheme === 'none' && '🎨 Original'}
+                                        </span>
+                                    </div>
+
+                                    {/* Christmas-specific options */}
+                                    {isChristmasMode && (
+                                        <div className="mt-3 space-y-3 p-3 bg-gradient-to-br from-red-900/20 to-green-900/20 rounded-lg border border-yellow-500/30">
+                                            <p className="text-sm text-green-400 animate-pulse font-semibold">
+                                                🎅 Ho ho ho! Merry Christmas! 🎄
+                                            </p>
+                                            <ToggleSwitch
+                                                enabled={isChristmasMusicEnabled}
+                                                onChange={toggleChristmasMusic}
+                                                label="🎵 Enable Christmas Music"
+                                            />
+                                            <p className="text-xs text-gray-400">
+                                                ✨ Festive lights, falling snow, glowing effects!
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </SettingCard>
 

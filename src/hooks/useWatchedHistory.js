@@ -87,10 +87,18 @@ export const useWatchedHistory = () => {
 
     const clearWatchedHistory = async () => {
         if (currentUser) {
-            watchedHistory.forEach(async (id) => {
-                const itemRef = doc(db, 'users', currentUser.uid, 'watchedHistory', id);
-                await deleteDoc(itemRef);
-            });
+            try {
+                // Use Promise.all instead of forEach to properly wait for all deletions
+                const deletePromises = watchedHistory.map(async (id) => {
+                    const itemRef = doc(db, 'users', currentUser.uid, 'watchedHistory', id);
+                    return await deleteDoc(itemRef);
+                });
+                await Promise.all(deletePromises);
+                setWatchedHistory([]);
+            } catch (error) {
+                console.error('Error clearing watched history:', error);
+                throw error; // Let the caller handle the error
+            }
         } else {
             setWatchedHistory([]);
         }

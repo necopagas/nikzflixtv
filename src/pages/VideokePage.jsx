@@ -14,10 +14,19 @@ export const VideokePage = () => {
         setResults([]); // Clear previous results
 
         try {
+            console.log('Searching for:', query);
             const ytResults = await searchYouTube(query);
+            console.log('YouTube results:', ytResults);
+            
+            if (!ytResults || ytResults.length === 0) {
+                setError('No results found. Try a different search term.');
+                setIsLoading(false);
+                return;
+            }
             
             // I-normalize nato ang data gikan sa YouTube
             const formattedResults = ytResults.map(item => {
+                console.log('Processing item:', item);
                 // Consumet / YouTube search results may provide id in different shapes
                 // e.g. item.id (string) or item.id.videoId or item.videoId
                 const rawId = item?.id;
@@ -42,11 +51,12 @@ export const VideokePage = () => {
                 };
             }).filter(Boolean);
 
+            console.log('Formatted results:', formattedResults);
             setResults(formattedResults);
 
         } catch (err) {
             console.error("Error searching videoke:", err);
-            setError(`Failed to fetch results. ${err.message}.`);
+            setError(`Failed to fetch results. ${err.message}`);
             setResults([]); // Clear results on error
         } finally {
             setIsLoading(false);
@@ -128,7 +138,8 @@ export const VideokePage = () => {
                                     src={item.embedUrl}
                                     title={item.title}
                                     allowFullScreen
-                                    allow="autoplay; encrypted-media"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    referrerPolicy="strict-origin-when-cross-origin"
                                     className="w-full h-full border-0"
                                 ></iframe>
                             </div>
