@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWatchedHistory } from '../hooks/useWatchedHistory';
 import { useParams, Link } from 'react-router-dom';
-import ReactPlayer from 'react-player';
+import { EnhancedVideoPlayer } from '../components/EnhancedVideoPlayer';
 // --- GIBALIK ANG DAAN NGA IMPORT ---
 import { getDramaEpisodeSources } from '../utils/consumetApi';
 
@@ -46,23 +46,18 @@ export const DramaPlayerPage = () => {
                         <p className="text-xl text-red-500">{error}</p>
                     </div>
                 ) : (
-                    <div className="player-wrapper rounded-lg overflow-hidden">
-                        <ReactPlayer
-                            className="react-player"
-                            // --- GIBALIK ANG DAAN NGA URL ---
-                            url={sources.url}
-                            width="100%"
-                            height="100%"
-                            controls
-                            playing
-                            onEnded={() => {
-                                try {
-                                    // mark episode as watched when playback ends
-                                    if (episodeId) addToWatched(episodeId);
-                                } catch (err) { console.warn('Failed to mark watched:', err); }
-                            }}
-                        />
-                    </div>
+                    <EnhancedVideoPlayer
+                        src={sources.url}
+                        episodeId={episodeId}
+                        onEnded={() => {
+                            try {
+                                // mark episode as watched when playback ends
+                                if (episodeId) addToWatched(episodeId);
+                            } catch (err) { console.warn('Failed to mark watched:', err); }
+                        }}
+                        autoplay={true}
+                        className="rounded-lg overflow-hidden"
+                    />
                 )}
                 <div className="mt-4 text-center">
                     <button onClick={() => window.history.back()} className="px-6 py-3 bg-red-600 text-white font-bold rounded hover:bg-red-700">

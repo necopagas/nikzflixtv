@@ -263,6 +263,16 @@ body::-webkit-scrollbar-thumb:hover {
     }
 }
 
+@keyframes spin-slow {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin-slow {
+    animation: spin-slow 3s linear infinite;
+}
+
 .header.scrolled {
     background: rgba(10, 11, 14, 0.95);
     backdrop-filter: blur(20px) saturate(180%);

@@ -7,6 +7,7 @@ export default function AdsterraBanner() {
   const [visible, setVisible] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const [scriptsLoaded, setScriptsLoaded] = useState(false);
+  const [adStatus, setAdStatus] = useState('loading');
   const location = useLocation();
 
   useEffect(() => {
@@ -17,14 +18,7 @@ export default function AdsterraBanner() {
       return;
     }
 
-    // Only show on desktop (width >= 768px for better threshold)
-    const isDesktop = window.innerWidth >= 768;
-    if (!isDesktop) {
-      console.info('[AdsterraBanner] Mobile detected, hiding ads');
-      setVisible(false);
-      return;
-    }
-
+    // Show on all devices
     const currentPath = location?.pathname || '/';
     console.info('[AdsterraBanner] Current path:', currentPath, '| Visible:', visible);
     
@@ -35,8 +29,14 @@ export default function AdsterraBanner() {
     if (!visible || scriptsLoaded || !containerRef.current) return;
 
     const AD_SCRIPTS = [
-      'https://gainedspotsspun.com/61/b8/02/61b80217fd398dccf27a4a8ef563b396.js',
-      'https://gainedspotsspun.com/23/83/40/238340cef35e12605e283ef1a601c2fe.js'
+      {
+        src: 'https://gainedspotsspun.com/61/b8/02/61b80217fd398dccf27a4a8ef563b396.js',
+        type: 'banner'
+      },
+      {
+        src: 'https://gainedspotsspun.com/23/83/40/238340cef35e12605e283ef1a601c2fe.js',
+        type: 'native'
+      }
     ];
 
     let timeoutId = null;
@@ -44,16 +44,27 @@ export default function AdsterraBanner() {
     const injectScripts = () => {
       if (!containerRef.current) {
         console.warn('[AdsterraBanner] Container not ready');
+        setAdStatus('error');
         return;
       }
 
       console.info('[AdsterraBanner] Injecting ad scripts...');
+      setAdStatus('loading');
       
-      AD_SCRIPTS.forEach((src, index) => {
+      let loadedCount = 0;
+      
+      AD_SCRIPTS.forEach((adConfig, index) => {
+        const { src, type } = adConfig;
+        
         // Check if script already exists globally
         const existing = document.querySelector(`script[src="${src}"]`);
         if (existing) {
           console.info('[AdsterraBanner] Script already loaded:', src);
+          loadedCount++;
+          if (loadedCount === AD_SCRIPTS.length) {
+            setScriptsLoaded(true);
+            setAdStatus('loaded');
+          }
           return;
         }
 
@@ -62,30 +73,47 @@ export default function AdsterraBanner() {
         script.src = src;
         script.async = true;
         script.setAttribute('data-ad-script', index);
+        script.setAttribute('data-ad-type', type);
         
         script.onload = () => {
-          console.info('[AdsterraBanner] ✓ Loaded:', src);
+          console.info('[AdsterraBanner] ✓ Loaded:', src, `(${type})`);
+          loadedCount++;
+          if (loadedCount === AD_SCRIPTS.length) {
+            setScriptsLoaded(true);
+            setAdStatus('loaded');
+          }
         };
         
         script.onerror = () => {
           console.error('[AdsterraBanner] ✗ Failed to load:', src);
+          loadedCount++;
+          if (loadedCount === AD_SCRIPTS.length) {
+            setAdStatus('error');
+          }
         };
 
         // Append to container
         containerRef.current.appendChild(script);
       });
-
-      setScriptsLoaded(true);
       
       // Set global telemetry
       if (typeof window !== 'undefined') {
-        window.__nikz_ads_loaded = AD_SCRIPTS;
+        window.__nikz_ads_loaded = AD_SCRIPTS.map(s => s.src);
         window.__nikz_ads_timestamp = new Date().toISOString();
       }
+
+      // Fallback timeout - mark as loaded after 5 seconds even if scripts don't trigger onload
+      setTimeout(() => {
+        if (!scriptsLoaded) {
+          console.info('[AdsterraBanner] Timeout reached, marking as loaded');
+          setScriptsLoaded(true);
+          setAdStatus('loaded');
+        }
+      }, 5000);
     };
 
-    // Load after 1 second delay
-    timeoutId = setTimeout(injectScripts, 1000);
+    // Load after 500ms delay (reduced from 1000ms)
+    timeoutId = setTimeout(injectScripts, 500);
 
     // Also load on first scroll/click
     const loadOnInteraction = () => {
@@ -128,13 +156,24 @@ export default function AdsterraBanner() {
           {/* Ad Container */}
           <div 
             ref={containerRef} 
-            className="flex-1 flex items-center justify-center min-h-[60px] relative"
+            className="flex-1 flex items-center justify-center min-h-[90px] relative"
             id="nikz-ad-container"
           >
-            {!scriptsLoaded && (
+            {adStatus === 'loading' && (
               <div className="flex flex-col items-center gap-2 py-4">
                 <div className="w-8 h-8 border-3 border-gray-600 border-t-red-500 rounded-full animate-spin" />
                 <span className="text-xs text-gray-400 animate-pulse">Loading ads...</span>
+              </div>
+            )}
+            {adStatus === 'error' && (
+              <div className="flex flex-col items-center gap-2 py-4 text-center">
+                <span className="text-xs text-orange-400">⚠️ Ad scripts loaded</span>
+                <span className="text-[10px] text-gray-500">If ads don't appear, check Adsterra dashboard</span>
+              </div>
+            )}
+            {adStatus === 'loaded' && !containerRef.current?.querySelector('script') && (
+              <div className="text-xs text-gray-400 py-4">
+                📺 Ad space ready - waiting for impressions
               </div>
             )}
           </div>
@@ -173,10 +212,18 @@ export default function AdsterraBanner() {
           </div>
         </div>
 
-        {/* Debug info (remove in production) */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="px-3 pb-2 text-[10px] text-gray-500 font-mono">
-            Scripts: {scriptsLoaded ? '✓ Loaded' : '⏳ Loading'} | Path: {location?.pathname}
+        {/* Debug info */}
+        {(process.env.NODE_ENV === 'development' || true) && (
+          <div className="px-3 pb-2 text-[10px] text-gray-500 font-mono border-t border-gray-700/30 pt-2">
+            <div className="flex items-center justify-between gap-2">
+              <span>Status: <span className={`font-bold ${
+                adStatus === 'loaded' ? 'text-green-400' : 
+                adStatus === 'loading' ? 'text-yellow-400' : 
+                'text-orange-400'
+              }`}>{adStatus}</span></span>
+              <span>Path: {location?.pathname}</span>
+              <span>Scripts: {scriptsLoaded ? '✓' : '⏳'}</span>
+            </div>
           </div>
         )}
       </div>
