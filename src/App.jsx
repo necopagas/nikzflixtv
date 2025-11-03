@@ -5,6 +5,7 @@ import { Footer } from './components/Footer';
 import { Modal } from './components/Modal';
 import { BackToTopButton } from './components/BackToTopButton';
 import { SettingsModal } from './components/SettingsModal';
+import { BraveNotification } from './components/BraveNotification';
 // Lazy load seasonal effects for better performance
 const SnowEffect = lazy(() => import('./components/SnowEffect').then(m => ({ default: m.SnowEffect })));
 const ChristmasLights = lazy(() => import('./components/ChristmasLights').then(m => ({ default: m.ChristmasLights })));
@@ -224,6 +225,9 @@ export default function App() {
           onClearMyList={clearMyList}
         />
       )}
+
+      {/* Brave Browser Notification */}
+      <BraveNotification />
     </div>
   );
 }

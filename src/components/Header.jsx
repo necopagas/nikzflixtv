@@ -81,6 +81,17 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4">
+                {/* Mobile icons - shown before hamburger menu */}
+                <div className="flex md:hidden items-center gap-2">
+                    <button type="button" onClick={onOpenSettings} className="theme-toggle text-xl" title="Settings">
+                        <FaCog />
+                    </button>
+                    <button type="button" onClick={toggleTheme} className="theme-toggle text-xl" title="Toggle Theme">
+                        {theme === 'light' ? <FaMoon /> : <FaSun />}
+                    </button>
+                </div>
+
+                {/* Desktop icons - shown on larger screens */}
                 <div className="hidden md:flex items-center gap-2 sm:gap-4">
                     <form onSubmit={handleSearch} className="flex items-center">
                         <div className="search-container relative flex items-center">
@@ -125,7 +136,10 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
             </div>
 
             <div className={`mobile-menu ${isMobileMenuOpen ? 'open' : ''}`}>
-                <nav className="flex flex-col items-center space-y-8 pt-24 text-xl">
+                <nav className="flex flex-col items-center space-y-6 pt-20 text-lg pb-8">
+                    {/* Clock at top of mobile menu */}
+                    <div className="text-2xl font-bold text-[var(--brand-color)] mb-2">{clock}</div>
+                    
                     <NavLink to="/" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Home</NavLink>
                     <NavLink to="/anime" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Anime</NavLink>
                     {/* <NavLink to="/manga" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Manga</NavLink> */} {/* <-- REMOVED */}
@@ -139,7 +153,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                     
                     <NavLink to="/chat-room" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Chat Room</NavLink>
 
-                    <div className="w-full px-4">
+                    <div className="w-full px-6 pt-2">
                         <form onSubmit={handleSearch} className="flex items-center">
                             <div className="search-container relative flex items-center w-full">
                                 <button type="submit" className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 z-10"><FaSearch /></button>
@@ -147,22 +161,23 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="search-input w-full border-2 border-transparent p-3 pl-12 rounded-full"
+                                    className="search-input w-full border-2 border-transparent p-2.5 pl-11 rounded-full text-base"
                                     placeholder="Search..."
                                 />
                             </div>
                         </form>
                     </div>
 
-                    <div className="border-t border-[var(--border-color)] w-full my-4"></div>
+                    <div className="border-t border-[var(--border-color)] w-3/4 my-3"></div>
 
                     {currentUser ? (
                          <>
+                            <div className="text-sm text-[var(--text-secondary)] px-4 text-center truncate max-w-full">{currentUser.email}</div>
                             <button onClick={navigateToProfile} className="font-semibold">My Profile</button>
-                            <button onClick={handleLogout} className="font-semibold">Logout</button>
+                            <button onClick={handleLogout} className="font-semibold text-red-500">Logout</button>
                          </>
                     ) : (
-                        <button onClick={() => { navigate('/auth'); handleNavLinkClick(); }} className="px-6 py-2 bg-[var(--brand-color)] rounded-md font-semibold">
+                        <button onClick={() => { navigate('/auth'); handleNavLinkClick(); }} className="px-6 py-2.5 bg-[var(--brand-color)] rounded-md font-semibold text-base">
                             Login
                         </button>
                     )}
