@@ -91,10 +91,21 @@ export const Row = ({ title, endpoint, param, items: propItems, onOpenModal, isW
                 >
                     {isLoading ? (
                         Array.from({ length: 10 }).map((_, i) => (
-                            <div key={`skeleton-${title}-${i}`} className={`flex-shrink-0 ${isLarge ? 'w-64' : 'w-40'} snap-start skeleton rounded-md`}></div>
+                            <div key={`skeleton-${title}-${i}`} className={`flex-shrink-0 ${isLarge ? 'w-64' : 'w-40'} snap-start`}>
+                                <div className="skeleton rounded-lg overflow-hidden">
+                                    <div className={`${isLarge ? 'h-96' : 'h-60'} bg-gradient-to-br from-gray-800 to-gray-900 animate-pulse`}>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                                    </div>
+                                </div>
+                            </div>
                         ))
                     ) : visibleItems.length === 0 ? (
-                        <div className="flex items-center justify-center w-full text-gray-400">No results</div>
+                        <div className="flex flex-col items-center justify-center w-full py-12 text-gray-400">
+                            <svg className="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                            </svg>
+                            <p className="text-lg font-medium">No results found</p>
+                        </div>
                     ) : (
                         visibleItems.map(item => (
                             <div key={item.id} className={`flex-shrink-0 ${isLarge ? 'w-64' : 'w-40'} snap-start`}>

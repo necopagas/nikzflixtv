@@ -5,17 +5,23 @@ import './index.css';
 import './App.css'; 
 
 import App from './App.jsx';
-import { AuthProvider } from './context/AuthContext.jsx'; // --- IMPORT ANG AUTHPROVIDER ---
+import { AuthProvider } from './context/AuthContext.jsx';
 import { SettingsProvider } from './context/SettingsContext.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
+import { ToastProvider } from './components/Toast.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
-      <AuthProvider> {/* --- PUTSA ANG APP SA AUTHPROVIDER --- */}
-        <SettingsProvider>
-          <App />
-        </SettingsProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <SettingsProvider>
+            <ToastProvider>
+              <App />
+            </ToastProvider>
+          </SettingsProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>,
 );

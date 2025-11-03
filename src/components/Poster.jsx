@@ -18,7 +18,6 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
     const [showPreview, setShowPreview] = useState(false);
     const [imgLoaded, setImgLoaded] = useState(false);
     const [mounted, setMounted] = useState(false);
-    const [lqipData, setLqipData] = useState(null);
     const previewTimerRef = useRef(null);
     const hoverDebounceRef = useRef(null);
     // prefer context
@@ -28,43 +27,12 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
 
     const imageUrl = item.poster_path?.startsWith('http')
         ? item.poster_path
-        : item.poster_path ? `${IMG_PATH}${item.poster_path}` : 'https://via.placeholder.com/500x750.png?text=No+Image+Available';
+        : item.poster_path ? `${IMG_PATH}${item.poster_path}` : '/no-image.svg';
     // low-res placeholder (blur-up)
     const lowResBase = IMG_PATH.replace('/w500', '/w92');
     const lowResUrl = item.poster_path?.startsWith('http')
         ? item.poster_path
-        : item.poster_path ? `${lowResBase}${item.poster_path}` : 'https://via.placeholder.com/92x138.png?text=No+Image';
-
-    // Try to load LQIP (base64) from sessionStorage or fetch on demand
-    useEffect(() => {
-        let cancelled = false;
-        const key = `lqip:${item.id}`;
-        const existing = sessionStorage.getItem(key);
-        if (existing) {
-            setLqipData(existing);
-            return;
-        }
-
-        // fetch small image and convert to base64, cache in sessionStorage
-        (async () => {
-            try {
-                const resp = await fetch(lowResUrl);
-                const blob = await resp.blob();
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    if (cancelled) return;
-                    const b64 = reader.result;
-                    try { sessionStorage.setItem(key, b64); } catch { /* ignore storage errors */ }
-                    setLqipData(b64);
-                };
-                reader.readAsDataURL(blob);
-            } catch {
-                // ignore LQIP on failure
-            }
-        })();
-
-        return () => { cancelled = true; };
-    }, [lowResUrl, item.id]);
+        : item.poster_path ? `${lowResBase}${item.poster_path}` : '/no-image.svg';
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -73,6 +41,7 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
         }
     };
 
+    // Simplified LQIP - just use the low-res URL directly, no fetch/CORS issues
     useEffect(() => {
         setMounted(true);
         return () => {
@@ -171,22 +140,13 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
                 <div
                     className={`poster-image-wrapper relative w-full aspect-[2/3] overflow-hidden bg-gray-800 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'} transition-transform transition-opacity duration-500`}
                 >
-                    {/* low-res LQIP placeholder (base64 if available) */}
-                    {lqipData ? (
-                        <img
-                            src={lqipData}
-                            alt={displayTitle}
-                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-out transform ${imgLoaded ? 'opacity-0' : 'opacity-100 blur-2xl scale-105'}`}
-                            aria-hidden
-                        />
-                    ) : (
-                        <img
-                            src={lowResUrl}
-                            alt={displayTitle}
-                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-out transform ${imgLoaded ? 'opacity-0' : 'opacity-100 blur-2xl scale-105'}`}
-                            aria-hidden
-                        />
-                    )}
+                                        {/* Low-res placeholder with blur effect */}
+                    <img
+                        src={lowResUrl}
+                        alt={displayTitle}
+                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-out transform ${imgLoaded ? 'opacity-0' : 'opacity-100 blur-2xl scale-105'}`}
+                        aria-hidden
+                    />
 
                     {/* main image */}
                     <img
@@ -195,7 +155,7 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
                         alt={displayTitle}
                         loading="lazy"
                         onLoad={() => setImgLoaded(true)}
-                        onError={(e) => { e.target.onerror = null; e.target.src='https://via.placeholder.com/500x750.png?text=No+Image+Available'; setImgLoaded(true); }}
+                        onError={(e) => { e.target.onerror = null; e.target.src='/no-image.svg'; setImgLoaded(true); }}
                     />
 
                     {/* Base Info Layer (Always Visible) */}

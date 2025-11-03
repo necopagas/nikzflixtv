@@ -1,11 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import axios from 'axios';
 import path from 'path';
 
 export default defineConfig(({ command, mode }) => ({
   plugins: [
     react(),
+    tailwindcss(),
     // Dev-only plugin: serve a simple server-side proxy for /api/vivamax
     {
       name: 'dev-vivamax-middleware',
