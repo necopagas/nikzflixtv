@@ -120,6 +120,9 @@ export default function AdsterraBanner() {
 
   if (!visible) return null;
 
+  // Don't show container until ad is loaded or error
+  if (adStatus === 'loading') return null;
+
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] animate-fade-in">
       <div 
@@ -139,16 +142,7 @@ export default function AdsterraBanner() {
             className="flex-1 flex items-center justify-center min-h-[90px] relative"
             id="nikz-ad-container"
           >
-            {adStatus === 'loading' && (
-              <div className="flex flex-col items-center gap-3 py-4">
-                <div className="relative w-12 h-12">
-                  <div className="absolute inset-0 rounded-full border-4 border-gray-700/30"></div>
-                  <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-red-500 animate-spin"></div>
-                  <div className="absolute inset-2 rounded-full border-4 border-transparent border-t-red-400 animate-spin" style={{ animationDuration: '0.8s', animationDirection: 'reverse' }}></div>
-                </div>
-                <span className="text-sm text-gray-400 font-medium animate-pulse">Loading ads...</span>
-              </div>
-            )}
+            {/* Loading indicator removed - ad loads silently in background */}
             {adStatus === 'error' && (
               <div className="flex flex-col items-center gap-2 py-4 text-center">
                 <span className="text-xs text-orange-400">⚠️ Ad scripts loaded</span>
