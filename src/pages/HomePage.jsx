@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useMyList } from '../hooks/useMyList';
 import { useContinueWatching } from '../hooks/useContinueWatching';
 import { useWatchedHistory } from '../hooks/useWatchedHistory'; 
@@ -6,7 +6,6 @@ import { Banner } from '../components/Banner';
 import { GenreFilter } from '../components/GenreFilter';
 import { Row } from '../components/Row';
 import AdsterraBanner from '../AdsterraBanner';
-import { AdsterraSmartlink } from '../components/AdsterraSmartlink';
 // --- GIDUGANG ANG CURATED_COLLECTIONS IMPORT ---
 import { API_ENDPOINTS, MOVIE_GENRES, CURATED_COLLECTIONS } from '../config'; 
 import { fetchData } from '../utils/fetchData';
@@ -28,6 +27,8 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
     const [recommendations, setRecommendations] = useState([]);
     const [recommendationSourceItem, setRecommendationSourceItem] = useState(null);
     const [isLoadingRecs, setIsLoadingRecs] = useState(false);
+    const lastRecommendationIdRef = useRef(null);
+    const isFetchingRecommendationsRef = useRef(false);
 
     // --- STATE PARA SA ATONG COLLECTIONS DATA ---
     const [collectionsData, setCollectionsData] = useState([]);
@@ -35,78 +36,168 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
 
     // --- EFFECT PARA MOKUHA SA STANDARD ROWS ---
     useEffect(() => {
-        // Fetch data for standard rows
-        fetchData(API_ENDPOINTS.trending).then(data => setTrending(data.results || []));
-        fetchData(API_ENDPOINTS.popular).then(data => setPopular(data.results || []));
-        fetchData(API_ENDPOINTS.toprated).then(data => setTopRated(data.results || []));
-        fetchData(API_ENDPOINTS.tvshows).then(data => setTvShows(data.results || []));
-        fetchData(API_ENDPOINTS.anime).then(data => setAnime(data.results || []));
-        fetchData(API_ENDPOINTS.asianDramas).then(data => setAsianDramas(data.results || []));
+        let isMounted = true;
+
+        const loadPrimaryRows = async () => {
+            const [
+                trendingData,
+                popularData,
+                topRatedData,
+                tvShowsData,
+                animeData,
+                asianDramaData,
+            ] = await Promise.all([
+                fetchData(API_ENDPOINTS.trending),
+                fetchData(API_ENDPOINTS.popular),
+                fetchData(API_ENDPOINTS.toprated),
+                fetchData(API_ENDPOINTS.tvshows),
+                fetchData(API_ENDPOINTS.anime),
+                fetchData(API_ENDPOINTS.asianDramas),
+            ]);
+
+            if (!isMounted) return;
+
+            setTrending(trendingData.results || []);
+            setPopular(popularData.results || []);
+            setTopRated(topRatedData.results || []);
+            setTvShows(tvShowsData.results || []);
+            setAnime(animeData.results || []);
+            setAsianDramas(asianDramaData.results || []);
+        };
+
+        loadPrimaryRows();
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     // --- EFFECT PARA MOKUHA SA RECOMMENDATIONS ---
     useEffect(() => {
-        if (!historyLoading && watchedHistory.length > 0) {
-            const lastWatchedId = watchedHistory[watchedHistory.length - 1]; 
-            if (recommendationSourceItem?.id.toString() === lastWatchedId) return;
+        let isMounted = true;
 
-            setIsLoadingRecs(true);
-            setRecommendations([]); 
-            setRecommendationSourceItem(null);
+        const loadRecommendations = async () => {
+            if (historyLoading) return;
 
-            Promise.all([
-                fetchData(API_ENDPOINTS.details('movie', lastWatchedId)).catch(() => null),
-                fetchData(API_ENDPOINTS.details('tv', lastWatchedId)).catch(() => null)
-            ]).then(([movieDetails, tvDetails]) => {
+            if (watchedHistory.length === 0) {
+                if (isMounted) {
+                    setIsLoadingRecs(false);
+                    setRecommendations([]);
+                    setRecommendationSourceItem(null);
+                }
+                lastRecommendationIdRef.current = null;
+                isFetchingRecommendationsRef.current = false;
+                return;
+            }
+
+            const lastWatchedRaw = watchedHistory[watchedHistory.length - 1];
+            const lastWatchedId = lastWatchedRaw?.toString();
+
+            if (
+                lastRecommendationIdRef.current === lastWatchedId &&
+                !isFetchingRecommendationsRef.current
+            ) {
+                return;
+            }
+
+            lastRecommendationIdRef.current = lastWatchedId;
+            isFetchingRecommendationsRef.current = true;
+
+            if (isMounted) {
+                setIsLoadingRecs(true);
+                setRecommendations([]);
+                setRecommendationSourceItem(null);
+            }
+
+            try {
+                const [movieDetails, tvDetails] = await Promise.all([
+                    fetchData(API_ENDPOINTS.details('movie', lastWatchedId)).catch(() => null),
+                    fetchData(API_ENDPOINTS.details('tv', lastWatchedId)).catch(() => null),
+                ]);
+
                 const detailsData = movieDetails?.id ? movieDetails : tvDetails?.id ? tvDetails : null;
                 const mediaType = movieDetails?.id ? 'movie' : 'tv';
 
-                if (detailsData) {
-                    setRecommendationSourceItem(detailsData);
-                    return fetchData(API_ENDPOINTS.recommendations(mediaType, lastWatchedId));
-                } else {
+                if (!detailsData) {
                     console.warn(`Could not find details for watched item ID: ${lastWatchedId}`);
-                    return { results: [] }; 
+                    lastRecommendationIdRef.current = null;
+                    if (isMounted) {
+                        setRecommendations([]);
+                        setIsLoadingRecs(false);
+                    }
+                    return;
                 }
-            })
-            .then(recsData => {
-                setRecommendations(recsData.results || []);
-            })
-            .catch(error => { console.error("Failed to fetch recommendations:", error); })
-            .finally(() => { setIsLoadingRecs(false); });
-        } else if (!historyLoading && watchedHistory.length === 0) {
-             setRecommendations([]);
-             setRecommendationSourceItem(null);
-        }
-    }, [watchedHistory, historyLoading, recommendationSourceItem]); 
+
+                if (isMounted) {
+                    setRecommendationSourceItem(detailsData);
+                }
+
+                const recsData = await fetchData(API_ENDPOINTS.recommendations(mediaType, lastWatchedId));
+                if (isMounted) {
+                    setRecommendations(recsData.results || []);
+                }
+            } catch (error) {
+                console.error('Failed to fetch recommendations:', error);
+                lastRecommendationIdRef.current = null;
+            } finally {
+                isFetchingRecommendationsRef.current = false;
+                if (isMounted) {
+                    setIsLoadingRecs(false);
+                }
+            }
+        };
+
+        loadRecommendations();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [watchedHistory, historyLoading]); 
 
     // --- BAG-ONG EFFECT PARA MOKUHA SA DATA SA COLLECTIONS ---
     useEffect(() => {
-        setIsLoadingCollections(true);
+        let isMounted = true;
         const fetchCollectionDetails = async () => {
+            if (isMounted) {
+                setIsLoadingCollections(true);
+            }
             const allCollectionsPromises = CURATED_COLLECTIONS.map(async (collection) => {
-                // Mag-fetch ta sa details para sa kada ID sa collection
-                const itemDetailsPromises = collection.ids.map(itemRef => 
-                    fetchData(API_ENDPOINTS.details(itemRef.type, itemRef.id)).catch(err => {
-                        console.error(`Failed to fetch details for ${itemRef.type} ID ${itemRef.id}:`, err);
-                        return null; // Return null kung naay error para dili madaot tanan
-                    })
-                );
-                const itemsDetails = await Promise.all(itemDetailsPromises);
-                // I-filter nato ang null (failed requests) ug siguraduon nga naay poster
-                const validItems = itemsDetails.filter(details => details && details.poster_path); 
-                return {
-                    title: collection.title,
-                    items: validItems
-                };
+                // Two modes: endpoint (dynamic list) or explicit ids (hand-picked)
+                if (collection.endpoint) {
+                    try {
+                        const data = await fetchData(collection.endpoint);
+                        const results = (data?.results || []).filter((d) => d && d.poster_path);
+                        const limited = collection.limit ? results.slice(0, collection.limit) : results;
+                        return { title: collection.title, items: limited };
+                    } catch (err) {
+                        console.error(`Failed to fetch collection via endpoint for ${collection.title}:`, err);
+                        return { title: collection.title, items: [] };
+                    }
+                }
+                if (Array.isArray(collection.ids) && collection.ids.length) {
+                    const itemDetailsPromises = collection.ids.map(itemRef => 
+                        fetchData(API_ENDPOINTS.details(itemRef.type, itemRef.id)).catch(err => {
+                            console.error(`Failed to fetch details for ${itemRef.type} ID ${itemRef.id}:`, err);
+                            return null;
+                        })
+                    );
+                    const itemsDetails = await Promise.all(itemDetailsPromises);
+                    const validItems = itemsDetails.filter(details => details && (details.poster_path || details.backdrop_path));
+                    return { title: collection.title, items: validItems };
+                }
+                return { title: collection.title, items: [] };
             });
 
             const resolvedCollections = await Promise.all(allCollectionsPromises);
+            if (!isMounted) return;
             setCollectionsData(resolvedCollections.filter(c => c.items.length > 0)); // Ipakita lang ang collection kung naay valid items
             setIsLoadingCollections(false);
         };
 
         fetchCollectionDetails();
+        return () => {
+            isMounted = false;
+        };
     }, []); // Modagan ra ni kausa inig load sa page
 
     const handleGenreSelect = (genreId) => {
@@ -129,91 +220,103 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
         return `Because You Watched ${shortTitle}`;
     };
 
-    return (
-        <>
-            <Banner onOpenModal={onOpenModal} />
-            <div className="bg-[#0b0b0b] text-white min-h-screen">
-              <div className="px-4 sm:px-8 md:px-16 pb-20">
-                <GenreFilter
-                    genres={MOVIE_GENRES}
-                    selectedGenre={selectedGenre}
-                    onGenreSelect={handleGenreSelect}
-                />
-                
-                {selectedGenre && (
-                    <Row
-                        key={`genre-${selectedGenre}`}
-                        title={MOVIE_GENRES.find(g => g.id === selectedGenre)?.name || 'Genre Results'}
-                        items={genreMovies}
-                        onOpenModal={onOpenModal}
-                        isWatched={isWatched}
-                        isLoading={isLoadingGenre}
-                    />
-                )}
+        // Helper to get specific collection by title
+        const findCollection = (title) => collectionsData.find(c => c.title === title);
 
-                {/* --- IBUTANG ANG CURATED COLLECTIONS ROWS DIRI --- */}
-                {!isLoadingCollections && collectionsData.map((collection, index) => (
-                    <Row
-                        key={`collection-${index}-${collection.title}`} // Unique key
-                        title={collection.title}
-                        items={collection.items}
-                        onOpenModal={onOpenModal}
-                        isWatched={isWatched}
-                        // Pwede nimo i-set isLarge=true kung gusto nimo padak-on ang posters
-                    />
-                ))}
-                {/* Kung nag-load pa ang collections, pwede magpakita og skeleton */}
-                {isLoadingCollections && CURATED_COLLECTIONS.map((collection, index) => (
-                    <Row
-                         key={`collection-loading-${index}`}
-                         title={collection.title}
-                         items={[]} // Empty items
-                         onOpenModal={onOpenModal}
-                         isWatched={isWatched}
-                         isLoading={true} // Set loading to true
-                    />
-                ))}
-                {/* --- END SA COLLECTIONS ROWS --- */}
+        // Sidebar removed per request
 
-                {(recommendations.length > 0 || isLoadingRecs) && recommendationSourceItem && (
-                    <Row 
-                        title={getRecommendationTitle()} 
-                        items={recommendations} 
-                        onOpenModal={onOpenModal} 
-                        isWatched={isWatched}
-                        isLoading={isLoadingRecs}
-                    />
-                )}
-                
-                <Row title="Trending Now" items={trending} onOpenModal={onOpenModal} isWatched={isWatched} />
-                
-                {/* Smartlink Ad (Zone: 27694335) */}
-                <AdsterraSmartlink />
-                
-                <Row title="Popular Movies" items={popular} onOpenModal={onOpenModal} isWatched={isWatched} />
-                
-                {(continueWatchingList.length > 0 || continueWatchingLoading) && (
-                    <Row title="Continue Watching" items={continueWatchingList} onOpenModal={onOpenModal} isWatched={isWatched} isLoading={continueWatchingLoading} />
-                )}
+        return (
+            <>
+                <Banner onOpenModal={onOpenModal} />
+                <div className="bg-[#0b0b0b] text-white min-h-screen">
+                      <div className="px-4 sm:px-8 md:px-16 pb-20">
 
-                <Row title="Top Rated Movies" items={topRated} onOpenModal={onOpenModal} isWatched={isWatched} />
-                
-                {/* Smartlink Ad (Zone: 27694335) */}
-                <AdsterraSmartlink />
-                
-                <Row title="Popular TV Shows" items={tvShows} onOpenModal={onOpenModal} isWatched={isWatched} />
+                        {/* Main content (full width) */}
+                        <div>
+                            <main>
+                                <GenreFilter
+                                    genres={MOVIE_GENRES}
+                                    selectedGenre={selectedGenre}
+                                    onGenreSelect={handleGenreSelect}
+                                />
 
-                {(myList.length > 0 || myListLoading) && (
-                     <Row title="My List" items={myList} onOpenModal={onOpenModal} isWatched={isWatched} isLoading={myListLoading} />
-                )}
+                                {selectedGenre && (
+                                    <Row
+                                        id={`genre-${selectedGenre}`}
+                                        key={`genre-${selectedGenre}`}
+                                        title={MOVIE_GENRES.find(g => g.id === selectedGenre)?.name || 'Genre Results'}
+                                        items={genreMovies}
+                                        onOpenModal={onOpenModal}
+                                        isWatched={isWatched}
+                                        isLoading={isLoadingGenre}
+                                    />
+                                )}
 
-                <Row title="Anime" items={anime} onOpenModal={onOpenModal} isWatched={isWatched} isLarge />
-                <Row title="Asian Dramas" items={asianDramas} onOpenModal={onOpenModal} isWatched={isWatched} />
-                
-                {/* Native Banner at bottom */}
-                <AdsterraBanner />
-              </div>
-            </div>
-        </>
-    );
+                                {/* Curated Collections in requested order with emojis */}
+                                {!isLoadingCollections && (
+                                    <>
+                                        {(() => {
+                                            const c = findCollection('Halloween Horrors');
+                                            return c ? (
+                                                <Row id="halloween-horrors" title="🎃 Halloween Horrors" items={c.items} onOpenModal={onOpenModal} isWatched={isWatched} />
+                                            ) : null;
+                                        })()}
+                                        {(() => {
+                                            const c = findCollection('Mind-Bending Sci-Fi');
+                                            return c ? (
+                                                <Row id="mind-bending-sci-fi" title="🧠🚀 Mind-Bending Sci‑Fi" items={c.items} onOpenModal={onOpenModal} isWatched={isWatched} />
+                                            ) : null;
+                                        })()}
+                                        {(() => {
+                                            const c = findCollection('Editor Picks');
+                                            return c ? (
+                                                <Row id="editor-picks" title="✍️⭐ Editor Picks" items={c.items} onOpenModal={onOpenModal} isWatched={isWatched} />
+                                            ) : null;
+                                        })()}
+                                    </>
+                                )}
+                                {isLoadingCollections && (
+                                    <>
+                                        <Row id="halloween-horrors" title="🎃 Halloween Horrors" items={[]} onOpenModal={onOpenModal} isWatched={isWatched} isLoading={true} />
+                                        <Row id="mind-bending-sci-fi" title="🧠🚀 Mind-Bending Sci‑Fi" items={[]} onOpenModal={onOpenModal} isWatched={isWatched} isLoading={true} />
+                                        <Row id="editor-picks" title="✍️⭐ Editor Picks" items={[]} onOpenModal={onOpenModal} isWatched={isWatched} isLoading={true} />
+                                    </>
+                                )}
+
+                                {(recommendations.length > 0 || isLoadingRecs) && recommendationSourceItem && (
+                                    <Row 
+                                        id="because-you-watched"
+                                        title={`👀 ${getRecommendationTitle()}`}
+                                        items={recommendations}
+                                        onOpenModal={onOpenModal}
+                                        isWatched={isWatched}
+                                        isLoading={isLoadingRecs}
+                                    />
+                                )}
+
+                                <Row id="trending-now" title="🔥 Trending Now" items={trending} onOpenModal={onOpenModal} isWatched={isWatched} />
+                                <Row id="popular-movies" title="🍿 Popular Movies" items={popular} onOpenModal={onOpenModal} isWatched={isWatched} />
+
+                                {(continueWatchingList.length > 0 || continueWatchingLoading) && (
+                                    <Row id="continue-watching" title="▶️ Continue Watching" items={continueWatchingList} onOpenModal={onOpenModal} isWatched={isWatched} isLoading={continueWatchingLoading} />
+                                )}
+
+                                <Row id="top-rated" title="🏆 Top Rated Movies" items={topRated} onOpenModal={onOpenModal} isWatched={isWatched} />
+                                <Row id="popular-tv" title="📺 Popular TV Shows" items={tvShows} onOpenModal={onOpenModal} isWatched={isWatched} />
+
+                                {(myList.length > 0 || myListLoading) && (
+                                    <Row id="my-list" title="⭐ My List" items={myList} onOpenModal={onOpenModal} isWatched={isWatched} isLoading={myListLoading} />
+                                )}
+
+                                <Row id="anime" title="🐉 Anime" items={anime} onOpenModal={onOpenModal} isWatched={isWatched} isLarge />
+                                <Row id="asian-dramas" title="🎭 Asian Dramas" items={asianDramas} onOpenModal={onOpenModal} isWatched={isWatched} />
+
+                                {/* Native Banner at bottom */}
+                                <AdsterraBanner />
+                            </main>
+                        </div>
+                    </div>
+                </div>
+            </>
+        );
 };

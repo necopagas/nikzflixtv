@@ -1,16 +1,66 @@
-# React + Vite
+![NikzFlix TV banner](public/logo512.png)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# NikzFlix TV
 
-Currently, two official plugins are available:
+NikzFlix TV is a React + Vite streaming hub that aggregates movies, anime, dramas, live TV, and curated collections with seasonal themes and ad monetisation hooks.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+- Home hero with smart trailer playback and curated media rows
+- My List, Continue Watching, and watch history syncing via local storage
+- IPTV viewer, Vivamax, Videoke, and community chat pages
+- Seasonal themes (Halloween, Christmas, New Year) with optional ambient audio
+- Adsterra social bar + smartlink placements out of the box
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Getting Started
 
-## Expanding the ESLint configuration
+1. Install dependencies:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+	```bash
+	npm install
+	```
+
+2. Configure environment variables:
+
+	```bash
+	cp .env.example .env
+	# edit .env and add your TMDB key
+	```
+
+3. Run the development server:
+
+	```bash
+	npm run dev
+	```
+
+## Available Scripts
+
+- `npm run dev` – start the Vite dev server
+- `npm run build` – create a production build
+- `npm run preview` – preview the production build locally
+- `npm run lint` – lint the source files with ESLint
+
+## Tech Stack
+
+- React 19 with React Router and Suspense-based code splitting
+- Tailwind CSS (via `@tailwindcss/vite`) and custom `App.css` theme
+- Capacitor plugins for Android packaging and sharing
+- TMDB-powered catalog fetching with resilient helpers
+
+## Project Structure Highlights
+
+- `src/App.jsx` – app shell, routing, modals, seasonal overlays
+- `src/pages/` – route-level pages (Home, Anime, Drama, IPTV, etc.)
+- `src/components/` – reusable UI primitives (Banner, Row, Poster, Modals)
+- `src/hooks/` – stateful logic for lists, history, seasonal themes
+- `api/` – Express proxies and Gemini integrations (optional backend)
+
+## Deployment Notes
+
+- Provide a valid TMDB API key via `VITE_TMDB_API_KEY`
+- Ensure hosted assets (alarm audio, ad scripts) are reachable over HTTPS
+- For Capacitor builds, update Android config under `android/`
+
+---
+
+Need help polishing further? Open an issue or reach out to the maintainer.

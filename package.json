@@ -1,12 +1,12 @@
 {
-  "name": "nikztv",
+  "name": "nikzflixtv",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-  "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
+    "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
     "preview": "vite preview"
   },
   "dependencies": {

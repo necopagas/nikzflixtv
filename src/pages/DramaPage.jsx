@@ -5,7 +5,6 @@ import { fetchData } from '../utils/fetchData';
 import { API_ENDPOINTS } from '../config';
 import { Poster } from '../components/Poster';
 import { Row } from '../components/Row';
-import AdsterraBanner from '../AdsterraBanner';
 import { AdsterraSmartlink } from '../components/AdsterraSmartlink';
 
 function useDebounce(value, delay) {
@@ -121,9 +120,6 @@ export const DramaPage = ({ onOpenModal, isWatched }) => {
                         onOpenModal={onOpenModal}
                         isWatched={isWatched}
                     />
-                    
-                    {/* Native Banner */}
-                    <AdsterraBanner />
                 </>
             )}
         </div>

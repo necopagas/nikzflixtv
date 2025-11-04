@@ -2,22 +2,72 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Hls from 'hls.js';
 import { MediaPlayer } from 'dashjs';
+import shaka from 'shaka-player/dist/shaka-player.compiled';
+import { normalizeHeaders, buildDashRequestModifier, applyDashProtectionData, buildShakaDrmConfiguration } from '../utils/iptvDrm';
 import { PiArrowsOutSimple, PiArrowsInSimple, PiPictureInPicture, PiGear, PiX } from 'react-icons/pi';
 import { FaPlay, FaPause, FaVolumeUp, FaVolumeMute, FaBackward, FaForward, FaClosedCaptioning } from 'react-icons/fa';
 
+const PROXY_PREFIX = '/api/proxy?url=';
+const USE_PROXY = false; // Disable proxy for now due to CORS issues
+const isProxiedUrl = (url = '') => typeof url === 'string' && url.includes(PROXY_PREFIX);
+const buildProxyUrl = (url) => {
+  if (!url || isProxiedUrl(url) || !USE_PROXY) return url;
+  return `${PROXY_PREFIX}${encodeURIComponent(url)}`;
+};
+const extractOriginalUrl = (url, fallback = '') => {
+  if (!isProxiedUrl(url)) return url || fallback;
+  const idx = url.indexOf(PROXY_PREFIX);
+  if (idx === -1) return fallback;
+  const encoded = url.slice(idx + PROXY_PREFIX.length);
+  try {
+    return decodeURIComponent(encoded);
+  } catch (error) {
+    console.warn('[IPTV] Failed to decode proxied URL', error);
+    return fallback;
+  }
+};
+
+
+const HLS_HINTS = ['.m3u8', 'format=m3u8', 'format=hls', 'playlist.m3u', 'hls/', 'manifest.m3u8', 'output.m3u8'];
+const DASH_HINTS = ['.mpd', 'manifest.mpd', 'format=mpd', 'dash/', 'manifest=mpd', '.ism/manifest', 'manifest.mpd?'];
+const PROGRESSIVE_EXT = /\.(mp4|m4v|mov|webm|ogg|ogv|mkv|avi|ts)$/i;
+
 const detectStreamType = (url) => {
-    if (!url) return 'unknown';
-    if (url.includes('.m3u8')) return 'hls';
-    if (url.includes('.mpd')) return 'dash';
-    if (/\.(mp4|webm|ogg)$/i.test(url)) return 'progressive';
-    return 'unknown';
+  if (!url) return 'unknown';
+  const normalized = url.toLowerCase();
+
+  if (HLS_HINTS.some((hint) => normalized.includes(hint))) {
+    return 'hls';
+  }
+  if (DASH_HINTS.some((hint) => normalized.includes(hint))) {
+    return 'dash';
+  }
+  if (PROGRESSIVE_EXT.test(normalized)) {
+    return 'progressive';
+  }
+  return 'unknown';
+};
+
+const resolveExplicitType = (channel = {}) => {
+  const manual = channel.type || channel.streamType || channel.format || channel.protocol || channel.manifestType;
+  if (!manual) return null;
+  const value = String(manual).toLowerCase();
+  if (['dash', 'mpd', 'mpeg-dash', 'dashjs', 'dash/shaka', 'dash_shaka'].includes(value)) return 'dash';
+  if (['hls', 'm3u8', 'application/x-mpegurl', 'hls.js'].includes(value)) return 'hls';
+  if (['progressive', 'mp4', 'file', 'direct'].includes(value)) return 'progressive';
+  return null;
 };
 
 export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onError }) => {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
   const dashRef = useRef(null);
+  const shakaRef = useRef(null);
   const containerRef = useRef(null);
+  const playbackGuardRef = useRef(null);
+  const playbackMonitorRef = useRef(null);
+  const attemptedUrlsRef = useRef(new Set());
+  const channelAttemptKeyRef = useRef(null);
 
   const [showControls, setShowControls] = useState(false);
   const [showQualityMenu, setShowQualityMenu] = useState(false);
@@ -36,6 +86,25 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [captionsEnabled, setCaptionsEnabled] = useState(false);
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+  // Try autoplay, force mute on first failure to satisfy browser policies
+  const attemptAutoplay = useCallback((videoElement) => {
+    const target = videoElement || videoRef.current;
+    if (!target) return Promise.resolve();
+
+    return target.play().catch((err) => {
+      if (!target.muted) {
+        console.warn('[IPTV] Autoplay prevented, muting and retrying.', err);
+        target.muted = true;
+        setMuted(true);
+        return target.play().catch((retryErr) => {
+          console.warn('[IPTV] Autoplay failed even after muting.', retryErr);
+          return Promise.reject(retryErr);
+        });
+      }
+      return Promise.reject(err);
+    });
+  }, [setMuted]);
 
   // --- Fullscreen functions (no change) ---
   // fullscreen handled inline in toggleFullscreen
@@ -197,11 +266,34 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
 
   // --- FIX: Ang cleanupPlayers stable na ---
   const cleanupPlayers = useCallback(() => {
+    if (playbackGuardRef.current) {
+      clearTimeout(playbackGuardRef.current);
+      playbackGuardRef.current = null;
+    }
+    if (playbackMonitorRef.current) {
+      try {
+        playbackMonitorRef.current();
+      } catch (error) {
+        console.warn('[IPTV] playback monitor cleanup failed', error);
+      }
+      playbackMonitorRef.current = null;
+    }
     if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     if (dashRef.current) {
       if (typeof dashRef.current.destroy === 'function') dashRef.current.destroy();
       else if (typeof dashRef.current.reset === 'function') dashRef.current.reset();
       dashRef.current = null;
+    }
+    if (shakaRef.current) {
+      try {
+        const destroyResult = shakaRef.current.destroy?.();
+        if (destroyResult?.catch) {
+          destroyResult.catch((error) => console.warn('[IPTV] Shaka destroy error', error));
+        }
+      } catch (error) {
+        console.warn('[IPTV] Shaka destroy error', error);
+      }
+      shakaRef.current = null;
     }
     const video = videoRef.current;
     if (video) { video.removeAttribute('src'); video.load(); }
@@ -216,14 +308,230 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
         return;
     }
 
-    const type = detectStreamType(channel.url);
+    const originalSourceUrl = channel?.originalUrl || extractOriginalUrl(channel.url, channel.url);
+    const channelAttemptKey = channel
+      ? `${channel?.name || 'unknown'}::${channel?.number || ''}::${originalSourceUrl}`
+      : null;
+
+    if (channelAttemptKeyRef.current !== channelAttemptKey) {
+      channelAttemptKeyRef.current = channelAttemptKey;
+      attemptedUrlsRef.current = new Set();
+    }
+    attemptedUrlsRef.current.add(channel.url);
+
+    const explicitType = resolveExplicitType(channel);
+    const detectionSource = explicitType ? channel.url : originalSourceUrl;
+    const type = explicitType || detectStreamType(detectionSource);
+    const baseHeaders = normalizeHeaders(channel?.headers);
+    const hlsHeaders = normalizeHeaders(channel?.hls?.headers || baseHeaders);
+    const dashHeaders = normalizeHeaders(channel?.dash?.headers || baseHeaders);
+    const withCredentials = Boolean(channel?.withCredentials);
+    const hlsWithCredentials = channel?.hls?.withCredentials ?? withCredentials;
+    const dashWithCredentials = channel?.dash?.withCredentials ?? withCredentials;
     console.log(`Initializing ${type} player for ${channel.url}`);
     let statsIntervalId = null; // Ip-define ang interval ID diri
+    const guardDelay = Math.max(4000, Number(channel?.playbackGuardMs) || 8000);
+    let playbackConfirmed = false;
+    let fallbackTriggered = false;
+
+    const stopPlaybackMonitor = () => {
+      if (playbackGuardRef.current) {
+        clearTimeout(playbackGuardRef.current);
+        playbackGuardRef.current = null;
+      }
+      if (playbackMonitorRef.current) {
+        try {
+          playbackMonitorRef.current();
+        } catch (error) {
+          console.warn('[IPTV] playback monitor cleanup failed', error);
+        }
+        playbackMonitorRef.current = null;
+      }
+    };
+
+    const attemptFallback = (reason, urlOverride = null, delayMs = 0) => {
+      if (fallbackTriggered) return;
+      console.warn(reason);
+
+      const fallbackCandidates = [];
+      const seenFallbackUrls = new Set();
+
+      const addCandidate = (candidateUrl, detectionUrl) => {
+        if (!candidateUrl) return;
+        if (candidateUrl === channel.url) return;
+        if (attemptedUrlsRef.current.has(candidateUrl)) return;
+        if (seenFallbackUrls.has(candidateUrl)) return;
+        seenFallbackUrls.add(candidateUrl);
+        const typeHint = detectStreamType(detectionUrl || extractOriginalUrl(candidateUrl, candidateUrl));
+        fallbackCandidates.push({
+          url: candidateUrl,
+          type: typeHint && typeHint !== 'unknown' ? typeHint : undefined,
+        });
+      };
+
+      const addCandidateVariants = (rawUrl) => {
+        if (!rawUrl) return;
+        addCandidate(rawUrl, rawUrl);
+        const decoded = extractOriginalUrl(rawUrl, rawUrl);
+        if (decoded && decoded !== rawUrl) {
+          addCandidate(decoded, decoded);
+        }
+        const proxied = buildProxyUrl(decoded);
+        if (proxied) {
+          addCandidate(proxied, decoded);
+        }
+      };
+
+      addCandidateVariants(urlOverride);
+      addCandidateVariants(channel?.fallback);
+      addCandidateVariants(channel?.hls?.url);
+      addCandidateVariants(channel?.dash?.fallback);
+      addCandidateVariants(channel?.dash?.fallbackUrl);
+      addCandidateVariants(channel?.streamFallback);
+      addCandidateVariants(channel?.backupUrl);
+
+      if (isProxiedUrl(channel.url)) {
+        if (originalSourceUrl && originalSourceUrl !== channel.url) {
+          addCandidate(originalSourceUrl, originalSourceUrl);
+        }
+      } else {
+        const proxiedCurrent = buildProxyUrl(originalSourceUrl);
+        if (proxiedCurrent) {
+          addCandidate(proxiedCurrent, originalSourceUrl);
+        }
+      }
+
+      const targetCandidate = fallbackCandidates.find(Boolean);
+
+      if (targetCandidate) {
+        fallbackTriggered = true;
+        stopPlaybackMonitor();
+        if (statsIntervalId) {
+          clearInterval(statsIntervalId);
+          statsIntervalId = null;
+        }
+        attemptedUrlsRef.current.add(targetCandidate.url);
+        const payload = {
+          url: targetCandidate.url,
+          originalUrl: originalSourceUrl,
+        };
+        if (targetCandidate.type) {
+          payload.type = targetCandidate.type;
+        }
+
+        const runner = () => onError?.(payload);
+        if (delayMs > 0) setTimeout(runner, delayMs);
+        else runner();
+      } else {
+        fallbackTriggered = true;
+        stopPlaybackMonitor();
+        if (statsIntervalId) {
+          clearInterval(statsIntervalId);
+          statsIntervalId = null;
+        }
+
+        console.warn('[IPTV] No fallback candidates available for', channel?.name || channel?.url);
+        onError?.({
+          url: null,
+          originalUrl: originalSourceUrl,
+          reason: 'no-fallback',
+        });
+        onCanPlay?.();
+      }
+    };
+
+    const markPlaybackStarted = () => {
+      if (playbackConfirmed) return;
+      const v = videoRef.current;
+      if (!v) return;
+      const hasBuffered = (() => {
+        try {
+          return v.buffered?.length && (v.buffered.end(v.buffered.length - 1) - v.currentTime > 0.1);
+        } catch {
+          return false;
+        }
+      })();
+      if (v.readyState >= 2 && !v.paused && (v.currentTime > 0.2 || hasBuffered)) {
+        playbackConfirmed = true;
+        stopPlaybackMonitor();
+      }
+    };
+
+    const startPlaybackMonitor = () => {
+      const v = videoRef.current;
+      if (!v) return;
+
+      const handleProgress = () => markPlaybackStarted();
+      const handlePlaying = () => markPlaybackStarted();
+      const handleTimeUpdate = () => markPlaybackStarted();
+      const handleLoaded = () => markPlaybackStarted();
+
+      v.addEventListener('progress', handleProgress);
+      v.addEventListener('playing', handlePlaying);
+      v.addEventListener('timeupdate', handleTimeUpdate);
+      v.addEventListener('loadeddata', handleLoaded);
+
+      playbackMonitorRef.current = () => {
+        v.removeEventListener('progress', handleProgress);
+        v.removeEventListener('playing', handlePlaying);
+        v.removeEventListener('timeupdate', handleTimeUpdate);
+        v.removeEventListener('loadeddata', handleLoaded);
+      };
+
+      playbackGuardRef.current = setTimeout(() => {
+        if (playbackConfirmed || fallbackTriggered) return;
+        markPlaybackStarted();
+        if (!playbackConfirmed && !fallbackTriggered) {
+          attemptFallback(`[IPTV] Playback stalled for ${channel?.name || channel.url}. Switching to fallback if available.`);
+        }
+      }, guardDelay);
+    };
+
+    startPlaybackMonitor();
 
     try {
       if (type === 'hls') {
         if (Hls.isSupported()) {
-          const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+          const hlsConfig = {
+            enableWorker: true,
+            lowLatencyMode: true,
+            backBufferLength: channel?.hls?.backBufferLength,
+          };
+
+          if (Object.keys(hlsHeaders).length > 0 || hlsWithCredentials) {
+            hlsConfig.xhrSetup = (xhr) => {
+              if (hlsWithCredentials) {
+                xhr.withCredentials = true;
+              }
+              Object.entries(hlsHeaders).forEach(([key, value]) => {
+                try {
+                  xhr.setRequestHeader(key, value);
+                } catch (error) {
+                  console.warn('[IPTV] Unable to set HLS header', key, error);
+                }
+              });
+            };
+
+            hlsConfig.fetchSetup = (context, init) => {
+              const nextInit = { ...init };
+              const headerBag = { ...(context?.headers || {}), ...(init?.headers || {}) };
+              Object.entries(hlsHeaders).forEach(([key, value]) => {
+                headerBag[key] = value;
+              });
+              if (Object.keys(headerBag).length > 0) {
+                nextInit.headers = headerBag;
+              }
+              if (hlsWithCredentials) {
+                context.credentials = 'include';
+                nextInit.credentials = 'include';
+              }
+              context.headers = headerBag;
+              return nextInit;
+            };
+          }
+
+          const mergedConfig = channel?.hls?.config ? { ...hlsConfig, ...channel.hls.config } : hlsConfig;
+          const hls = new Hls(mergedConfig);
           hlsRef.current = hls;
           hls.loadSource(channel.url);
           hls.attachMedia(video);
@@ -231,7 +539,9 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
             console.log("HLS Manifest Parsed");
             setQualities([{ label: 'Auto', value: -1 }, ...hls.levels.map((l, i) => ({ label: `${l.height}p`, value: i }))]);
-            video.play().catch((e) => console.warn("HLS Autoplay prevented", e));
+            attemptAutoplay(video)
+              .then(() => markPlaybackStarted())
+              .catch((e) => console.warn("HLS Autoplay failed", e));
             onCanPlay?.(); // Tawagon *human* ma-parse
           });
 
@@ -242,24 +552,28 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
           });
 
           hls.on(Hls.Events.ERROR, (event, data) => {
-            console.error('HLS Error:', data);
-            // Gamiton ang 'channel.fallback' gikan sa dependency
-            if (data.fatal && channel.fallback && data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-              console.warn(`HLS Network Error, attempting fallback: ${channel.fallback}`);
-              // Tawagon ang 'onError' gikan sa dependency
-              setTimeout(() => onError?.(channel.fallback), 3000); 
+            const errorMsg = data.details ? `${data.type}: ${data.details}` : data.type;
+            const fatalMsg = data.fatal ? ' (fatal)' : '';
+            console.error(`HLS Error: ${errorMsg}${fatalMsg}`, data.error || data);
+
+            // Only attempt fallback for fatal errors, not for non-fatal fragParsingError
+            if (data.fatal && data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+              attemptFallback(`[IPTV] HLS network error for ${channel?.name || channel.url}.`, channel.fallback);
             } else if (data.fatal) {
-                console.warn("HLS Fatal error, re-initializing player...");
-                // Dili na nato i-call ang initializePlayer diri,
-                // ang fallback logic na ang mo-handle sa pag-re-init
+              attemptFallback(`[IPTV] HLS fatal error for ${channel?.name || channel.url}.`, channel.fallback, 200);
             }
+            // Non-fatal errors like fragParsingError are logged but don't trigger fallback
           });
 
           const updateStats = () => {
             if(hlsRef.current) {
                 setLatency(hlsRef.current.latency?.toFixed(1));
-                const bufferInfo = Hls.BufferHelper.bufferInfo(video, video.currentTime, 0.5);
-                setBufferHealth(bufferInfo.len?.toFixed(1));
+                try {
+                  const bufferInfo = Hls.BufferHelper?.bufferInfo(video, video.currentTime, 0.5);
+                  setBufferHealth(bufferInfo?.len?.toFixed(1) || '0.0');
+                } catch (error) {
+                  setBufferHealth('0.0');
+                }
             }
           };
           statsIntervalId = setInterval(updateStats, 1000); // I-assign ang ID
@@ -267,14 +581,13 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
           console.log("Using Native HLS");
           video.src = channel.url;
-          video.play().catch((e) => console.warn("Native HLS Autoplay prevented", e));
+          attemptAutoplay(video)
+            .then(() => markPlaybackStarted())
+            .catch((e) => console.warn("Native HLS Autoplay failed", e));
           video.addEventListener('canplay', () => onCanPlay?.(), { once: true });
            video.addEventListener('error', () => {
                console.error("Native HLS Error");
-               if (channel.fallback) {
-                   console.warn(`Native HLS Error, attempting fallback: ${channel.fallback}`);
-                   onError?.(channel.fallback);
-               }
+               attemptFallback(`[IPTV] Native HLS error for ${channel?.name || channel.url}.`, channel.fallback);
            });
         } else {
              console.error("HLS not supported");
@@ -283,38 +596,350 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
       }
       else if (type === 'dash') {
         console.log("Initializing DASH Player");
-        const player = MediaPlayer().create();
-        dashRef.current = player;
-        player.initialize(video, channel.url, true);
 
-        player.on(MediaPlayer.events.STREAM_INITIALIZED, () => {
-            console.log("DASH Stream Initialized");
-            onCanPlay?.();
-        });
-        player.on(MediaPlayer.events.ERROR, (e) => {
-            console.error("DASH Error:", e);
-            if (channel.fallback) {
-                console.warn(`DASH Error, attempting fallback: ${channel.fallback}`);
-                onError?.(channel.fallback);
-            } else {
-                 onCanPlay?.();
+        let dashFallbackTried = false;
+
+        const startDashWithDashJS = () => {
+          dashFallbackTried = true;
+          try {
+            const player = MediaPlayer().create();
+            dashRef.current = player;
+
+            player.updateSettings({
+              debug: { logLevel: 4 },
+              streaming: {
+                abr: {
+                  autoSwitchBitrate: { video: true, audio: true },
+                  limitBitrateByPortal: true,
+                },
+                buffer: {
+                  fastSwitchEnabled: true,
+                  bufferTimeAtTopQuality: 30,
+                  bufferTimeAtTopQualityLongForm: 60,
+                  initialBufferLevel: 10,
+                  stableBufferTime: 20,
+                  bufferPruningInterval: 10,
+                },
+                gaps: {
+                  jumpGaps: true,
+                  jumpLargeGaps: true,
+                  smallGapLimit: 1.5,
+                },
+                retryAttempts: {
+                  MPD: 10,
+                  XLinkExpansion: 5,
+                  MediaSegment: 10,
+                  InitializationSegment: 10,
+                  BitstreamSwitching: 5,
+                },
+                retryIntervals: {
+                  MPD: 1000,
+                  XLinkExpansion: 1000,
+                  MediaSegment: 1000,
+                  InitializationSegment: 1000,
+                  BitstreamSwitching: 1000,
+                },
+                lowLatencyEnabled: false,
+                liveCatchup: { enabled: true },
+              },
+            });
+
+            if (channel?.dash?.settings) {
+              player.updateSettings(channel.dash.settings);
             }
-        });
+
+            if (typeof channel?.dash?.requestModifier === 'function') {
+              player.extend('RequestModifier', channel.dash.requestModifier, true);
+            } else {
+              player.extend('RequestModifier', buildDashRequestModifier(dashHeaders, dashWithCredentials), true);
+            }
+
+            applyDashProtectionData(player, channel?.dash?.drm || channel?.drm);
+
+            player.initialize(video, channel.url, true);
+
+            player.on(MediaPlayer.events.STREAM_INITIALIZED, () => {
+              const bitrateList = player.getBitrateInfoListFor('video');
+              if (bitrateList?.length) {
+                const qualityOptions = bitrateList.map((item, idx) => ({
+                  label: `${item.height}p`,
+                  value: idx,
+                  bitrate: item.bitrate,
+                }));
+                setQualities([{ label: 'Auto', value: -1 }, ...qualityOptions]);
+              }
+
+              attemptAutoplay(video)
+                .then(() => markPlaybackStarted())
+                .catch((e) => console.warn('DASH (dash.js) Autoplay failed', e));
+              onCanPlay?.();
+            });
+
+            player.on(MediaPlayer.events.PLAYBACK_STARTED, () => {
+              setIsPlaying(true);
+              markPlaybackStarted();
+            });
+
+            player.on(MediaPlayer.events.QUALITY_CHANGE_RENDERED, (e) => {
+              if (e.mediaType === 'video') {
+                const bitrateList = player.getBitrateInfoListFor('video');
+                const currentBitrate = bitrateList?.[e.newQuality];
+                if (currentBitrate) {
+                  setCurrentQuality(player.getSettings().streaming.abr.autoSwitchBitrate.video ? 'Auto' : `${currentBitrate.height}p`);
+                  setBitrate(currentBitrate.bitrate || 0);
+                }
+              }
+            });
+
+            player.on(MediaPlayer.events.ERROR, (e) => {
+              console.error('dash.js error', e);
+              attemptFallback(`[IPTV] dash.js error for ${channel?.name || channel.url}.`, channel.fallback, 400);
+            });
+
+            const updateDashStats = () => {
+              if (fallbackTriggered) return;
+              if (dashRef.current && video) {
+                const metrics = dashRef.current.getMetricsFor('video');
+                if (metrics) {
+                  const dashMetrics = dashRef.current.getDashMetrics();
+                  const bufferLevel = dashMetrics?.getCurrentBufferLevel('video');
+                  if (bufferLevel !== undefined) {
+                    setBufferHealth(bufferLevel.toFixed(1));
+                  }
+                }
+                if (typeof dashRef.current.getCurrentLiveLatency === 'function') {
+                  const liveLatency = dashRef.current.getCurrentLiveLatency();
+                  if (typeof liveLatency === 'number' && !Number.isNaN(liveLatency)) {
+                    setLatency(liveLatency.toFixed(1));
+                  }
+                }
+                const currentIndex = typeof dashRef.current.getQualityFor === 'function'
+                  ? dashRef.current.getQualityFor('video')
+                  : null;
+                const bitrateList = dashRef.current.getBitrateInfoListFor?.('video');
+                if (Array.isArray(bitrateList) && typeof currentIndex === 'number' && bitrateList[currentIndex]) {
+                  setBitrate(bitrateList[currentIndex].bitrate || 0);
+                }
+              }
+            };
+            statsIntervalId = setInterval(updateDashStats, 1000);
+
+            return true;
+          } catch (error) {
+            console.error('dash.js initialization error:', error);
+            attemptFallback(`[IPTV] dash.js initialization failed for ${channel?.name || channel.url}.`, channel.fallback);
+            return false;
+          }
+        };
+
+        const startDashWithShaka = () => {
+          if (typeof shaka === 'undefined' || !shaka.Player || !shaka.Player.isBrowserSupported()) {
+            return false;
+          }
+
+          try {
+            shaka.polyfill?.installAll?.();
+
+            const player = new shaka.Player(video);
+            shakaRef.current = player;
+
+            player.configure({
+              streaming: {
+                rebufferingGoal: 10,
+                bufferingGoal: 20,
+                lowLatencyMode: false,
+                jumpLargeGaps: true,
+              },
+              abr: {
+                enabled: true,
+                defaultBandwidthEstimate: 5_000_000,
+              },
+            });
+
+            if (channel?.dash?.shakaConfig) {
+              player.configure(channel.dash.shakaConfig);
+            }
+
+            const drmConfig = channel?.dash?.drm || channel?.drm;
+            const shakaDrm = buildShakaDrmConfiguration(drmConfig);
+            const mergedLicenseHeaders = {};
+
+            if (shakaDrm) {
+              const drmSettings = {};
+
+              if (shakaDrm.servers && Object.keys(shakaDrm.servers).length) {
+                drmSettings.servers = shakaDrm.servers;
+              }
+              if (shakaDrm.advanced && Object.keys(shakaDrm.advanced).length) {
+                drmSettings.advanced = shakaDrm.advanced;
+              }
+              if (shakaDrm.clearKeys && Object.keys(shakaDrm.clearKeys).length) {
+                drmSettings.clearKeys = shakaDrm.clearKeys;
+              }
+
+              if (Object.keys(drmSettings).length) {
+                player.configure({ drm: drmSettings });
+              }
+
+              Object.values(shakaDrm.licenseHeaders || {}).forEach((headers) => {
+                Object.assign(mergedLicenseHeaders, headers);
+              });
+            }
+
+            const networking = player.getNetworkingEngine?.();
+            if (networking) {
+              const RequestType = shaka.net.NetworkingEngine.RequestType;
+              const mediaRequestTypes = new Set([
+                RequestType.MANIFEST,
+                RequestType.SEGMENT,
+                RequestType.SEGMENT_LIST,
+                RequestType.TIMELINE,
+                RequestType.SEGMENT_INIT,
+                RequestType.APP_MANIFEST,
+              ]);
+
+              networking.clearAllRequestFilters?.();
+              networking.registerRequestFilter((type, request) => {
+                const headers = request.headers || (request.headers = {});
+                if (dashWithCredentials || (drmConfig?.withCredentials ?? false)) {
+                  request.allowCrossSiteCredentials = true;
+                }
+
+                if (mediaRequestTypes.has(type) && Object.keys(dashHeaders).length > 0) {
+                  Object.assign(headers, dashHeaders);
+                }
+
+                if (type === RequestType.LICENSE && Object.keys(mergedLicenseHeaders).length > 0) {
+                  Object.assign(headers, mergedLicenseHeaders);
+                }
+              });
+            }
+
+            const handleShakaFatal = (error) => {
+              if (fallbackTriggered) return;
+              console.error('[Shaka] fatal error', error);
+              if (statsIntervalId) {
+                clearInterval(statsIntervalId);
+                statsIntervalId = null;
+              }
+
+              if (!dashFallbackTried) {
+                console.warn('[Shaka] falling back to dash.js');
+                cleanupPlayers();
+                stopPlaybackMonitor();
+                startPlaybackMonitor();
+                const dashStarted = startDashWithDashJS();
+                if (!dashStarted) {
+                  attemptFallback(`[IPTV] Shaka fatal error, dash.js unavailable for ${channel?.name || channel.url}.`, channel.fallback, 500);
+                }
+                return;
+              }
+
+              attemptFallback(`[IPTV] Shaka fatal error for ${channel?.name || channel.url}.`, channel.fallback, 500);
+            };
+
+            player.addEventListener('error', (event) => {
+              const detail = event?.detail || event;
+              const severity = detail?.severity;
+              if (typeof severity === 'number' && shaka.util?.Error?.Severity) {
+                if (severity !== shaka.util.Error.Severity.CRITICAL) {
+                  console.warn('[Shaka] non-fatal error', detail);
+                  return;
+                }
+              }
+              handleShakaFatal(detail);
+            });
+
+            player.addEventListener('adaptation', () => {
+              const tracks = player.getVariantTracks?.() || [];
+              const activeTrack = tracks.find((track) => track.active);
+              const abrEnabled = player.getConfiguration().abr.enabled;
+              if (activeTrack) {
+                setCurrentQuality(abrEnabled ? 'Auto' : `${activeTrack.height || Math.round((activeTrack.bandwidth || 0) / 1000)}p`);
+                setBitrate(activeTrack.bandwidth || 0);
+                markPlaybackStarted();
+              }
+            });
+
+            player.load(channel.url).then(() => {
+              const tracks = player.getVariantTracks?.() || [];
+              const seen = new Set();
+              const qualityOptions = tracks
+                .filter((track) => track.type === 'variant' && track.height)
+                .filter((track) => {
+                  const key = `${track.height}-${track.bandwidth}`;
+                  if (seen.has(key)) return false;
+                  seen.add(key);
+                  return true;
+                })
+                .sort((a, b) => (a.height || 0) - (b.height || 0))
+                .map((track, idx) => ({
+                  label: `${track.height}p`,
+                  value: track.id ?? idx,
+                  trackId: track.id,
+                  bandwidth: track.bandwidth,
+                  height: track.height,
+                }));
+
+              setQualities([{ label: 'Auto', value: -1 }, ...qualityOptions]);
+
+              attemptAutoplay(video)
+                .then(() => markPlaybackStarted())
+                .catch((e) => console.warn('Shaka Autoplay failed', e));
+              onCanPlay?.();
+            }).catch((error) => {
+              handleShakaFatal(error);
+            });
+
+            const updateShakaStats = () => {
+              if (fallbackTriggered) return;
+              if (!shakaRef.current || !video) return;
+
+              const buffered = video.buffered;
+              if (buffered?.length) {
+                const bufferAhead = buffered.end(buffered.length - 1) - video.currentTime;
+                if (!Number.isNaN(bufferAhead)) {
+                  setBufferHealth(bufferAhead.toFixed(1));
+                }
+              }
+
+              const latencyValue = shakaRef.current.getPresentationLatency?.();
+              if (typeof latencyValue === 'number' && !Number.isNaN(latencyValue)) {
+                setLatency(latencyValue.toFixed(1));
+              }
+
+              const stats = shakaRef.current.getStats?.();
+              if (stats?.estimatedBandwidth) {
+                setBitrate(stats.estimatedBandwidth);
+              }
+            };
+
+            statsIntervalId = setInterval(updateShakaStats, 1000);
+
+            return true;
+          } catch (error) {
+            console.error('Shaka initialization error:', error);
+            attemptFallback(`[IPTV] Shaka initialization failed for ${channel?.name || channel.url}.`, channel.fallback);
+            return false;
+          }
+        };
+
+        const shakaStarted = startDashWithShaka();
+        if (!shakaStarted) {
+          startDashWithDashJS();
+        }
       }
       else if (type === 'progressive') {
         console.log("Initializing Progressive Player");
         video.src = channel.url;
         video.load();
-        video.play().catch((e) => console.warn("Progressive Autoplay prevented", e));
+        attemptAutoplay(video)
+          .then(() => markPlaybackStarted())
+          .catch((e) => console.warn("Progressive Autoplay failed", e));
         video.addEventListener('canplay', () => onCanPlay?.(), { once: true });
         video.addEventListener('error', () => {
             console.error("Progressive Playback Error");
-            if (channel.fallback) {
-                 console.warn(`Progressive Error, attempting fallback: ${channel.fallback}`);
-                 onError?.(channel.fallback);
-            } else {
-                 onCanPlay?.();
-            }
+            attemptFallback(`[IPTV] Progressive playback error for ${channel?.name || channel.url}.`, channel.fallback);
         });
       }
        else {
@@ -334,7 +959,7 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
         }
     };
   // Karon, ang dependencies ani kay stable na gikan sa parent
-  }, [channel, cleanupPlayers, onCanPlay, onError]);
+  }, [channel, cleanupPlayers, onCanPlay, onError, attemptAutoplay]);
 
 
   // --- FIX: GI-ILISAN ANG MAIN useEffect ---
@@ -388,12 +1013,58 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
   }, []); // Modagan ra ni kausa
 
 
-  const switchQuality = (level) => {
+  const switchQuality = (value) => {
+    const selected = qualities.find((q) => String(q.value) === String(value));
+    if (!selected) return;
+
     if (hlsRef.current) {
-        console.log(`Switching HLS quality to level: ${level}`);
-        hlsRef.current.currentLevel = parseInt(level, 10);
-        setCurrentQuality(level === -1 ? 'Auto' : qualities.find(q => q.value === level)?.label || '...');
+      const levelIndex = Number(selected.value);
+      console.log(`Switching HLS quality to level: ${levelIndex}`);
+      hlsRef.current.currentLevel = levelIndex;
+      const levelInfo = levelIndex >= 0 ? hlsRef.current.levels?.[levelIndex] : null;
+      if (levelInfo?.bitrate) {
+        setBitrate(levelInfo.bitrate);
+      }
+      setCurrentQuality(levelIndex === -1 ? 'Auto' : selected.label || `${levelInfo?.height || ''}p`);
+    } else if (dashRef.current) {
+      const levelIndex = Number(selected.value);
+      console.log(`Switching dash.js quality to level: ${levelIndex}`);
+      const settings = dashRef.current.getSettings();
+
+      if (levelIndex === -1) {
+        settings.streaming.abr.autoSwitchBitrate.video = true;
+        dashRef.current.updateSettings(settings);
+        setCurrentQuality('Auto');
+      } else {
+        settings.streaming.abr.autoSwitchBitrate.video = false;
+        dashRef.current.updateSettings(settings);
+        dashRef.current.setQualityFor('video', levelIndex);
+        setCurrentQuality(selected.label || '...');
+        const bitrateList = dashRef.current.getBitrateInfoListFor?.('video');
+        const info = bitrateList?.[levelIndex];
+        if (info?.bitrate) {
+          setBitrate(info.bitrate);
+        }
+      }
+    } else if (shakaRef.current) {
+      console.log(`Switching Shaka quality to value: ${selected.value}`);
+      if (selected.value === -1) {
+        shakaRef.current.configure({ abr: { enabled: true } });
+        setCurrentQuality('Auto');
+      } else {
+        shakaRef.current.configure({ abr: { enabled: false } });
+        const tracks = shakaRef.current.getVariantTracks?.() || [];
+        const targetTrack = tracks.find((track) => String(track.id ?? track.height) === String(selected.trackId ?? selected.value));
+        if (targetTrack) {
+          shakaRef.current.selectVariantTrack(targetTrack, true, 0);
+          setCurrentQuality(selected.label || `${targetTrack.height || Math.round((targetTrack.bandwidth || 0) / 1000)}p`);
+          if (targetTrack.bandwidth) {
+            setBitrate(targetTrack.bandwidth);
+          }
+        }
+      }
     }
+
     setShowQualityMenu(false);
   };
   // (control helpers moved earlier to avoid TDZ issues)

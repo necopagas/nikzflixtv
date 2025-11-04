@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Row } from '../components/Row';
-import AdsterraBanner from '../AdsterraBanner';
 import { AdsterraSmartlink } from '../components/AdsterraSmartlink';
 import { GenreFilter } from '../components/GenreFilter';
 import { ANIME_GENRES } from '../config';
@@ -75,9 +74,6 @@ export const AnimePage = ({ onOpenModal, isWatched }) => {
                         onOpenModal={onOpenModal}
                         isWatched={isWatched}
                     />
-                    
-                    {/* Native Banner */}
-                    <AdsterraBanner />
                 </>
             )}
         </div>

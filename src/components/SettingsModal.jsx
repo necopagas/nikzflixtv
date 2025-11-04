@@ -580,20 +580,33 @@ const SettingCard = ({ title, icon: Icon, children }) => (
     </div>
 );
 
-const ToggleSwitch = ({ enabled, onChange, label }) => (
-    <div className="flex items-center justify-between">
-        <span className="text-gray-300">{label}</span>
-        <button
-            onClick={onChange}
-            className={`relative w-14 h-7 rounded-full transition-all ${
-                enabled ? 'bg-red-600' : 'bg-gray-600'
-            }`}
-        >
-            <div
-                className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
-                    enabled ? 'transform translate-x-7' : ''
+const ToggleSwitch = ({ enabled, onChange, label }) => {
+    const handleKeyDown = (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onChange();
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-between gap-4">
+            <span className="text-gray-300 text-sm sm:text-base">{label}</span>
+            <button
+                type="button"
+                onClick={onChange}
+                onKeyDown={handleKeyDown}
+                role="switch"
+                aria-checked={enabled}
+                className={`relative w-14 h-7 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-red-500/60 ${
+                    enabled ? 'bg-red-600' : 'bg-gray-600'
                 }`}
-            />
-        </button>
-    </div>
-);
+            >
+                <span
+                    className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform transform ${
+                        enabled ? 'translate-x-7' : 'translate-x-0'
+                    }`}
+                />
+            </button>
+        </div>
+    );
+};

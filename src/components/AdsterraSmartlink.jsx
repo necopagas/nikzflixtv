@@ -7,13 +7,13 @@ import React, { useEffect, useRef, useState } from 'react';
  */
 export const AdsterraSmartlink = ({ className = '' }) => {
   const containerRef = useRef(null);
-  const [loaded, setLoaded] = useState(false);
+  const [status, setStatus] = useState('loading'); // loading | loaded | error
 
   useEffect(() => {
-    if (!containerRef.current || loaded) return;
+    if (!containerRef.current || status !== 'loading') return;
 
     // YOUR ACTUAL ADSTERRA SMARTLINK
-    const SMARTLINK_URL = 'https://gainedspotsspun.com/n0u5f9q4a?key=9c1055e64d70326a468b297e9741a70d';
+  const SMARTLINK_URL = 'https://tearingtastes.com/n0u5f9q4a?key=9c1055e64d70326a468b297e9741a70d';
     
     console.info('[Smartlink] Creating iframe...');
 
@@ -25,24 +25,36 @@ export const AdsterraSmartlink = ({ className = '' }) => {
     iframe.setAttribute('scrolling', 'no');
     iframe.setAttribute('allowtransparency', 'true');
     
+    const timeoutId = window.setTimeout(() => {
+      console.warn('[Smartlink] Timeout while loading iframe');
+      setStatus(prev => (prev === 'loading' ? 'error' : prev));
+    }, 8000);
+
     iframe.onload = () => {
       console.info('[Smartlink] ✓ Loaded');
-      setLoaded(true);
+      window.clearTimeout(timeoutId);
+      setStatus('loaded');
     };
     
     iframe.onerror = () => {
       console.error('[Smartlink] ✗ Failed to load');
-      setLoaded(true); // Still mark as loaded to hide spinner
+      window.clearTimeout(timeoutId);
+      setStatus('error');
     };
 
     containerRef.current.appendChild(iframe);
 
     return () => {
+      window.clearTimeout(timeoutId);
       if (containerRef.current?.contains(iframe)) {
         containerRef.current.removeChild(iframe);
       }
     };
-  }, [loaded]);
+  }, [status]);
+
+  if (status === 'error') {
+    return null;
+  }
 
   return (
     <div className={`adsterra-smartlink my-8 flex justify-center ${className}`}>
@@ -51,7 +63,7 @@ export const AdsterraSmartlink = ({ className = '' }) => {
         className="bg-gradient-to-br from-gray-900/30 to-gray-800/30 rounded-lg p-4 border border-gray-700/20 min-h-[250px] flex items-center justify-center"
         id="adsterra-smartlink"
       >
-        {!loaded && (
+        {status === 'loading' && (
           <div className="flex flex-col items-center gap-3">
             <div className="relative w-12 h-12">
               <div className="absolute inset-0 rounded-full border-4 border-gray-700/30"></div>

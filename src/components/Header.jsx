@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { SANTA_HAT_USER } from '../assets/santaHatUser';
 import { useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 // Icons (use react-icons for consistent, lightweight icons)
@@ -22,6 +23,49 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
 
     const { currentUser, logout } = useAuth();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+    // Show holiday hat in November and December
+    const showHolidayHat = useMemo(() => {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const forced = localStorage.getItem('nikzflix-hat'); // 'on' | 'off'
+            if (params.get('hat') === '1' || forced === 'on') return true;
+            if (forced === 'off') return false;
+            const m = new Date().getMonth(); // 0=Jan, 10=Nov, 11=Dec
+            return m === 10 || m === 11;
+        } catch {
+            return false;
+        }
+    }, []);
+
+    // Resolve hat source; prefer transparent PNG in public, else use provided data URL, else SVG
+    const [hatSrc, setHatSrc] = useState('/assets/santa-hat.svg');
+
+    useEffect(() => {
+        if (!showHolidayHat) return;
+
+        const tryLoad = (src) => new Promise((resolve, reject) => {
+            try {
+                const img = new Image();
+                img.onload = () => resolve(src);
+                img.onerror = reject;
+                img.src = src;
+            } catch (e) { reject(e); }
+        });
+
+        // 1) Prefer public PNG (transparent)
+        tryLoad('/assets/santa-hat.png')
+            .then((ok) => setHatSrc(ok))
+            .catch(() => {
+                // 2) Then use embedded user image if present
+                if (SANTA_HAT_USER && typeof SANTA_HAT_USER === 'string' && SANTA_HAT_USER.length > 0) {
+                    setHatSrc(SANTA_HAT_USER);
+                } else {
+                    // 3) Fallback to vector SVG
+                    setHatSrc('/assets/santa-hat.svg');
+                }
+            });
+    }, [showHolidayHat]);
 
     useEffect(() => {
         const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -62,7 +106,18 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
             <div className="flex items-center space-x-4 md:space-x-8">
                 <a href="/" onClick={(e) => { e.preventDefault(); navigate('/'); }} className="flex items-center space-x-2 cursor-pointer">
                     <FaPlay className="text-red-600 text-2xl sm:text-3xl" />
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-[#E50914]">NikzFlix</h1>
+                    <span className="relative inline-block">
+                        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#E50914]">NikzFlix</h1>
+                        {showHolidayHat && (
+                            <img
+                                src={hatSrc}
+                                alt=""
+                                aria-hidden="true"
+                                className="absolute -top-4 sm:-top-5 -left-3 sm:-left-4 w-7 sm:w-9 -rotate-12 drop-shadow-md pointer-events-none select-none"
+                                onError={() => setHatSrc('/assets/santa-hat.svg')}
+                            />
+                        )}
+                    </span>
                 </a>
             </div>
 

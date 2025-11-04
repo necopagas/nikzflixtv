@@ -1,6 +1,6 @@
 // src/components/Poster.jsx
 import React, { useState, useRef, useEffect } from 'react';
-import { IMG_PATH, API_ENDPOINTS } from '../config';
+import { IMG_PATH, BACKDROP_PATH, API_ENDPOINTS } from '../config';
 import { getGenreNamesByIds } from '../utils/genreUtils';
 import { escapeRegex } from '../utils/text';
 import { FaPlay, FaInfoCircle, FaCheck } from 'react-icons/fa';
@@ -25,14 +25,21 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
     const settings = useSettings();
     const isPreviewCapable = typeof window !== 'undefined' ? (settings?.previewsEnabled && window.matchMedia && window.matchMedia('(hover: hover)').matches && window.innerWidth >= 640) : false;
 
-    const imageUrl = item.poster_path?.startsWith('http')
-        ? item.poster_path
-        : item.poster_path ? `${IMG_PATH}${item.poster_path}` : '/no-image.svg';
+    // Prefer poster; fallback to backdrop if poster is missing
+    const hasPoster = !!item.poster_path;
+    const hasBackdrop = !!item.backdrop_path;
+    const imageUrl = hasPoster
+        ? (item.poster_path?.startsWith('http') ? item.poster_path : `${IMG_PATH}${item.poster_path}`)
+        : hasBackdrop
+        ? `${BACKDROP_PATH}${item.backdrop_path}`
+        : '/no-image.svg';
     // low-res placeholder (blur-up)
     const lowResBase = IMG_PATH.replace('/w500', '/w92');
-    const lowResUrl = item.poster_path?.startsWith('http')
-        ? item.poster_path
-        : item.poster_path ? `${lowResBase}${item.poster_path}` : '/no-image.svg';
+    const lowResUrl = hasPoster
+        ? (item.poster_path?.startsWith('http') ? item.poster_path : `${lowResBase}${item.poster_path}`)
+        : hasBackdrop
+        ? `${BACKDROP_PATH}${item.backdrop_path}`
+        : '/no-image.svg';
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' || e.key === ' ') {

@@ -5,7 +5,7 @@ import { Poster } from './Poster';
 import { useApi } from '../hooks/useApi';
 import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 
-export const Row = ({ title, endpoint, param, items: propItems, onOpenModal, isWatched, isLarge = false, isLoading: propIsLoading = false, query = '' }) => {
+export const Row = ({ id, title, endpoint, param, items: propItems, onOpenModal, isWatched, isLarge = false, isLoading: propIsLoading = false, query = '' }) => {
     const scrollContainerRef = useRef(null);
     const [rowRef, isVisible] = useIntersectionObserver({ threshold: 0.1, triggerOnce: true });
 
@@ -73,8 +73,8 @@ export const Row = ({ title, endpoint, param, items: propItems, onOpenModal, isW
     if (!isLoading && (!items || items.length === 0)) return null;
 
     return (
-        <div ref={rowRef} className={`row-container py-4 ${isVisible ? 'is-visible' : ''}`}>
-            <div className="px-6 max-w-7xl mx-auto">
+        <div id={id} ref={rowRef} className={`row-container py-4 ${isVisible ? 'is-visible' : ''}`}>
+            <div className="px-6">
                 <h2 className="text-2xl md:text-3xl font-bold mb-2">{title}</h2>
             </div>
 
