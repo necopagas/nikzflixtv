@@ -189,7 +189,6 @@ export class NetworkSpeedDetector {
   }
 
   getSuggestedQuality() {
-    const type = this.getConnectionType();
     const downlink = this.getDownlinkSpeed();
 
     if (this.isSlowConnection() || (downlink && downlink < 1)) {

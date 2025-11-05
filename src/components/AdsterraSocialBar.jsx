@@ -18,7 +18,9 @@ export const AdsterraSocialBar = () => {
       return;
     }
 
-    if (!containerRef.current || loaded) return;
+  if (!containerRef.current || loaded) return;
+
+  const container = containerRef.current;
 
     const script = document.createElement('script');
     script.type = 'text/javascript';
@@ -33,11 +35,11 @@ export const AdsterraSocialBar = () => {
       console.error('[SocialBar] ✗ Failed to load');
     };
 
-    containerRef.current.appendChild(script);
+    container.appendChild(script);
 
     return () => {
-      if (containerRef.current?.contains(script)) {
-        containerRef.current.removeChild(script);
+      if (container.contains(script)) {
+        container.removeChild(script);
       }
     };
   }, [loaded]);

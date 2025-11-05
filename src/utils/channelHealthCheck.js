@@ -14,7 +14,7 @@ export const checkChannelHealth = async (url, timeout = 5000) => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
         
-        const response = await fetch(url, {
+        await fetch(url, {
             method: 'HEAD', // Only get headers, not the full stream
             signal: controller.signal,
             mode: 'no-cors', // Bypass CORS for health check

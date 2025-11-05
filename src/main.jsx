@@ -8,7 +8,7 @@ import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { SettingsProvider } from './context/SettingsContext.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
-import { ToastProvider } from './components/Toast.jsx';
+import { ToastProvider } from './components/ToastProvider.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

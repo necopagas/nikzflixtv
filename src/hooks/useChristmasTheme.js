@@ -113,7 +113,7 @@ export const useChristmasTheme = () => {
         isChristmasMusicEnabled,
         toggleChristmasMusic,
         // Legacy support
-        isChristmasMode: isChristmasMode,
+        legacyIsChristmasMode: isChristmasMode,
         toggleChristmasMode: () => setTheme(isChristmasMode ? 'none' : 'christmas')
     };
 };

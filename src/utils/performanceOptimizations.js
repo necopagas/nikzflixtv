@@ -216,6 +216,6 @@ export class PerformanceMonitor {
 export const performanceMonitor = new PerformanceMonitor();
 
 // Start FPS monitoring if in development
-if (process.env.NODE_ENV === 'development') {
+if (import.meta.env.DEV) {
     performanceMonitor.measureFPS();
 }

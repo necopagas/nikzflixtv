@@ -19,8 +19,9 @@ export const base64ToUint8Array = (input) => {
       : (typeof atob === 'function'
         ? atob
         : (value) => {
-            if (typeof Buffer !== 'undefined') {
-              return Buffer.from(value, 'base64').toString('binary');
+            const nodeBuffer = typeof globalThis !== 'undefined' ? globalThis.Buffer : undefined;
+            if (nodeBuffer?.from) {
+              return nodeBuffer.from(value, 'base64').toString('binary');
             }
             throw new Error('No base64 decoder available');
           });

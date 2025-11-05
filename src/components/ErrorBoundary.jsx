@@ -8,7 +8,7 @@ class ErrorBoundary extends React.Component {
     this.state = { hasError: false, error: null, errorInfo: null };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError() {
     return { hasError: true };
   }
 
@@ -23,6 +23,7 @@ class ErrorBoundary extends React.Component {
   };
 
   render() {
+    const isDev = import.meta.env.DEV;
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-red-900 p-4">
@@ -41,7 +42,7 @@ class ErrorBoundary extends React.Component {
               We're sorry for the inconvenience. An unexpected error occurred.
             </p>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {isDev && this.state.error && (
               <details className="mb-6 bg-black/50 rounded-lg p-4 max-h-64 overflow-auto">
                 <summary className="text-red-400 cursor-pointer font-semibold mb-2">
                   Error Details (Dev Mode)

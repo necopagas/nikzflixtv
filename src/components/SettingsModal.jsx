@@ -42,13 +42,6 @@ export const SettingsModal = ({
         }
     };
     
-    const handleKeyDown = (e, action) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            action();
-        }
-    };
-
     const handleVideoQualityChange = (quality) => {
         setVideoQuality(quality);
         localStorage.setItem('videoQuality', quality);
@@ -119,6 +112,7 @@ export const SettingsModal = ({
                     if (imported.language) handleLanguageChange(imported.language);
                     alert('Settings imported successfully!');
                 } catch (err) {
+                    console.error('Failed to import settings', err);
                     alert('Failed to import settings. Invalid file format.');
                 }
             };

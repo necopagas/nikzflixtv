@@ -10,7 +10,9 @@ export const AdsterraSmartlink = ({ className = '' }) => {
   const [status, setStatus] = useState('loading'); // loading | loaded | error
 
   useEffect(() => {
-    if (!containerRef.current || status !== 'loading') return;
+  if (!containerRef.current || status !== 'loading') return;
+
+  const container = containerRef.current;
 
     // YOUR ACTUAL ADSTERRA SMARTLINK
   const SMARTLINK_URL = 'https://tearingtastes.com/n0u5f9q4a?key=9c1055e64d70326a468b297e9741a70d';
@@ -42,12 +44,12 @@ export const AdsterraSmartlink = ({ className = '' }) => {
       setStatus('error');
     };
 
-    containerRef.current.appendChild(iframe);
+    container.appendChild(iframe);
 
     return () => {
       window.clearTimeout(timeoutId);
-      if (containerRef.current?.contains(iframe)) {
-        containerRef.current.removeChild(iframe);
+      if (container.contains(iframe)) {
+        container.removeChild(iframe);
       }
     };
   }, [status]);

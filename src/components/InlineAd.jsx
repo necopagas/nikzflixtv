@@ -6,20 +6,6 @@ import React from 'react';
  * Supports: Adsterra, PropellerAds, Google AdSense
  */
 export const InlineAd = ({ type = 'adsterra', position = 'center' }) => {
-    // Adsterra Inline Banner Code
-    const adsterraInlineCode = `
-        <script type="text/javascript">
-            atOptions = {
-                'key' : 'YOUR_ADSTERRA_KEY_HERE',
-                'format' : 'iframe',
-                'height' : 250,
-                'width' : 300,
-                'params' : {}
-            };
-            document.write('<scr' + 'ipt type="text/javascript" src="//www.topcreativeformat.com/' + atOptions.key + '/invoke.js"></scr' + 'ipt>');
-        </script>
-    `;
-
     const positionClass = {
         'left': 'mr-auto',
         'center': 'mx-auto',

@@ -16,7 +16,7 @@ export const ChristmasLights = () => {
                 <div className="absolute top-1.5 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-gray-600/40 to-transparent"></div>
                 
                 {/* Lights */}
-                {lights.map((light, index) => (
+                {lights.map((light) => (
                     <div
                         key={light.id}
                         className="absolute top-1.5 transform -translate-x-1/2"

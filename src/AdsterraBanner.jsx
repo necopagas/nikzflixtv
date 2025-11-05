@@ -20,8 +20,8 @@ export default function AdsterraBanner() {
 
     // Show on all devices
     const currentPath = location?.pathname || '/';
-    console.info('[AdsterraBanner] Current path:', currentPath, '| Visible:', visible);
-    
+    console.info('[AdsterraBanner] Current path:', currentPath);
+
     setVisible(true);
   }, [location?.pathname]);
 
@@ -191,7 +191,7 @@ export default function AdsterraBanner() {
         </div>
 
         {/* Debug info */}
-        {(process.env.NODE_ENV === 'development' || true) && (
+        {import.meta.env.DEV && (
           <div className="px-3 pb-2 text-[10px] text-gray-500 font-mono border-t border-gray-700/30 pt-2">
             <div className="flex items-center justify-between gap-2">
               <span>Status: <span className={`font-bold ${

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, lazy, Suspense, useRef } from 'react';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { Modal } from './components/Modal';
@@ -13,6 +13,9 @@ import { useTheme } from './hooks/useTheme';
 import { useWatchedHistory } from './hooks/useWatchedHistory';
 import { useChristmasTheme } from './hooks/useChristmasTheme';
 import { AdsterraSocialBar } from './components/AdsterraSocialBar';
+import { NetworkStatusBanner } from './components/NetworkStatusBanner';
+import { PageTransitionIndicator } from './components/PageTransitionIndicator';
+import { useToast } from './components/toastContext.js';
 
 // Lazy load seasonal effects for better performance
 const SnowEffect = lazy(() => import('./components/SnowEffect').then(m => ({ default: m.SnowEffect })));
@@ -37,7 +40,17 @@ export default function App() {
   const [modalItem, setModalItem] = useState(null);
   const [playOnOpen, setPlayOnOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [networkStatus, setNetworkStatus] = useState(() => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return 'offline';
+    }
+    return null;
+  });
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const onlineTimeoutRef = useRef();
 
   const { isItemInMyList, toggleMyList, clearMyList } = useMyList();
   const { continueWatchingList, setItemProgress, clearContinueWatching } = useContinueWatching();
@@ -48,6 +61,87 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 });
   }, [location.pathname]);
+
+  useEffect(() => {
+    setIsTransitioning(true);
+    const timer = setTimeout(() => setIsTransitioning(false), 500);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return () => {};
+    }
+    const handleOffline = () => {
+      if (onlineTimeoutRef.current) {
+        clearTimeout(onlineTimeoutRef.current);
+      }
+      setNetworkStatus('offline');
+      showToast('You appear to be offline. Playback may pause until you reconnect.', 'error', 4000);
+    };
+
+    const handleOnline = () => {
+      setNetworkStatus('online');
+      showToast('Connection restored. You are back online.', 'success', 3000);
+      onlineTimeoutRef.current = setTimeout(() => {
+        setNetworkStatus(null);
+      }, 3200);
+    };
+
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+      if (onlineTimeoutRef.current) {
+        clearTimeout(onlineTimeoutRef.current);
+      }
+    };
+  }, [showToast]);
+
+  useEffect(() => {
+    const handler = (event) => {
+      const target = event.target;
+      const tag = target && target.tagName ? target.tagName.toLowerCase() : '';
+      if (tag === 'input' || tag === 'textarea' || target?.isContentEditable) {
+        return;
+      }
+
+      if (event.key === '/' && !event.metaKey && !event.ctrlKey) {
+        event.preventDefault();
+        navigate('/search');
+        showToast('Jumped to search. Tip: press Shift + L for My List.', 'info', 3500);
+      }
+
+      if ((event.key === 'L' || event.key === 'l') && event.shiftKey) {
+        event.preventDefault();
+        navigate('/my-list');
+        showToast('Opened My List via keyboard shortcut.', 'info', 3000);
+      }
+
+      if ((event.key === 'S' || event.key === 's') && event.shiftKey) {
+        event.preventDefault();
+        setIsSettingsOpen(true);
+        showToast('Settings opened. Press Esc to close.', 'info', 3000);
+      }
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [navigate, showToast]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const storageKey = 'nikzflixtv_shortcuts_v1';
+    const hasSeen = sessionStorage.getItem(storageKey);
+    if (!hasSeen) {
+      showToast('Pro tip: Press / for search, Shift + L for My List, Shift + S for settings.', 'info', 5200);
+      sessionStorage.setItem(storageKey, '1');
+    }
+  }, [showToast]);
 
   const handleOpenModal = (item, play = false) => {
     setModalItem(item);
@@ -61,6 +155,8 @@ export default function App() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      <PageTransitionIndicator isActive={isTransitioning} />
+      <NetworkStatusBanner status={networkStatus} />
       <Header
         theme={theme}
         toggleTheme={toggleTheme}
@@ -105,7 +201,7 @@ export default function App() {
 
       <Footer />
       <BackToTopButton />
-      <AdsterraSocialBar />
+    <AdsterraSocialBar />
 
       <Suspense fallback={null}>
         {isChristmasMode && (

@@ -1,10 +1,8 @@
 // src/hooks/useChannelHealth.js
 import { useState, useEffect, useCallback } from 'react';
-import { 
-    checkChannelHealth, 
-    checkMultipleChannels, 
+import {
     getHealthWithCache,
-    clearHealthCache 
+    clearHealthCache
 } from '../utils/channelHealthCheck';
 
 /**
@@ -113,11 +111,14 @@ export const useChannelHealth = (channels = [], autoCheck = false) => {
     }, [channels, healthMap]);
 
     // Auto-check on mount if enabled
+    const checkedCount = healthMap.size;
+
     useEffect(() => {
-        if (autoCheck && channels.length > 0 && healthMap.size === 0) {
-            checkAllChannels();
+        if (!autoCheck || channels.length === 0 || checkedCount > 0) {
+            return;
         }
-    }, [autoCheck, channels.length]); // Don't include healthMap.size to avoid loops
+        checkAllChannels();
+    }, [autoCheck, channels.length, checkedCount, checkAllChannels]);
 
     return {
         healthMap,

@@ -1,22 +1,89 @@
 // src/pages/VideokePage.jsx
-import React, { useState, useEffect } from 'react';
-import { searchYouTube } from '../utils/consumetApi'; // Import nato ang bag-ong function
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import ReactPlayer from 'react-player';
+import {
+    FiArrowDown,
+    FiArrowUp,
+    FiBookOpen,
+    FiCopy,
+    FiExternalLink,
+    FiPlay,
+    FiShuffle,
+    FiSkipForward,
+    FiTrash2,
+    FiYoutube,
+    FiZap,
+} from 'react-icons/fi';
+import { searchYouTube } from '../utils/consumetApi';
+import { useToast } from '../components/toastContext.js';
+
+const PRESET_QUERIES = [
+    { label: 'OPM Classics', value: 'opm karaoke minus one' },
+    { label: 'Duet Night', value: 'karaoke duet songs' },
+    { label: 'Power Ballads', value: 'power ballad karaoke' },
+    { label: 'Throwback 90s', value: '90s karaoke hits' },
+    { label: 'Party Hits', value: 'party karaoke upbeat' },
+    { label: 'Tagalog Love', value: 'tagalog love song karaoke' },
+];
+
+const FALLBACK_QUERY = 'OPM karaoke';
 
 export const VideokePage = () => {
-    const [query, setQuery] = useState('OPM karaoke'); // Default search query
+    const { showToast } = useToast();
+    const [query, setQuery] = useState(FALLBACK_QUERY);
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [activeSong, setActiveSong] = useState(null);
+    const [ambientMode, setAmbientMode] = useState(true);
+    const [queue, setQueue] = useState([]);
+    const playerRef = useRef(null);
 
-    const searchVideoke = async () => {
-        setIsLoading(true);
-        setError(null);
-        setResults([]); // Clear previous results
+    const attemptPlay = useCallback(() => {
+        const internalPlayer = playerRef.current?.getInternalPlayer?.();
+        if (!internalPlayer) {
+            return;
+        }
 
         try {
-            console.log('Searching for:', query);
-            const ytResults = await searchYouTube(query);
-            console.log('YouTube results:', ytResults);
+            if (typeof internalPlayer.playVideo === 'function') {
+                internalPlayer.playVideo();
+                return;
+            }
+
+            if (typeof internalPlayer.play === 'function') {
+                const playPromise = internalPlayer.play();
+                if (playPromise?.catch) {
+                    playPromise.catch(() => {
+                        showToast('Autoplay blocked. Tap play to continue.', 'info', 2400);
+                    });
+                }
+            }
+        } catch (playError) {
+            console.error('Autoplay attempt failed', playError);
+            showToast('Autoplay blocked. Tap play to continue.', 'info', 2400);
+        }
+    }, [showToast]);
+
+    const searchVideoke = async (nextQuery) => {
+        const finalQuery = (nextQuery ?? query)?.trim();
+        if (!finalQuery) {
+            setError('Please enter a song or artist.');
+            setResults([]);
+            setIsLoading(false);
+            return;
+        }
+
+        if (nextQuery && nextQuery !== query) {
+            setQuery(finalQuery);
+        }
+
+        setIsLoading(true);
+        setError(null);
+        setResults([]);
+
+        try {
+            const ytResults = await searchYouTube(finalQuery);
             
             if (!ytResults || ytResults.length === 0) {
                 setError('No results found. Try a different search term.');
@@ -24,11 +91,7 @@ export const VideokePage = () => {
                 return;
             }
             
-            // I-normalize nato ang data gikan sa YouTube
             const formattedResults = ytResults.map(item => {
-                console.log('Processing item:', item);
-                // Consumet / YouTube search results may provide id in different shapes
-                // e.g. item.id (string) or item.id.videoId or item.videoId
                 const rawId = item?.id;
                 const videoId = (typeof rawId === 'string' && rawId)
                     || rawId?.videoId
@@ -37,7 +100,6 @@ export const VideokePage = () => {
                     || item?.id?.id;
 
                 if (!videoId) {
-                    console.warn('Skipping YouTube item without video id:', item);
                     return null;
                 }
 
@@ -45,32 +107,50 @@ export const VideokePage = () => {
                     id: videoId,
                     title: item.title || item.snippet?.title || 'YouTube Video',
                     source: 'YouTube',
-                    // Use modest branding and disable related videos; do not autoplay by default
                     embedUrl: `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`,
-                    description: item.channel?.name || item.snippet?.channelTitle || 'YouTube Video'
+                    watchUrl: `https://www.youtube.com/watch?v=${videoId}`,
+                    description: item.channel?.name || item.snippet?.channelTitle || 'YouTube Video',
                 };
             }).filter(Boolean);
 
-            console.log('Formatted results:', formattedResults);
             setResults(formattedResults);
+            setQueue([]);
 
         } catch (err) {
-            console.error("Error searching videoke:", err);
             setError(`Failed to fetch results. ${err.message}`);
-            setResults([]); // Clear results on error
+            setResults([]);
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Initial search on component load
     useEffect(() => {
-        searchVideoke();
+        searchVideoke(query);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Modagan kausa inig load
+    }, []);
+
+    useEffect(() => {
+        if (results.length === 0) {
+            setActiveSong(null);
+            return;
+        }
+
+        if (!activeSong || !results.some((song) => song.id === activeSong.id)) {
+            setActiveSong(results[0]);
+            setQueue(results.slice(1));
+            return;
+        }
+    }, [results, activeSong]);
+
+    useEffect(() => {
+        if (!activeSong && results.length > 0) {
+            setActiveSong(results[0]);
+            setQueue(results.slice(1));
+        }
+    }, [activeSong, results]);
 
     const handleSearchClick = () => {
-        searchVideoke();
+        searchVideoke(query);
     };
 
     const handleInputChange = (event) => {
@@ -79,75 +159,391 @@ export const VideokePage = () => {
 
     const handleKeyDown = (event) => {
          if (event.key === 'Enter') {
-             searchVideoke();
+             searchVideoke(query);
          }
     };
 
+    const handlePresetSelect = (value) => {
+        searchVideoke(value);
+    };
+
+    const handleSelectSong = (song, options = {}) => {
+        const { fromQueue = false } = options;
+        const previousActive = activeSong;
+        setActiveSong(song);
+        setQueue((prevQueue) => {
+            const withoutSong = prevQueue.filter((item) => item.id !== song.id);
+            if (fromQueue) {
+                return withoutSong;
+            }
+
+            if (!previousActive || previousActive.id === song.id) {
+                return withoutSong;
+            }
+
+            if (withoutSong.some((item) => item.id === previousActive.id)) {
+                return withoutSong;
+            }
+
+            return [previousActive, ...withoutSong];
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleOpenYoutube = () => {
+        if (!activeSong) {
+            return;
+        }
+        window.open(activeSong.watchUrl, '_blank', 'noopener,noreferrer');
+    };
+
+    const handleCopyLink = async () => {
+        if (!activeSong) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(activeSong.watchUrl);
+            showToast('Song link copied to clipboard.', 'success', 2000);
+        } catch (clipError) {
+            console.error('Copy to clipboard failed', clipError);
+            showToast('Copy failed. Tap the YouTube button instead.', 'error', 2800);
+        }
+    };
+
+    const handleShuffle = () => {
+        if (results.length < 2) {
+            showToast('Need more songs to shuffle. Try another search.', 'info', 2800);
+            return;
+        }
+        const pool = results.filter((song) => song.id !== activeSong?.id);
+        const nextSong = pool[Math.floor(Math.random() * pool.length)] || results[0];
+        setActiveSong(nextSong);
+        setQueue(pool.filter((item) => item.id !== nextSong.id));
+        showToast(`Random pick: ${nextSong.title}`, 'info', 2400);
+    };
+
+    const handleLyrics = () => {
+        if (!activeSong) {
+            return;
+        }
+        const queryString = encodeURIComponent(`${activeSong.title} lyrics`);
+        window.open(`https://www.google.com/search?q=${queryString}`, '_blank', 'noopener,noreferrer');
+    };
+
+    const toggleAmbientMode = () => {
+        setAmbientMode((prev) => !prev);
+        showToast(ambientMode ? 'Stage lights dimmed.' : 'Stage lights on!', 'info', 2000);
+    };
+
+    const handleQueueAdd = (song) => {
+        if (queue.some((queued) => queued.id === song.id)) {
+            showToast('Song already in queue.', 'info', 2000);
+            return;
+        }
+
+        setQueue((prev) => [...prev, song]);
+        showToast(`Added to queue: ${song.title}`, 'success', 2200);
+    };
+
+    const handleQueueRemove = (songId) => {
+        setQueue((prev) => prev.filter((item) => item.id !== songId));
+    };
+
+    const handleQueueClear = () => {
+        setQueue([]);
+        showToast('Queue cleared.', 'info', 1800);
+    };
+
+    const handlePlayNextFromQueue = (options = {}) => {
+        const { auto = false } = options;
+        if (queue.length === 0) {
+            showToast(auto ? 'Queue finished. Add more tracks to keep singing.' : 'Queue is empty.', 'info', 2000);
+            return;
+        }
+        const [nextSong, ...rest] = queue;
+        handleSelectSong(nextSong, { fromQueue: true });
+        setQueue(rest);
+        if (!auto) {
+            showToast(`Playing next: ${nextSong.title}`, 'success', 2000);
+        }
+    };
+
+    const handleStageEnded = () => {
+        handlePlayNextFromQueue({ auto: true });
+    };
+
+    useEffect(() => {
+        if (activeSong) {
+            attemptPlay();
+        }
+    }, [activeSong, attemptPlay]);
+
+    const handleQueueReorder = (songId, direction) => {
+        setQueue((prev) => {
+            const index = prev.findIndex((song) => song.id === songId);
+            if (index === -1) {
+                return prev;
+            }
+            const swapIndex = direction === 'up' ? index - 1 : index + 1;
+            if (swapIndex < 0 || swapIndex >= prev.length) {
+                return prev;
+            }
+            const newQueue = [...prev];
+            const [song] = newQueue.splice(index, 1);
+            newQueue.splice(swapIndex, 0, song);
+            return newQueue;
+        });
+    };
+
+    const controls = [
+        {
+            id: 'youtube',
+            label: 'Open in YouTube',
+            icon: <FiYoutube />,
+            onClick: handleOpenYoutube,
+        },
+        {
+            id: 'copy',
+            label: 'Copy Link',
+            icon: <FiCopy />,
+            onClick: handleCopyLink,
+        },
+        {
+            id: 'lyrics',
+            label: 'Find Lyrics',
+            icon: <FiBookOpen />,
+            onClick: handleLyrics,
+        },
+        {
+            id: 'shuffle',
+            label: 'Shuffle Song',
+            icon: <FiShuffle />,
+            onClick: handleShuffle,
+        },
+        {
+            id: 'lights',
+            label: ambientMode ? 'Lights Off' : 'Lights On',
+            icon: <FiZap />,
+            onClick: toggleAmbientMode,
+        },
+        {
+            id: 'next',
+            label: 'Play Next in Queue',
+            icon: <FiSkipForward />,
+            onClick: handlePlayNextFromQueue,
+        },
+        {
+            id: 'popout',
+            label: 'Pop-out Player',
+            icon: <FiExternalLink />,
+            onClick: handleOpenYoutube,
+        },
+    ];
+
     return (
-        // Gamiton nato ang existing padding classes
-        <div className="px-4 sm:px-8 md:px-16 pt-28 pb-20 text-white min-h-screen">
-            <h1 className="text-3xl font-bold mb-6 text-center text-[var(--brand-color)]">
-                🎤 NikzFlix Videoke
-            </h1>
+        <div className="videoke-page px-4 sm:px-8 md:px-16 pt-28 pb-24 text-white min-h-screen">
+            <section className="videoke-hero">
+                <div className="videoke-hero-copy">
+                    <span className="videoke-badge">Live Videoke Mode</span>
+                    <h1>Mic on. Lights on. Ready, set, belt it out!</h1>
+                    <p>Type an artist, song, or pick a preset setlist. Every result is tuned for karaoke night.</p>
+                </div>
 
-            {/* Search Box */}
-            <div className="mb-8 max-w-xl mx-auto flex gap-2">
-                <input
-                    type="text"
-                    value={query}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Pangita og kanta (e.g., OPM karaoke)"
-                    className="flex-grow p-3 rounded-lg bg-[var(--bg-secondary)] border border-gray-700 focus:outline-none focus:ring-2 focus:ring-[var(--brand-color)] text-white"
-                />
-                <button
-                    onClick={handleSearchClick}
-                    disabled={isLoading}
-                    className="px-6 py-3 bg-[var(--brand-color)] hover:bg-red-700 rounded-lg font-semibold transition-colors disabled:opacity-50"
-                >
-                    {isLoading ? 'Searching...' : 'Search'}
-                </button>
-            </div>
+                <div className="videoke-search">
+                    <input
+                        type="text"
+                        value={query}
+                        onChange={handleInputChange}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Search for a song, artist, or genre (e.g., Morissette karaoke)"
+                    />
+                    <button
+                        type="button"
+                        onClick={handleSearchClick}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? 'Searching…' : 'Search'}
+                    </button>
+                </div>
 
-            {/* Loading State */}
-            {isLoading && (
-                 <div className="flex justify-center items-center h-40">
-                     <div className="player-loading"></div> {/* Reuse loading spinner style */}
-                 </div>
+                <div className="videoke-presets">
+                    {PRESET_QUERIES.map((preset) => (
+                        <button
+                            key={preset.value}
+                            type="button"
+                            className={`videoke-preset ${query === preset.value ? 'active' : ''}`}
+                            onClick={() => handlePresetSelect(preset.value)}
+                            disabled={isLoading}
+                        >
+                            {preset.label}
+                        </button>
+                    ))}
+                </div>
+            </section>
+
+            {error && (
+                <p className="videoke-error">{error}</p>
             )}
 
-            {/* Error Message */}
-             {error && (
-                 <p className="text-center text-red-500 bg-red-900 bg-opacity-30 p-4 rounded-lg">{error}</p>
-             )}
+            {isLoading && (
+                <div className="videoke-loading">
+                    <div className="player-loading" />
+                    <p>Warming up the stage…</p>
+                </div>
+            )}
 
-            {/* Results Grid */}
+            {activeSong && !isLoading && (
+                <section className={`videoke-stage ${ambientMode ? 'ambient' : ''}`}>
+                    <div className="videoke-stage-frame">
+                        <ReactPlayer
+                            key={activeSong.id}
+                            ref={playerRef}
+                            url={activeSong.embedUrl}
+                            playing
+                            controls
+                            width="100%"
+                            height="100%"
+                            className="videoke-stage-player"
+                            onEnded={handleStageEnded}
+                            onReady={attemptPlay}
+                            onError={() => showToast('Playback error. Try another track.', 'error', 2400)}
+                            config={{
+                                youtube: {
+                                    playerVars: {
+                                        autoplay: 1,
+                                        rel: 0,
+                                        modestbranding: 1,
+                                        playsinline: 1,
+                                        origin: typeof window !== 'undefined' ? window.location.origin : undefined,
+                                    },
+                                },
+                            }}
+                        />
+                    </div>
+                    <div className="videoke-stage-info">
+                        <span className="videoke-badge">Now Playing</span>
+                        <h2>{activeSong.title}</h2>
+                        <p>{activeSong.description}</p>
+                    </div>
+                    <div className="videoke-controls">
+                        {controls.map(({ id, label, icon, onClick }) => (
+                            <button key={id} type="button" onClick={onClick}>
+                                <span className="icon">{icon}</span>
+                                <span>{label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </section>
+            )}
+
+            {queue.length > 0 && !isLoading && (
+                <section className="videoke-queue">
+                    <header className="videoke-queue-header">
+                        <div>
+                            <h3>Up Next</h3>
+                            <p>{queue.length} song{queue.length > 1 ? 's' : ''} lined up.</p>
+                        </div>
+                        <div className="videoke-queue-actions">
+                            <button type="button" onClick={() => handlePlayNextFromQueue()}>
+                                Play next
+                            </button>
+                            <button type="button" onClick={handleQueueClear}>
+                                Clear queue
+                            </button>
+                        </div>
+                    </header>
+                    <ol className="videoke-queue-list">
+                        {queue.map((song, index) => (
+                            <li key={song.id}>
+                                <div className="videoke-queue-item">
+                                    <div className="videoke-queue-meta">
+                                        <span className="videoke-queue-index">{index + 1}</span>
+                                        <div>
+                                            <h4 title={song.title}>{song.title}</h4>
+                                            <p title={song.description}>{song.description}</p>
+                                        </div>
+                                    </div>
+                                    <div className="videoke-queue-controls">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleQueueReorder(song.id, 'up')}
+                                                        aria-label="Move up"
+                                                        disabled={index === 0}
+                                                    >
+                                                        <FiArrowUp />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleQueueReorder(song.id, 'down')}
+                                                        aria-label="Move down"
+                                                        disabled={index === queue.length - 1}
+                                                    >
+                                                        <FiArrowDown />
+                                                    </button>
+                                                    <button type="button" onClick={() => handleQueueRemove(song.id)} aria-label="Remove from queue">
+                                                        <FiTrash2 />
+                                                    </button>
+                                                    <button type="button" onClick={() => handleSelectSong(song, { fromQueue: true })} aria-label="Play this song">
+                                                        <FiPlay />
+                                                    </button>
+                                    </div>
+                                </div>
+                            </li>
+                        ))}
+                    </ol>
+                </section>
+            )}
+
             {!isLoading && !error && results.length === 0 && (
-                 <p className="text-center text-gray-400">Walay nakita nga resulta para sa "{query}".</p>
+                <p className="videoke-empty">No tracks yet for “{query}”. Try another vibe.</p>
             )}
 
             {!isLoading && results.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {results.map((item) => (
-                        <div key={item.id} className="bg-[var(--bg-secondary)] p-4 rounded-lg shadow-lg flex flex-col">
-                            <h3 className="text-lg font-semibold mb-2 truncate" title={item.title}>
-                                🎵 {item.title}
-                            </h3>
-                            <div className="aspect-video mb-2 bg-black rounded overflow-hidden">
-                                <iframe
-                                    src={item.embedUrl}
-                                    title={item.title}
-                                    allowFullScreen
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                    referrerPolicy="strict-origin-when-cross-origin"
-                                    className="w-full h-full border-0"
-                                ></iframe>
-                            </div>
-                            <p className="text-xs text-gray-400 mt-auto">{item.description}</p>
-                        </div>
-                    ))}
-                </div>
-             )}
+                <section className="videoke-results">
+                    <header>
+                        <h3>Song line-up</h3>
+                        <p>Select a track to put it on the main stage.</p>
+                    </header>
+                    <div className="videoke-grid">
+                        {results.map((item) => (
+                            <article
+                                key={item.id}
+                                className={`videoke-card ${activeSong?.id === item.id ? 'active' : ''}`}
+                            >
+                                <div className="videoke-card-video">
+                                    <iframe
+                                        src={item.embedUrl}
+                                        title={item.title}
+                                        allowFullScreen
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        referrerPolicy="strict-origin-when-cross-origin"
+                                    />
+                                </div>
+                                <div className="videoke-card-body">
+                                    <h4 title={item.title}>{item.title}</h4>
+                                    <p title={item.description}>{item.description}</p>
+                                    <div className="videoke-card-actions">
+                                        <button type="button" onClick={() => handleSelectSong(item)}>
+                                            Sing this
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleQueueAdd(item)}
+                                            disabled={queue.some((queued) => queued.id === item.id) || activeSong?.id === item.id}
+                                        >
+                                            Add to queue
+                                        </button>
+                                        <button type="button" onClick={() => window.open(item.watchUrl, '_blank', 'noopener,noreferrer')}>
+                                            Watch on YouTube
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                </section>
+            )}
         </div>
     );
 };

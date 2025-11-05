@@ -48,9 +48,13 @@ const fetchConsumetData = async (endpoint) => {
 
 // --- GI-TANGGAL ANG searchMoviesAndTV ---
 
-/**
- * Searches YouTube via Invidious API (alternative free YouTube API)
- */
+// --- MANGA FUNCTIONS (using Consumet) ---
+export const searchManga = async (query) => {
+    if (!query) return [];
+    const response = await fetchConsumetData(`/manga/mangadex/${encodeURIComponent(query)}`);
+    return response?.results || [];
+};
+
 export const searchYouTube = async (query) => {
     if (!query) return [];
     
@@ -115,46 +119,3 @@ export const searchYouTube = async (query) => {
         return [];
     }
 };
-
-// --- MANGA FUNCTIONS (using Consumet) ---
-export const searchManga = async (query) => {
-    if (!query) return [];
-    const response = await fetchConsumetData(`/manga/mangadex/${encodeURIComponent(query)}`);
-    return response?.results || [];
-};
-
-export const getTrendingManga = async () => {
-    const response = await fetchConsumetData(`/manga/mangadex/trending`);
-     // Check for null response
-    return response?.results || [];
-};
-
- export const getMangaDetails = async (mangaId) => {
-    if (!mangaId) return null;
-    // Adjust endpoint based on API structure
-    const response = await fetchConsumetData(`/manga/mangadex/info/${mangaId}`);
-    return response; // Return the whole response or specific parts
-};
-
-export const getChapterPages = async (chapterId) => {
-    if (!chapterId) return [];
-     // Adjust endpoint based on API structure
-    const response = await fetchConsumetData(`/manga/mangadex/read/${chapterId}`);
-     // Check for null response and expected structure
-    return response || [];
-};
-
-// --- ANIME FUNCTIONS (using Consumet - Example for Anime Details if needed later) ---
-// export const getAnimeDetailsConsumet = async (animeId) => {
-//     if (!animeId) return null;
-//     // Example using gogoanime, adjust provider/endpoint as needed
-//     const response = await fetchConsumetData(`/anime/gogoanime/info/${animeId}`);
-//     return response;
-// };
-
-// export const getAnimeEpisodeSourcesConsumet = async (episodeId) => {
-//     if (!episodeId) return null;
-//     // Example using gogoanime, adjust provider/endpoint as needed
-//     const response = await fetchConsumetData(`/anime/gogoanime/watch/${episodeId}`);
-//     return response;
-// };

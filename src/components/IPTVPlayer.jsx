@@ -571,7 +571,7 @@ export const IPTVPlayer = ({ channel, isLoading: parentLoading, onCanPlay, onErr
                 try {
                   const bufferInfo = Hls.BufferHelper?.bufferInfo(video, video.currentTime, 0.5);
                   setBufferHealth(bufferInfo?.len?.toFixed(1) || '0.0');
-                } catch (error) {
+                } catch {
                   setBufferHealth('0.0');
                 }
             }

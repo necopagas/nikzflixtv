@@ -77,8 +77,7 @@ export const EnhancedVideoPlayer = ({
     useEffect(() => {
         if (!videoRef.current) return;
 
-        const autoSkipIntro = localStorage.getItem('autoSkipIntro') === 'true';
-        const skipIntroTime = parseInt(localStorage.getItem('skipIntroTime') || '90');
+    const autoSkipIntro = localStorage.getItem('autoSkipIntro') === 'true';
 
         if (episodeId) {
             introSkipper.reset(episodeId);
