@@ -1,9 +1,28 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SANTA_HAT_USER } from '../assets/santaHatUser';
 import { useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 // Icons (use react-icons for consistent, lightweight icons)
 import { FaSearch, FaCog, FaMoon, FaSun, FaBars, FaTimes, FaPlay } from 'react-icons/fa';
+
+const NAV_LINKS = [
+    { to: '/', label: 'Home' },
+    { to: '/anime', label: 'Anime' },
+    { to: '/drama', label: 'Drama' },
+    { to: '/my-list', label: 'My List' },
+    { to: '/live-tv', label: 'Live TV' },
+    { to: '/videoke', label: 'Videoke' },
+    { to: '/vivamax', label: 'Vivamax' },
+    { to: '/chat-room', label: 'Chat Room' },
+];
+
+const desktopNavLinkClass = ({ isActive }) =>
+    `font-semibold hover:text-[var(--brand-color)] transition-colors ${
+        isActive ? 'text-[var(--brand-color)]' : ''
+    }`;
+
+const mobileNavLinkClass = ({ isActive }) =>
+    `mobile-menu__link ${isActive ? 'mobile-menu__link--active' : ''}`;
 
 const useClock = () => {
     const [time, setTime] = useState(new Date());
@@ -23,6 +42,12 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
 
     const { currentUser, logout } = useAuth();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+    const closeMobileMenu = useCallback(() => setIsMobileMenuOpen(false), []);
+    const toggleMobileMenu = useCallback(
+        () => setIsMobileMenuOpen((prev) => !prev),
+        [],
+    );
 
     // Show holiday hat in November and December
     const showHolidayHat = useMemo(() => {
@@ -73,11 +98,37 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    useEffect(() => {
+        if (!isMobileMenuOpen) return;
+
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                closeMobileMenu();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            document.body.style.overflow = originalOverflow;
+        };
+    }, [isMobileMenuOpen, closeMobileMenu]);
+
+    useEffect(() => {
+        if (isMobileMenuOpen) {
+            setIsProfileOpen(false);
+        }
+    }, [isMobileMenuOpen]);
+
     const handleSearch = (e) => {
         e.preventDefault();
         if (searchQuery.trim().length > 0) {
             navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-            setIsMobileMenuOpen(false);
+            closeMobileMenu();
         }
     };
     
@@ -85,7 +136,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
         try {
             await logout();
             navigate('/');
-            setIsMobileMenuOpen(false);
+            closeMobileMenu();
         } catch (error) {
             console.error("Failed to log out", error);
         }
@@ -94,11 +145,12 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
     const navigateToProfile = () => {
         setIsProfileOpen(false);
         navigate('/profile');
-        setIsMobileMenuOpen(false);
+        closeMobileMenu();
     };
-    
-    const handleNavLinkClick = () => {
-        setIsMobileMenuOpen(false);
+
+    const handleOpenSettings = () => {
+        closeMobileMenu();
+        onOpenSettings();
     };
 
     return (
@@ -123,25 +175,34 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
 
             {/* Centered nav for wider screens */}
             <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 top-4 z-50">
-                <nav className="flex items-center space-x-6">
-                    <NavLink to="/" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Home</NavLink>
-                    <NavLink to="/anime" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Anime</NavLink>
-                    <NavLink to="/drama" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Drama</NavLink>
-                    <NavLink to="/my-list" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>My List</NavLink>
-                    <NavLink to="/live-tv" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Live TV</NavLink>
-                    <NavLink to="/videoke" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Videoke</NavLink>
-                    <NavLink to="/vivamax" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Vivamax</NavLink>
-                    <NavLink to="/chat-room" className={({isActive}) => `font-semibold hover:text-[var(--brand-color)] transition-colors ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Chat Room</NavLink>
+                <nav className="flex items-center space-x-6" aria-label="Primary navigation">
+                    {NAV_LINKS.map((link) => (
+                        <NavLink key={link.to} to={link.to} className={desktopNavLinkClass}>
+                            {link.label}
+                        </NavLink>
+                    ))}
                 </nav>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4">
                 {/* Mobile icons - shown before hamburger menu */}
                 <div className="flex md:hidden items-center gap-2">
-                    <button type="button" onClick={onOpenSettings} className="theme-toggle text-xl" title="Settings">
+                    <button
+                        type="button"
+                        onClick={handleOpenSettings}
+                        className="theme-toggle text-xl"
+                        title="Settings"
+                        aria-label="Open settings"
+                    >
                         <FaCog />
                     </button>
-                    <button type="button" onClick={toggleTheme} className="theme-toggle text-xl" title="Toggle Theme">
+                    <button
+                        type="button"
+                        onClick={toggleTheme}
+                        className="theme-toggle text-xl"
+                        title="Toggle Theme"
+                        aria-label="Toggle theme"
+                    >
                         {theme === 'light' ? <FaMoon /> : <FaSun />}
                     </button>
                 </div>
@@ -150,7 +211,11 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                 <div className="hidden md:flex items-center gap-2 sm:gap-4">
                     <form onSubmit={handleSearch} className="flex items-center">
                         <div className="search-container relative flex items-center">
-                            <button type="submit" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10">
+                            <button
+                                type="submit"
+                                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10"
+                                aria-label="Search"
+                            >
                                 <FaSearch />
                             </button>
                             <input
@@ -159,15 +224,38 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="search-input border-2 border-transparent p-2 pl-10 rounded-full w-40 focus:w-64 focus:outline-none"
                                 placeholder="Search..."
+                                aria-label="Search titles"
                             />
                         </div>
                     </form>
-                    <button type="button" onClick={onOpenSettings} className="theme-toggle" title="Settings"><FaCog /></button>
-                    <button type="button" onClick={toggleTheme} className="theme-toggle" title="Toggle Theme">{theme === 'light' ? <FaMoon /> : <FaSun />}</button>
+                    <button
+                        type="button"
+                        onClick={handleOpenSettings}
+                        className="theme-toggle"
+                        title="Settings"
+                        aria-label="Open settings"
+                    >
+                        <FaCog />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={toggleTheme}
+                        className="theme-toggle"
+                        title="Toggle Theme"
+                        aria-label="Toggle theme"
+                    >
+                        {theme === 'light' ? <FaMoon /> : <FaSun />}
+                    </button>
                     <div className="clock text-xl font-semibold whitespace-nowrap">{clock}</div>
                     <div className="relative">
                         {currentUser ? (
-                            <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="w-9 h-9 rounded-full bg-red-600 flex items-center justify-center font-bold text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-color)]">
+                            <button
+                                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                                className="w-9 h-9 rounded-full bg-red-600 flex items-center justify-center font-bold text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-color)]"
+                                aria-haspopup="menu"
+                                aria-expanded={isProfileOpen}
+                                aria-label="Open profile menu"
+                            >
                                 {currentUser.email.charAt(0).toUpperCase()}
                             </button>
                         ) : (
@@ -185,58 +273,132 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                     </div>
                 </div>
 
-                <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden text-2xl z-[1001]">
+                <button
+                    type="button"
+                    onClick={toggleMobileMenu}
+                    className="md:hidden text-2xl"
+                    aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+                    aria-expanded={isMobileMenuOpen}
+                    aria-controls="mobileMenu"
+                >
                     {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
                 </button>
             </div>
+            {isMobileMenuOpen && (
+                <div
+                    className="mobile-menu-backdrop"
+                    onClick={closeMobileMenu}
+                    aria-hidden="true"
+                />
+            )}
 
-            <div className={`mobile-menu ${isMobileMenuOpen ? 'open' : ''}`}>
-                <nav className="flex flex-col items-center space-y-6 pt-20 text-lg pb-8">
-                    {/* Clock at top of mobile menu */}
-                    <div className="text-2xl font-bold text-[var(--brand-color)] mb-2">{clock}</div>
-                    
-                    <NavLink to="/" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Home</NavLink>
-                    <NavLink to="/anime" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Anime</NavLink>
-                    {/* <NavLink to="/manga" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Manga</NavLink> */} {/* <-- REMOVED */}
-                    <NavLink to="/drama" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Drama</NavLink>
-                    <NavLink to="/my-list" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>My List</NavLink>
-                    <NavLink to="/live-tv" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Live TV</NavLink>
-                    
-                    {/* --- DUGANG NGA LINK PARA SA MOBILE --- */}
-                    <NavLink to="/videoke" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Videoke</NavLink>
-                    <NavLink to="/vivamax" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Vivamax</NavLink>
-                    
-                    <NavLink to="/chat-room" onClick={handleNavLinkClick} className={({isActive}) => `font-semibold ${isActive ? 'text-[var(--brand-color)]' : ''}`}>Chat Room</NavLink>
-
-                    <div className="w-full px-6 pt-2">
-                        <form onSubmit={handleSearch} className="flex items-center">
-                            <div className="search-container relative flex items-center w-full">
-                                <button type="submit" className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 z-10"><FaSearch /></button>
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="search-input w-full border-2 border-transparent p-2.5 pl-11 rounded-full text-base"
-                                    placeholder="Search..."
-                                />
-                            </div>
-                        </form>
+            <div
+                className={`mobile-menu ${isMobileMenuOpen ? 'open' : ''}`}
+                id="mobileMenu"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="mobileMenuTitle"
+            >
+                <div className="mobile-menu__header">
+                    <div className="mobile-menu__brand" id="mobileMenuTitle">
+                        <FaPlay className="text-[var(--brand-color)] text-lg" />
+                        <span>NikzFlix</span>
                     </div>
+                    <button
+                        type="button"
+                        className="mobile-menu__close"
+                        onClick={closeMobileMenu}
+                        aria-label="Close menu"
+                    >
+                        <FaTimes />
+                    </button>
+                </div>
 
-                    <div className="border-t border-[var(--border-color)] w-3/4 my-3"></div>
+                <div className="mobile-menu__meta">
+                    <span className="mobile-menu__clock">{clock}</span>
+                    <div className="mobile-menu__meta-actions">
+                        <button
+                            type="button"
+                            onClick={handleOpenSettings}
+                            aria-label="Open settings"
+                        >
+                            <FaCog />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => toggleTheme()}
+                            aria-label="Toggle theme"
+                        >
+                            {theme === 'light' ? <FaMoon /> : <FaSun />}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="mobile-menu__content">
+                    <nav
+                        className="mobile-menu__nav"
+                        role="navigation"
+                        aria-label="Mobile navigation"
+                    >
+                        {NAV_LINKS.map((link) => (
+                            <NavLink
+                                key={link.to}
+                                to={link.to}
+                                className={mobileNavLinkClass}
+                                onClick={closeMobileMenu}
+                            >
+                                {link.label}
+                            </NavLink>
+                        ))}
+                    </nav>
+
+                    <form onSubmit={handleSearch} className="mobile-menu__search">
+                        <div className="search-container relative flex items-center w-full">
+                            <button
+                                type="submit"
+                                className="absolute top-1/2 -translate-y-1/2 text-gray-400 z-10"
+                                aria-label="Search"
+                            >
+                                <FaSearch />
+                            </button>
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="search-input"
+                                placeholder="Search..."
+                                aria-label="Search titles"
+                            />
+                        </div>
+                    </form>
+
+                    <div className="mobile-menu__divider" />
 
                     {currentUser ? (
-                         <>
-                            <div className="text-sm text-[var(--text-secondary)] px-4 text-center truncate max-w-full">{currentUser.email}</div>
-                            <button onClick={navigateToProfile} className="font-semibold">My Profile</button>
-                            <button onClick={handleLogout} className="font-semibold text-red-500">Logout</button>
-                         </>
+                        <div className="mobile-menu__auth">
+                            <div className="mobile-menu__user-email">{currentUser.email}</div>
+                            <button type="button" onClick={navigateToProfile}>My Profile</button>
+                            <button
+                                type="button"
+                                onClick={handleLogout}
+                                className="mobile-menu__logout"
+                            >
+                                Logout
+                            </button>
+                        </div>
                     ) : (
-                        <button onClick={() => { navigate('/auth'); handleNavLinkClick(); }} className="px-6 py-2.5 bg-[var(--brand-color)] rounded-md font-semibold text-base">
+                        <button
+                            type="button"
+                            className="mobile-menu__login"
+                            onClick={() => {
+                                navigate('/auth');
+                                closeMobileMenu();
+                            }}
+                        >
                             Login
                         </button>
                     )}
-                </nav>
+                </div>
             </div>
         </header>
     );

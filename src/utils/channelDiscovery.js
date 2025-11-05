@@ -1,9 +1,6 @@
 // src/utils/channelDiscovery.js
 // Utility helpers for discovering IPTV stream candidates from public APIs
 
-import { checkChannelHealth } from './channelHealthCheck.js';
-import { getSeededScrapeCandidates } from './scrapeSeeds.js';
-
 const CHANNELS_API_URL = 'https://iptv-org.github.io/api/channels.json';
 const STREAMS_API_URL = 'https://iptv-org.github.io/api/streams.json';
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -18,25 +15,6 @@ const FALLBACK_PLAYLISTS = [
 ];
 
 const playlistCache = new Map();
-
-const SCRAPE_CACHE_TTL = 15 * 60 * 1000;
-const scrapeCache = new Map();
-const PROXY_ENDPOINT = '/api/proxy?url=';
-
-const SCRAPE_SOURCES = [
-  {
-    label: 'DuckDuckGo',
-    buildUrl: (query) => `https://duckduckgo.com/html/?q=${encodeURIComponent(`${query} m3u8`)}`,
-  },
-  {
-    label: 'IptvCat',
-    buildUrl: (query) => `https://iptvcat.com/streaming/${encodeURIComponent(query)}`,
-  },
-  {
-    label: 'GitHubSearch',
-    buildUrl: (query) => `https://github.com/search?q=${encodeURIComponent(`${query} m3u8`)}&type=code`,
-  },
-];
 
 const fetchWithCache = async (cacheRef, url, ttl = CACHE_TTL_MS) => {
   const isFresh = cacheRef.data && Date.now() - cacheRef.timestamp < ttl;
@@ -153,167 +131,6 @@ const fetchPlaylistEntries = async (playlist, ttl = CACHE_TTL_MS) => {
   return promise;
 };
 
-const buildProxyUrl = (targetUrl) => {
-  if (!targetUrl) return null;
-  if (typeof window === 'undefined') return targetUrl;
-  return `${PROXY_ENDPOINT}${encodeURIComponent(targetUrl)}`;
-};
-
-const fetchTextWithProxy = async (targetUrl) => {
-  const requestUrl = buildProxyUrl(targetUrl);
-  if (!requestUrl) return '';
-
-  const response = await fetch(requestUrl, {
-    method: 'GET',
-    headers: {
-      'x-iptv-scrape': '1',
-      'User-Agent': 'Mozilla/5.0 (compatible; IPTVDiscoveryBot/1.0)',
-      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    },
-    cache: 'no-store',
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch scrape target ${targetUrl} (${response.status})`);
-  }
-
-  return response.text();
-};
-
-const extractStreamUrls = (html) => {
-  if (!html) return [];
-  const urls = new Set();
-  const absoluteRegex = /https?:\/\/[^\s"'<>]+\.(m3u8|mpd)[^\s"'<>]*/gi;
-  let match;
-  while ((match = absoluteRegex.exec(html))) {
-    let url = match[0];
-    if (!url) continue;
-    url = url.replace(/&amp;/gi, '&').replace(/\\u0026/gi, '&');
-    if (/https?:\/\/github\.com\//i.test(url) && url.includes('/blob/')) {
-      url = url
-        .replace('https://github.com/', 'https://raw.githubusercontent.com/')
-        .replace('http://github.com/', 'https://raw.githubusercontent.com/')
-        .replace('/blob/', '/');
-    }
-    if (/^https?:\/\//i.test(url)) {
-      urls.add(url);
-    }
-  }
-
-  const relativeRegex = /href="(\/[^"'<>]+\.(m3u8|mpd)[^"'<>]*)"/gi;
-  while ((match = relativeRegex.exec(html))) {
-    let path = match[1];
-    if (!path) continue;
-    let url = `https://github.com${path}`;
-    url = url.replace(/&amp;/gi, '&').replace(/\\u0026/gi, '&');
-    if (url.includes('/blob/')) {
-      url = url.replace('https://github.com/', 'https://raw.githubusercontent.com/').replace('/blob/', '/');
-    }
-    if (/^https?:\/\//i.test(url)) {
-      urls.add(url);
-    }
-  }
-  return Array.from(urls);
-};
-
-const scrapeFallbackCandidates = async (channelName, options = {}) => {
-  const {
-    maxResults = 5,
-    localOnly = false,
-    targetRegion = null,
-  } = options;
-
-  const normalized = normalizeName(channelName);
-  if (!normalized) return [];
-
-  const cached = scrapeCache.get(normalized);
-  if (cached && Date.now() - cached.timestamp < SCRAPE_CACHE_TTL) {
-    return cached.data.slice(0, maxResults);
-  }
-
-  const aggregated = [];
-  const seenUrls = new Set();
-
-  for (const source of SCRAPE_SOURCES) {
-    if (!source?.buildUrl) continue;
-    const target = source.buildUrl(channelName.trim());
-    if (!target) continue;
-
-    try {
-      const html = await fetchTextWithProxy(target);
-      const urls = extractStreamUrls(html);
-      if (!urls.length) continue;
-
-      const streams = [];
-      for (const url of urls) {
-        if (streams.length >= maxResults) break;
-        if (seenUrls.has(url)) continue;
-        seenUrls.add(url);
-
-        streams.push({
-          url,
-          quality: null,
-          streamType: detectStreamType(url),
-          userAgent: null,
-          referrer: null,
-          requiresProxy: false,
-          source: source.label,
-        });
-      }
-
-      if (!streams.length) continue;
-
-      aggregated.push({
-        id: `scrape:${source.label}:${normalized}`,
-        name: channelName,
-        logo: null,
-        country: null,
-        categories: [],
-        source: source.label,
-        score: 35,
-        region: null,
-        origin: 'scrape',
-        streams,
-      });
-    } catch (error) {
-      console.warn(`[IPTV] Failed scrape from ${source.label}`, error.message || error);
-    }
-  }
-
-  const seeded = getSeededScrapeCandidates(channelName, {
-    maxResults,
-    localOnly,
-    targetRegion,
-  });
-
-  const combined = [...aggregated];
-  if (seeded.length) {
-    seeded.forEach((candidate) => {
-      const uniqueStreams = candidate.streams.filter((stream) => {
-        if (!stream?.url || seenUrls.has(stream.url)) return false;
-        seenUrls.add(stream.url);
-        return true;
-      });
-      if (!uniqueStreams.length) return;
-      combined.push({
-        ...candidate,
-        streams: uniqueStreams,
-      });
-    });
-  }
-
-  let filtered = combined;
-  if (localOnly && targetRegion) {
-    filtered = filtered.filter((candidate) => {
-      if (!candidate) return false;
-      if (!candidate.region) return true;
-      return candidate.region === targetRegion;
-    });
-  }
-
-  scrapeCache.set(normalized, { data: filtered, timestamp: Date.now() });
-  return filtered.slice(0, maxResults);
-};
 
 const normalizeName = (value) => {
   if (!value) return '';
@@ -779,39 +596,10 @@ const dedupeCandidates = (candidates) => {
     .filter(Boolean);
 };
 
-const verifyTopStreams = async (candidate, limit, timeout) => {
-  const streamsToTest = candidate.streams.slice(0, limit);
-  const results = await Promise.all(
-    streamsToTest.map(async (stream) => {
-      try {
-        const health = await checkChannelHealth(stream.url, timeout);
-        return { ...stream, health };
-      } catch (error) {
-        return {
-          ...stream,
-          health: {
-            isAlive: false,
-            status: 'offline',
-            error: error.message,
-          },
-        };
-      }
-    })
-  );
-
-  const enriched = candidate.streams.map((stream) => {
-    const match = results.find((tested) => tested.url === stream.url);
-    return match ? match : stream;
-  });
-
-  return { ...candidate, streams: enriched };
-};
-
 const weightOrigin = (origin) => {
   if (origin === 'playlist') return 2;
   if (origin === 'api') return 1;
   if (origin === 'seed') return 0;
-  if (origin === 'scrape') return -1;
   return 0;
 };
 
@@ -836,12 +624,8 @@ export const discoverChannelStreams = async (channelName, options = {}) => {
     country = 'PH',
     maxResults = 5,
     includeInternational: includeInternationalOption,
-    verify = false,
-    verifyLimit = 2,
-    verifyTimeout = 4000,
     localOnly = false,
     localRegion: explicitLocalRegion,
-    enableScraping = true,
   } = options;
 
   const includeInternational = localOnly ? false : (includeInternationalOption ?? false);
@@ -901,32 +685,8 @@ export const discoverChannelStreams = async (channelName, options = {}) => {
     });
   }
 
-  if (!combined.length && enableScraping) {
-    try {
-      const scraped = await scrapeFallbackCandidates(channelName, {
-        maxResults,
-        localOnly,
-        targetRegion,
-      });
-      if (scraped.length) {
-        combined = dedupeCandidates(scraped.sort(compareCandidates));
-      }
-    } catch (error) {
-      console.warn('[IPTV] Scrape fallback failed', error.message || error);
-    }
-  }
-
   if (!combined.length) return [];
-
-  if (!verify) return combined.sort(compareCandidates);
-
-  const verified = [];
-  for (const candidate of combined) {
-    const enriched = await verifyTopStreams(candidate, verifyLimit, verifyTimeout);
-    verified.push(enriched);
-  }
-
-  return verified.sort(compareCandidates);
+  return combined.sort(compareCandidates);
 };
 
 export const discoverChannelsBatch = async (channelNames, options = {}) => {
@@ -952,5 +712,4 @@ export const clearDiscoveryCache = () => {
   streamCache.timestamp = 0;
   streamCache.promise = null;
   playlistCache.clear();
-  scrapeCache.clear();
 };

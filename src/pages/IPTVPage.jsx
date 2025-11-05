@@ -57,11 +57,10 @@ export const IPTVPage = () => {
   const { 
     healthMap, 
     isChecking, 
-    progress, 
+    progress,
     checkAllChannels, 
     getStats, 
     getHealth,
-    lastCheck
   } = useChannelHealth(allChannels, true); // Auto-check on mount
   
   const [selectedChannel, setSelectedChannel] = useState(null);
