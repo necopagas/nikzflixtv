@@ -1,6 +1,5 @@
 // src/pages/VideokePage.jsx
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import ReactPlayer from 'react-player';
 import {
     FiArrowDown,
     FiArrowUp,
@@ -28,6 +27,176 @@ const PRESET_QUERIES = [
 
 const FALLBACK_QUERY = 'OPM karaoke';
 
+let youTubeApiPromise = null;
+
+const loadYouTubeIframeAPI = () => {
+    if (typeof window === 'undefined') {
+        return Promise.reject(new Error('YouTube API requires a browser environment.'));
+    }
+
+    if (window.YT?.Player) {
+        return Promise.resolve(window.YT);
+    }
+
+    if (!youTubeApiPromise) {
+        youTubeApiPromise = new Promise((resolve, reject) => {
+            const handleFailure = () => {
+                youTubeApiPromise = null;
+                const danglingScript = document.getElementById('youtube-iframe-api');
+                if (danglingScript?.parentNode) {
+                    danglingScript.parentNode.removeChild(danglingScript);
+                }
+                reject(new Error('Failed to load the YouTube player API.'));
+            };
+
+            let script = document.getElementById('youtube-iframe-api');
+            if (!script) {
+                script = document.createElement('script');
+                script.id = 'youtube-iframe-api';
+                script.src = 'https://www.youtube.com/iframe_api';
+                script.async = true;
+                script.onerror = handleFailure;
+                document.head.appendChild(script);
+            } else {
+                script.addEventListener('error', handleFailure, { once: true });
+            }
+
+            const previousCallback = window.onYouTubeIframeAPIReady;
+            window.onYouTubeIframeAPIReady = () => {
+                previousCallback?.();
+                const scriptEl = document.getElementById('youtube-iframe-api');
+                if (scriptEl) {
+                    scriptEl.onerror = null;
+                }
+                if (window.YT?.Player) {
+                    resolve(window.YT);
+                } else {
+                    handleFailure();
+                }
+            };
+        });
+    }
+
+    return youTubeApiPromise;
+};
+
+const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer }) => {
+    const containerRef = useRef(null);
+    const playerRef = useRef(null);
+    const readyRef = useRef(false);
+    const lastVideoRef = useRef(null);
+
+    const destroyPlayer = useCallback(() => {
+        if (playerRef.current?.destroy) {
+            try {
+                playerRef.current.destroy();
+            } catch (destroyError) {
+                console.error('Failed to destroy YouTube player instance.', destroyError);
+            }
+        }
+        playerRef.current = null;
+        readyRef.current = false;
+        lastVideoRef.current = null;
+        registerPlayer?.(null);
+    }, [registerPlayer]);
+
+    useEffect(() => () => destroyPlayer(), [destroyPlayer]);
+
+    useEffect(() => {
+        let isActive = true;
+
+        if (!videoId) {
+            destroyPlayer();
+            return undefined;
+        }
+
+        loadYouTubeIframeAPI()
+            .then((YT) => {
+                if (!isActive) {
+                    return;
+                }
+
+                if (!containerRef.current) {
+                    return;
+                }
+
+                const playerVars = {
+                    autoplay: 1,
+                    rel: 0,
+                    modestbranding: 1,
+                    playsinline: 1,
+                    enablejsapi: 1,
+                    origin: typeof window !== 'undefined' ? window.location.origin : undefined,
+                };
+
+                const bindExistingPlayer = () => {
+                    if (!readyRef.current || !playerRef.current) {
+                        return;
+                    }
+                    try {
+                        if (lastVideoRef.current !== videoId) {
+                            playerRef.current.loadVideoById(videoId);
+                            lastVideoRef.current = videoId;
+                        }
+                        registerPlayer?.(playerRef.current);
+                        onReady?.({ target: playerRef.current });
+                    } catch (loadError) {
+                        onError?.(loadError);
+                    }
+                };
+
+                if (!playerRef.current) {
+                    playerRef.current = new YT.Player(containerRef.current, {
+                        videoId,
+                        width: '100%',
+                        height: '100%',
+                        playerVars,
+                        events: {
+                            onReady: (event) => {
+                                if (!isActive) {
+                                    return;
+                                }
+                                readyRef.current = true;
+                                lastVideoRef.current = videoId;
+                                registerPlayer?.(event.target);
+                                onReady?.(event);
+                            },
+                            onStateChange: (event) => {
+                                if (!isActive) {
+                                    return;
+                                }
+                                if (event.data === YT.PlayerState.ENDED) {
+                                    onEnded?.();
+                                }
+                            },
+                            onError: (event) => {
+                                if (!isActive) {
+                                    return;
+                                }
+                                onError?.(event);
+                            },
+                        },
+                    });
+                    registerPlayer?.(playerRef.current);
+                } else {
+                    bindExistingPlayer();
+                }
+            })
+            .catch((error) => {
+                if (!isActive) {
+                    return;
+                }
+                onError?.(error);
+            });
+
+        return () => {
+            isActive = false;
+        };
+    }, [videoId, onReady, onEnded, onError, registerPlayer, destroyPlayer]);
+
+    return <div ref={containerRef} className="videoke-stage-player" />;
+};
+
 export const VideokePage = () => {
     const { showToast } = useToast();
     const [query, setQuery] = useState(FALLBACK_QUERY);
@@ -37,10 +206,16 @@ export const VideokePage = () => {
     const [activeSong, setActiveSong] = useState(null);
     const [ambientMode, setAmbientMode] = useState(true);
     const [queue, setQueue] = useState([]);
+    const [playerError, setPlayerError] = useState(null);
     const playerRef = useRef(null);
+    const searchRequestIdRef = useRef(0);
+
+    const registerPlayer = useCallback((playerInstance) => {
+        playerRef.current = playerInstance ?? null;
+    }, []);
 
     const attemptPlay = useCallback(() => {
-        const internalPlayer = playerRef.current?.getInternalPlayer?.();
+        const internalPlayer = playerRef.current;
         if (!internalPlayer) {
             return;
         }
@@ -78,6 +253,9 @@ export const VideokePage = () => {
             setQuery(finalQuery);
         }
 
+        const requestId = searchRequestIdRef.current + 1;
+        searchRequestIdRef.current = requestId;
+
         setIsLoading(true);
         setError(null);
         setResults([]);
@@ -85,9 +263,13 @@ export const VideokePage = () => {
         try {
             const ytResults = await searchYouTube(finalQuery);
             
+            if (requestId !== searchRequestIdRef.current) {
+                return;
+            }
+
             if (!ytResults || ytResults.length === 0) {
                 setError('No results found. Try a different search term.');
-                setIsLoading(false);
+                setQueue([]);
                 return;
             }
             
@@ -108,6 +290,7 @@ export const VideokePage = () => {
                     title: item.title || item.snippet?.title || 'YouTube Video',
                     source: 'YouTube',
                     embedUrl: `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`,
+                    playerUrl: `https://www.youtube.com/watch?v=${videoId}`,
                     watchUrl: `https://www.youtube.com/watch?v=${videoId}`,
                     description: item.channel?.name || item.snippet?.channelTitle || 'YouTube Video',
                 };
@@ -117,10 +300,19 @@ export const VideokePage = () => {
             setQueue([]);
 
         } catch (err) {
-            setError(`Failed to fetch results. ${err.message}`);
+            if (requestId !== searchRequestIdRef.current) {
+                return;
+            }
+            const errorMessage = err instanceof Error && err.message
+                ? err.message
+                : 'An unexpected error occurred.';
+            setError(`Failed to fetch results. ${errorMessage}`);
             setResults([]);
+            setQueue([]);
         } finally {
-            setIsLoading(false);
+            if (requestId === searchRequestIdRef.current) {
+                setIsLoading(false);
+            }
         }
     };
 
@@ -148,6 +340,10 @@ export const VideokePage = () => {
             setQueue(results.slice(1));
         }
     }, [activeSong, results]);
+
+    useEffect(() => {
+        setPlayerError(null);
+    }, [activeSong?.id]);
 
     const handleSearchClick = () => {
         searchVideoke(query);
@@ -187,7 +383,9 @@ export const VideokePage = () => {
 
             return [previousActive, ...withoutSong];
         });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     };
 
     const handleOpenYoutube = () => {
@@ -235,6 +433,18 @@ export const VideokePage = () => {
         setAmbientMode((prev) => !prev);
         showToast(ambientMode ? 'Stage lights dimmed.' : 'Stage lights on!', 'info', 2000);
     };
+
+    const handlePlayerError = useCallback((event) => {
+        console.error('YouTube player error', event);
+        let message = 'Playback error. Try another track or open it on YouTube.';
+        if (event?.data === 150 || event?.data === 101) {
+            message = 'This track is blocked from being played in embedded players.';
+        } else if (event instanceof Error && event.message) {
+            message = event.message;
+        }
+        setPlayerError(message);
+        showToast(message, 'error', 3200);
+    }, [showToast]);
 
     const handleQueueAdd = (song) => {
         if (queue.some((queued) => queued.id === song.id)) {
@@ -396,30 +606,22 @@ export const VideokePage = () => {
             {activeSong && !isLoading && (
                 <section className={`videoke-stage ${ambientMode ? 'ambient' : ''}`}>
                     <div className="videoke-stage-frame">
-                        <ReactPlayer
+                        <YouTubeStagePlayer
                             key={activeSong.id}
-                            ref={playerRef}
-                            url={activeSong.embedUrl}
-                            playing
-                            controls
-                            width="100%"
-                            height="100%"
-                            className="videoke-stage-player"
-                            onEnded={handleStageEnded}
+                            videoId={activeSong.id}
                             onReady={attemptPlay}
-                            onError={() => showToast('Playback error. Try another track.', 'error', 2400)}
-                            config={{
-                                youtube: {
-                                    playerVars: {
-                                        autoplay: 1,
-                                        rel: 0,
-                                        modestbranding: 1,
-                                        playsinline: 1,
-                                        origin: typeof window !== 'undefined' ? window.location.origin : undefined,
-                                    },
-                                },
-                            }}
+                            onEnded={handleStageEnded}
+                            onError={handlePlayerError}
+                            registerPlayer={registerPlayer}
                         />
+                        {playerError && (
+                            <div className="videoke-stage-fallback">
+                                <p>{playerError}</p>
+                                <button type="button" onClick={handleOpenYoutube}>
+                                    Watch on YouTube
+                                </button>
+                            </div>
+                        )}
                     </div>
                     <div className="videoke-stage-info">
                         <span className="videoke-badge">Now Playing</span>
