@@ -143,7 +143,7 @@ const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer
                 }
 
                 const playerVars = {
-                    autoplay: 0, // Always start with 0, we'll control play manually
+                    autoplay: 1, // Enable autoplay for main player
                     rel: 0,
                     modestbranding: 1,
                     playsinline: 1,
@@ -241,7 +241,7 @@ const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer
 
     // Iframe fallback when YouTube API fails
     if (useIframe) {
-        const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&controls=1`;
+        const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&controls=1`; // Autoplay for main player
         return (
             <iframe
                 src={embedUrl}
@@ -271,6 +271,7 @@ export const VideokePage = () => {
     const [playerError, setPlayerError] = useState(null);
     const [isPlayerLoading, setIsPlayerLoading] = useState(false);
     const [hasUserInteracted, setHasUserInteracted] = useState(false);
+    const [showAutoplayPrompt, setShowAutoplayPrompt] = useState(false);
     const playerRef = useRef(null);
     const searchRequestIdRef = useRef(0);
 
@@ -294,42 +295,45 @@ export const VideokePage = () => {
             if (typeof internalPlayer.playVideo === 'function') {
                 console.log('Using YouTube playVideo method');
                 
-                // Only attempt autoplay if user has interacted
-                if (hasUserInteracted) {
-                    setTimeout(() => {
-                        try {
-                            internalPlayer.playVideo();
-                            console.log('playVideo called successfully');
-                        } catch (playError) {
-                            console.log('playVideo failed:', playError);
+                // Try autoplay for main player always
+                setTimeout(() => {
+                    try {
+                        internalPlayer.playVideo();
+                        console.log('playVideo called successfully');
+                        setHasUserInteracted(true); // Mark as interacted after successful play
+                        setShowAutoplayPrompt(false); // Hide prompt if autoplay works
+                    } catch (playError) {
+                        console.log('playVideo failed:', playError);
+                        if (!hasUserInteracted) {
+                            // Show autoplay prompt after a delay if autoplay fails
+                            setTimeout(() => setShowAutoplayPrompt(true), 2000);
                             showToast('Click the play button to start', 'info', 3000);
                         }
-                    }, 500);
-                } else {
-                    console.log('No user interaction yet, waiting for manual play');
-                    showToast('Click the video or play button to start', 'info', 4000);
-                }
+                    }
+                }, 500);
                 return;
             }
 
             if (typeof internalPlayer.play === 'function') {
                 console.log('Using standard play method');
-                if (hasUserInteracted) {
-                    const playPromise = internalPlayer.play();
-                    if (playPromise?.catch) {
-                        playPromise.catch((playError) => {
-                            console.log('Autoplay failed:', playError);
+                const playPromise = internalPlayer.play();
+                if (playPromise?.catch) {
+                    playPromise.catch((playError) => {
+                        console.log('Autoplay failed:', playError);
+                        if (!hasUserInteracted) {
                             showToast('Click the video to start playing', 'info', 3000);
-                        });
-                    }
+                        }
+                    });
                 } else {
-                    showToast('Click the video to start playing', 'info', 3000);
+                    setHasUserInteracted(true);
                 }
             }
         } catch (playError) {
             console.error('Autoplay attempt failed', playError);
             setIsPlayerLoading(false);
-            showToast('Click the video to start playing', 'info', 3000);
+            if (!hasUserInteracted) {
+                showToast('Click the video to start playing', 'info', 3000);
+            }
         }
     }, [showToast, hasUserInteracted]);
 
@@ -389,7 +393,7 @@ export const VideokePage = () => {
                     id: videoId,
                     title: item.title || item.snippet?.title || 'YouTube Video',
                     source: 'YouTube',
-                    embedUrl: `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&autoplay=1`,
+                    embedUrl: `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&autoplay=0`, // NO autoplay for previews!
                     playerUrl: `https://www.youtube.com/watch?v=${videoId}`,
                     watchUrl: `https://www.youtube.com/watch?v=${videoId}`,
                     description: item.author || item.channel?.name || item.snippet?.channelTitle || 'YouTube Video',
@@ -507,6 +511,7 @@ export const VideokePage = () => {
         // Clear any previous player errors and set loading when switching songs
         setPlayerError(null);
         setIsPlayerLoading(true);
+        setShowAutoplayPrompt(false); // Hide autoplay prompt when switching songs
         
         console.log('Setting active song:', song);
         setActiveSong(song);
@@ -778,15 +783,16 @@ export const VideokePage = () => {
                                 registerPlayer={registerPlayer}
                             />
                         </VideoPlayerErrorBoundary>
-                        {!hasUserInteracted && !isPlayerLoading && !playerError && (
-                            <div className="videoke-stage-fallback">
+                        {showAutoplayPrompt && !hasUserInteracted && !isPlayerLoading && !playerError && (
+                            <div className="videoke-stage-fallback" style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}>
                                 <div className="text-center">
-                                    <h3 className="text-lg font-semibold mb-2">🎵 Ready to Sing?</h3>
-                                    <p className="mb-4">Click the Play button below to start your karaoke session!</p>
+                                    <h3 className="text-lg font-semibold mb-2">🎵 Autoplay Blocked</h3>
+                                    <p className="mb-4">Your browser blocked autoplay. Click to start singing!</p>
                                     <button 
                                         type="button" 
                                         onClick={() => {
                                             setHasUserInteracted(true);
+                                            setShowAutoplayPrompt(false);
                                             attemptPlay();
                                         }}
                                         className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold"
@@ -828,7 +834,7 @@ export const VideokePage = () => {
                             </button>
                             <button 
                                 type="button" 
-                                onClick={() => console.log('Current player:', playerRef.current, 'Active song:', activeSong, 'Has interacted:', hasUserInteracted)}
+                                onClick={() => console.log('Current player:', playerRef.current, 'Active song:', activeSong, 'Has interacted:', hasUserInteracted, 'Show prompt:', showAutoplayPrompt)}
                                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                             >
                                 🔍 Debug Info
@@ -922,11 +928,12 @@ export const VideokePage = () => {
                             >
                                 <div className="videoke-card-video">
                                     <iframe
-                                        src={item.embedUrl}
+                                        src={`https://www.youtube.com/embed/${item.id}?rel=0&modestbranding=1&autoplay=0&controls=0`}
                                         title={item.title}
-                                        allowFullScreen
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        allowFullScreen={false}
+                                        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                         referrerPolicy="strict-origin-when-cross-origin"
+                                        style={{ pointerEvents: 'none' }} // Prevent interaction with preview
                                     />
                                 </div>
                                 <div className="videoke-card-body">
