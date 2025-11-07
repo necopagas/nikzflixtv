@@ -91,12 +91,52 @@ const loadYouTubeIframeAPI = () => {
 };
 
 const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer }) => {
+    const [playerKey, setPlayerKey] = useState(0); // Force recreation with key
     const containerRef = useRef(null);
     const playerRef = useRef(null);
     const readyRef = useRef(false);
     const lastVideoRef = useRef(null);
     const isMountedRef = useRef(true);
-    const [useIframe, setUseIframe] = useState(false);
+    const [useIframe, setUseIframe] = useState(true); // Default to iframe for reliability
+    const songTimerRef = useRef(null);
+
+    // Force iframe approach for more reliable video transitions
+    useEffect(() => {
+        if (videoId && lastVideoRef.current && lastVideoRef.current !== videoId) {
+            console.log('Video changed, forcing iframe recreation');
+            setPlayerKey(prev => prev + 1); // Force complete recreation
+            
+            // Clear any existing timer
+            if (songTimerRef.current) {
+                clearTimeout(songTimerRef.current);
+                songTimerRef.current = null;
+            }
+        }
+        lastVideoRef.current = videoId;
+    }, [videoId]);
+
+    // Set up automatic song ending timer (default 4 minutes for most songs)
+    useEffect(() => {
+        if (videoId && useIframe) {
+            // Clear any existing timer
+            if (songTimerRef.current) {
+                clearTimeout(songTimerRef.current);
+            }
+            
+            // Set timer for automatic progression (4 minutes = 240 seconds)
+            songTimerRef.current = setTimeout(() => {
+                console.log('Song timer ended, triggering onEnded');
+                onEnded?.();
+            }, 240000); // 4 minutes
+            
+            return () => {
+                if (songTimerRef.current) {
+                    clearTimeout(songTimerRef.current);
+                    songTimerRef.current = null;
+                }
+            };
+        }
+    }, [videoId, useIframe, onEnded]);
 
     const destroyPlayer = useCallback(() => {
         if (playerRef.current) {
@@ -125,6 +165,15 @@ const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer
         playerRef.current = null;
         readyRef.current = false;
         lastVideoRef.current = null;
+        
+        // Clear the container element
+        if (containerRef.current) {
+            try {
+                containerRef.current.innerHTML = '';
+            } catch (clearError) {
+                console.log('Failed to clear container:', clearError);
+            }
+        }
         
         if (isMountedRef.current) {
             registerPlayer?.(null);
@@ -178,35 +227,79 @@ const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer
                     }
                     try {
                         if (lastVideoRef.current !== videoId) {
+                            console.log('Different video detected, destroying and recreating player');
                             console.log('Switching from video:', lastVideoRef.current, 'to:', videoId);
                             
-                            // Stop current video first to prevent audio-only playback
-                            if (typeof playerRef.current.stopVideo === 'function') {
-                                playerRef.current.stopVideo();
-                                console.log('Stopped previous video');
-                            }
+                            // For video transitions, destroy the old player completely and create new one
+                            destroyPlayer();
                             
-                            // Clear video with a longer delay to ensure proper cleanup
+                            // Wait a bit, then recreate the player with new video
                             setTimeout(() => {
-                                if (playerRef.current && isMountedRef.current) {
-                                    console.log('Loading new video:', videoId);
+                                if (isMountedRef.current && containerRef.current) {
+                                    console.log('Creating fresh player for video:', videoId);
                                     
-                                    // Use cueVideoById first, then play
-                                    if (typeof playerRef.current.cueVideoById === 'function') {
-                                        playerRef.current.cueVideoById(videoId);
-                                        setTimeout(() => {
-                                            if (playerRef.current && isMountedRef.current) {
-                                                playerRef.current.playVideo();
-                                            }
-                                        }, 500);
-                                    } else {
-                                        // Fallback to loadVideoById
-                                        playerRef.current.loadVideoById(videoId);
-                                    }
+                                    // Clear the container completely
+                                    containerRef.current.innerHTML = '';
                                     
-                                    lastVideoRef.current = videoId;
+                                    playerRef.current = new YT.Player(containerRef.current, {
+                                        videoId,
+                                        width: '100%',
+                                        height: '100%',
+                                        playerVars,
+                                        events: {
+                                            onReady: (event) => {
+                                                console.log('Fresh YouTube player ready for video:', videoId);
+                                                if (!isActive || !isMountedRef.current) {
+                                                    return;
+                                                }
+                                                readyRef.current = true;
+                                                lastVideoRef.current = videoId;
+                                                registerPlayer?.(event.target);
+                                                onReady?.(event);
+                                            },
+                                            onStateChange: (event) => {
+                                                console.log('Fresh YouTube player state change:', event.data, 'for video:', videoId);
+                                                if (!isActive || !isMountedRef.current) {
+                                                    return;
+                                                }
+                                                
+                                                // Handle video ended
+                                                if (event.data === YT.PlayerState.ENDED) {
+                                                    console.log('Video ended, triggering onEnded');
+                                                    onEnded?.();
+                                                }
+                                                
+                                                // Handle video playing - ensure video is visible
+                                                if (event.data === YT.PlayerState.PLAYING) {
+                                                    console.log('Video is playing, checking visibility');
+                                                    // Force a small resize to ensure video is visible
+                                                    setTimeout(() => {
+                                                        if (playerRef.current && isMountedRef.current) {
+                                                            try {
+                                                                const iframe = containerRef.current?.querySelector('iframe');
+                                                                if (iframe) {
+                                                                    iframe.style.visibility = 'visible';
+                                                                    iframe.style.opacity = '1';
+                                                                }
+                                                            } catch (err) {
+                                                                console.log('Minor iframe visibility fix failed:', err);
+                                                            }
+                                                        }
+                                                    }, 100);
+                                                }
+                                            },
+                                            onError: (event) => {
+                                                console.error('Fresh YouTube player error:', event.data, 'for video:', videoId);
+                                                if (!isActive || !isMountedRef.current) {
+                                                    return;
+                                                }
+                                                onError?.(event);
+                                            },
+                                        },
+                                    });
                                 }
-                            }, 300); // Longer delay for proper cleanup
+                            }, 500); // Give time for cleanup
+                            return;
                         }
                         registerPlayer?.(playerRef.current);
                         onReady?.({ target: playerRef.current });
@@ -299,20 +392,58 @@ const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer
         };
     }, [videoId, onReady, onEnded, onError, registerPlayer, destroyPlayer]);
 
-    // Iframe fallback when YouTube API fails
+    // Iframe fallback when YouTube API fails OR for reliable video transitions
     if (useIframe) {
-        const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&controls=1`; // Autoplay for main player
+        const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&controls=1&enablejsapi=1`;
+        
+        useEffect(() => {
+            // Simulate onReady after iframe loads - faster for iframe approach
+            const timer = setTimeout(() => {
+                onReady?.({ target: null });
+            }, 300); // Reduced from 1000ms to 300ms for faster loading
+            
+            return () => clearTimeout(timer);
+        }, [onReady, videoId]);
+
+        useEffect(() => {
+            // Set up a message listener for iframe events
+            const handleMessage = (event) => {
+                if (event.origin !== 'https://www.youtube.com') return;
+                
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.event === 'video-progress') {
+                        // YouTube iframe doesn't reliably send ended events, so we'll use a different approach
+                        // We'll let the parent component handle this with a timer or other mechanism
+                    }
+                } catch (e) {
+                    // Ignore parsing errors
+                }
+            };
+
+            window.addEventListener('message', handleMessage);
+            return () => window.removeEventListener('message', handleMessage);
+        }, [onEnded]);
+        
         return (
-            <iframe
-                src={embedUrl}
-                title="YouTube Video Player"
-                width="100%"
-                height="100%"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                style={{ border: 0 }}
-            />
+            <div key={playerKey} style={{ width: '100%', height: '100%' }}>
+                <iframe
+                    src={embedUrl}
+                    title="YouTube Video Player"
+                    width="100%"
+                    height="100%"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    style={{ border: 0 }}
+                    onLoad={() => {
+                        // Clear loading state as soon as iframe loads
+                        setTimeout(() => {
+                            onReady?.({ target: null });
+                        }, 200); // Very fast loading for iframe
+                    }}
+                />
+            </div>
         );
     }
 
@@ -329,7 +460,6 @@ export const VideokePage = () => {
     const [ambientMode, setAmbientMode] = useState(true);
     const [queue, setQueue] = useState([]);
     const [playerError, setPlayerError] = useState(null);
-    const [isPlayerLoading, setIsPlayerLoading] = useState(false);
     const [hasUserInteracted, setHasUserInteracted] = useState(false);
     const [showAutoplayPrompt, setShowAutoplayPrompt] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -350,9 +480,6 @@ export const VideokePage = () => {
         }
 
         try {
-            // Clear loading state when player is ready
-            setIsPlayerLoading(false);
-            
             if (typeof internalPlayer.playVideo === 'function') {
                 console.log('Using YouTube playVideo method');
                 
@@ -391,7 +518,6 @@ export const VideokePage = () => {
             }
         } catch (playError) {
             console.error('Autoplay attempt failed', playError);
-            setIsPlayerLoading(false);
             if (!hasUserInteracted) {
                 showToast('Click the video to start playing', 'info', 3000);
             }
@@ -569,9 +695,8 @@ export const VideokePage = () => {
         // Mark user interaction for autoplay permission
         setHasUserInteracted(true);
         
-        // Clear any previous player errors and set loading when switching songs
+        // Clear any previous player errors when switching songs
         setPlayerError(null);
-        setIsPlayerLoading(true);
         setShowAutoplayPrompt(false); // Hide autoplay prompt when switching songs
         setIsTransitioning(true); // Mark as transitioning
         
@@ -597,7 +722,7 @@ export const VideokePage = () => {
         // Clear transition state after a delay
         setTimeout(() => {
             setIsTransitioning(false);
-        }, 1000);
+        }, 500); // Reduced from 1000ms to 500ms for faster transitions
         
         if (typeof window !== 'undefined') {
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -652,7 +777,6 @@ export const VideokePage = () => {
 
     const handlePlayerError = useCallback((event) => {
         console.error('YouTube player error', event);
-        setIsPlayerLoading(false); // Clear loading state on error
         
         let message = 'Playback error. Trying next song...';
         
@@ -851,7 +975,7 @@ export const VideokePage = () => {
                                 registerPlayer={registerPlayer}
                             />
                         </VideoPlayerErrorBoundary>
-                        {showAutoplayPrompt && !hasUserInteracted && !isPlayerLoading && !playerError && (
+                        {showAutoplayPrompt && !hasUserInteracted && !playerError && (
                             <div className="videoke-stage-fallback" style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}>
                                 <div className="text-center">
                                     <h3 className="text-lg font-semibold mb-2">🎵 Autoplay Blocked</h3>
@@ -870,13 +994,7 @@ export const VideokePage = () => {
                                 </div>
                             </div>
                         )}
-                        {isPlayerLoading && (
-                            <div className="videoke-stage-fallback">
-                                <div className="player-loading" />
-                                <p>Loading video...</p>
-                            </div>
-                        )}
-                        {playerError && !isPlayerLoading && (
+                        {playerError && (
                             <div className="videoke-stage-fallback">
                                 <p>{playerError}</p>
                                 <button type="button" onClick={handleOpenYoutube}>
