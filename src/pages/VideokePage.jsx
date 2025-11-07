@@ -15,6 +15,7 @@ import {
 } from 'react-icons/fi';
 import { searchYouTube } from '../utils/consumetApi';
 import { useToast } from '../components/toastContext.js';
+import VideoPlayerErrorBoundary from '../components/VideoPlayerErrorBoundary.jsx';
 
 const PRESET_QUERIES = [
     { label: 'OPM Classics', value: 'opm karaoke minus one' },
@@ -43,8 +44,17 @@ const loadYouTubeIframeAPI = () => {
             const handleFailure = () => {
                 youTubeApiPromise = null;
                 const danglingScript = document.getElementById('youtube-iframe-api');
-                if (danglingScript?.parentNode) {
-                    danglingScript.parentNode.removeChild(danglingScript);
+                if (danglingScript) {
+                    try {
+                        // Use modern remove() method with fallback to removeChild()
+                        if (danglingScript.remove) {
+                            danglingScript.remove();
+                        } else if (danglingScript.parentNode) {
+                            danglingScript.parentNode.removeChild(danglingScript);
+                        }
+                    } catch (removeError) {
+                        console.warn('Failed to remove YouTube script element:', removeError);
+                    }
                 }
                 reject(new Error('Failed to load the YouTube player API.'));
             };
@@ -85,6 +95,8 @@ const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer
     const playerRef = useRef(null);
     const readyRef = useRef(false);
     const lastVideoRef = useRef(null);
+    const isMountedRef = useRef(true);
+    const [useIframe, setUseIframe] = useState(false);
 
     const destroyPlayer = useCallback(() => {
         if (playerRef.current?.destroy) {
@@ -97,10 +109,18 @@ const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer
         playerRef.current = null;
         readyRef.current = false;
         lastVideoRef.current = null;
-        registerPlayer?.(null);
+        if (isMountedRef.current) {
+            registerPlayer?.(null);
+        }
     }, [registerPlayer]);
 
-    useEffect(() => () => destroyPlayer(), [destroyPlayer]);
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+            destroyPlayer();
+        };
+    }, [destroyPlayer]);
 
     useEffect(() => {
         let isActive = true;
@@ -112,40 +132,56 @@ const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer
 
         loadYouTubeIframeAPI()
             .then((YT) => {
+                console.log('YouTube API loaded successfully');
                 if (!isActive) {
                     return;
                 }
 
                 if (!containerRef.current) {
+                    console.log('No container ref available');
                     return;
                 }
 
                 const playerVars = {
-                    autoplay: 1,
+                    autoplay: 0, // Always start with 0, we'll control play manually
                     rel: 0,
                     modestbranding: 1,
                     playsinline: 1,
                     enablejsapi: 1,
+                    controls: 1,
+                    iv_load_policy: 3,
+                    fs: 1,
+                    mute: 0,
                     origin: typeof window !== 'undefined' ? window.location.origin : undefined,
                 };
 
                 const bindExistingPlayer = () => {
-                    if (!readyRef.current || !playerRef.current) {
+                    if (!readyRef.current || !playerRef.current || !isMountedRef.current) {
                         return;
                     }
                     try {
                         if (lastVideoRef.current !== videoId) {
-                            playerRef.current.loadVideoById(videoId);
-                            lastVideoRef.current = videoId;
+                            // Add a small delay to ensure previous video is cleared
+                            setTimeout(() => {
+                                if (playerRef.current && isMountedRef.current) {
+                                    console.log('Loading video:', videoId);
+                                    playerRef.current.loadVideoById(videoId);
+                                    lastVideoRef.current = videoId;
+                                }
+                            }, 100);
                         }
                         registerPlayer?.(playerRef.current);
                         onReady?.({ target: playerRef.current });
                     } catch (loadError) {
-                        onError?.(loadError);
+                        console.error('Error in bindExistingPlayer:', loadError);
+                        if (isMountedRef.current) {
+                            onError?.(loadError);
+                        }
                     }
                 };
 
                 if (!playerRef.current) {
+                    console.log('Creating new YouTube player for video:', videoId);
                     playerRef.current = new YT.Player(containerRef.current, {
                         videoId,
                         width: '100%',
@@ -153,7 +189,8 @@ const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer
                         playerVars,
                         events: {
                             onReady: (event) => {
-                                if (!isActive) {
+                                console.log('YouTube player ready for video:', videoId);
+                                if (!isActive || !isMountedRef.current) {
                                     return;
                                 }
                                 readyRef.current = true;
@@ -162,7 +199,8 @@ const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer
                                 onReady?.(event);
                             },
                             onStateChange: (event) => {
-                                if (!isActive) {
+                                console.log('YouTube player state change:', event.data, 'for video:', videoId);
+                                if (!isActive || !isMountedRef.current) {
                                     return;
                                 }
                                 if (event.data === YT.PlayerState.ENDED) {
@@ -170,7 +208,8 @@ const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer
                                 }
                             },
                             onError: (event) => {
-                                if (!isActive) {
+                                console.error('YouTube player error:', event.data, 'for video:', videoId);
+                                if (!isActive || !isMountedRef.current) {
                                     return;
                                 }
                                 onError?.(event);
@@ -179,20 +218,43 @@ const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer
                     });
                     registerPlayer?.(playerRef.current);
                 } else {
+                    console.log('Reusing existing player for video:', videoId);
                     bindExistingPlayer();
                 }
             })
             .catch((error) => {
+                console.error('YouTube API failed to load, using iframe fallback:', error);
                 if (!isActive) {
                     return;
                 }
-                onError?.(error);
+                // Use iframe fallback
+                setUseIframe(true);
+                setTimeout(() => {
+                    onReady?.({ target: null });
+                }, 500);
             });
 
         return () => {
             isActive = false;
         };
     }, [videoId, onReady, onEnded, onError, registerPlayer, destroyPlayer]);
+
+    // Iframe fallback when YouTube API fails
+    if (useIframe) {
+        const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&controls=1`;
+        return (
+            <iframe
+                src={embedUrl}
+                title="YouTube Video Player"
+                width="100%"
+                height="100%"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{ border: 0 }}
+            />
+        );
+    }
 
     return <div ref={containerRef} className="videoke-stage-player" />;
 };
@@ -207,6 +269,8 @@ export const VideokePage = () => {
     const [ambientMode, setAmbientMode] = useState(true);
     const [queue, setQueue] = useState([]);
     const [playerError, setPlayerError] = useState(null);
+    const [isPlayerLoading, setIsPlayerLoading] = useState(false);
+    const [hasUserInteracted, setHasUserInteracted] = useState(false);
     const playerRef = useRef(null);
     const searchRequestIdRef = useRef(0);
 
@@ -216,29 +280,58 @@ export const VideokePage = () => {
 
     const attemptPlay = useCallback(() => {
         const internalPlayer = playerRef.current;
+        console.log('attemptPlay called, player:', internalPlayer, 'hasUserInteracted:', hasUserInteracted);
+        
         if (!internalPlayer) {
+            console.log('No player available for autoplay');
             return;
         }
 
         try {
+            // Clear loading state when player is ready
+            setIsPlayerLoading(false);
+            
             if (typeof internalPlayer.playVideo === 'function') {
-                internalPlayer.playVideo();
+                console.log('Using YouTube playVideo method');
+                
+                // Only attempt autoplay if user has interacted
+                if (hasUserInteracted) {
+                    setTimeout(() => {
+                        try {
+                            internalPlayer.playVideo();
+                            console.log('playVideo called successfully');
+                        } catch (playError) {
+                            console.log('playVideo failed:', playError);
+                            showToast('Click the play button to start', 'info', 3000);
+                        }
+                    }, 500);
+                } else {
+                    console.log('No user interaction yet, waiting for manual play');
+                    showToast('Click the video or play button to start', 'info', 4000);
+                }
                 return;
             }
 
             if (typeof internalPlayer.play === 'function') {
-                const playPromise = internalPlayer.play();
-                if (playPromise?.catch) {
-                    playPromise.catch(() => {
-                        showToast('Autoplay blocked. Tap play to continue.', 'info', 2400);
-                    });
+                console.log('Using standard play method');
+                if (hasUserInteracted) {
+                    const playPromise = internalPlayer.play();
+                    if (playPromise?.catch) {
+                        playPromise.catch((playError) => {
+                            console.log('Autoplay failed:', playError);
+                            showToast('Click the video to start playing', 'info', 3000);
+                        });
+                    }
+                } else {
+                    showToast('Click the video to start playing', 'info', 3000);
                 }
             }
         } catch (playError) {
             console.error('Autoplay attempt failed', playError);
-            showToast('Autoplay blocked. Tap play to continue.', 'info', 2400);
+            setIsPlayerLoading(false);
+            showToast('Click the video to start playing', 'info', 3000);
         }
-    }, [showToast]);
+    }, [showToast, hasUserInteracted]);
 
     const searchVideoke = async (nextQuery) => {
         const finalQuery = (nextQuery ?? query)?.trim();
@@ -261,19 +354,23 @@ export const VideokePage = () => {
         setResults([]);
 
         try {
+            showToast('Searching for karaoke videos...', 'info', 1500);
             const ytResults = await searchYouTube(finalQuery);
+            console.log('Search results received:', ytResults);
             
             if (requestId !== searchRequestIdRef.current) {
                 return;
             }
 
             if (!ytResults || ytResults.length === 0) {
-                setError('No results found. Try a different search term.');
+                console.log('No search results found');
+                setError('No results found. Try a different search term or check your internet connection.');
                 setQueue([]);
                 return;
             }
             
             const formattedResults = ytResults.map(item => {
+                console.log('Processing search item:', item);
                 const rawId = item?.id;
                 const videoId = (typeof rawId === 'string' && rawId)
                     || rawId?.videoId
@@ -281,23 +378,34 @@ export const VideokePage = () => {
                     || item?.video?.id
                     || item?.id?.id;
 
+                console.log('Extracted video ID:', videoId, 'from item:', item);
+
                 if (!videoId) {
+                    console.log('No valid video ID found for item:', item);
                     return null;
                 }
 
-                return {
+                const formattedItem = {
                     id: videoId,
                     title: item.title || item.snippet?.title || 'YouTube Video',
                     source: 'YouTube',
-                    embedUrl: `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`,
+                    embedUrl: `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&autoplay=1`,
                     playerUrl: `https://www.youtube.com/watch?v=${videoId}`,
                     watchUrl: `https://www.youtube.com/watch?v=${videoId}`,
-                    description: item.channel?.name || item.snippet?.channelTitle || 'YouTube Video',
+                    description: item.author || item.channel?.name || item.snippet?.channelTitle || 'YouTube Video',
                 };
+                
+                console.log('Formatted item:', formattedItem);
+                return formattedItem;
             }).filter(Boolean);
 
+            console.log('Final formatted results:', formattedResults);
             setResults(formattedResults);
             setQueue([]);
+            
+            if (formattedResults.length > 0) {
+                showToast(`Found ${formattedResults.length} karaoke tracks!`, 'success', 2000);
+            }
 
         } catch (err) {
             if (requestId !== searchRequestIdRef.current) {
@@ -305,10 +413,11 @@ export const VideokePage = () => {
             }
             const errorMessage = err instanceof Error && err.message
                 ? err.message
-                : 'An unexpected error occurred.';
+                : 'An unexpected error occurred while searching.';
             setError(`Failed to fetch results. ${errorMessage}`);
             setResults([]);
             setQueue([]);
+            showToast('Search failed. Please try again.', 'error', 3000);
         } finally {
             if (requestId === searchRequestIdRef.current) {
                 setIsLoading(false);
@@ -317,17 +426,20 @@ export const VideokePage = () => {
     };
 
     useEffect(() => {
+        console.log('VideokePage mounted, searching for:', query);
         searchVideoke(query);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
+        console.log('Results changed:', results);
         if (results.length === 0) {
             setActiveSong(null);
             return;
         }
 
         if (!activeSong || !results.some((song) => song.id === activeSong.id)) {
+            console.log('Setting first result as active song:', results[0]);
             setActiveSong(results[0]);
             setQueue(results.slice(1));
             return;
@@ -335,15 +447,36 @@ export const VideokePage = () => {
     }, [results, activeSong]);
 
     useEffect(() => {
+        console.log('Active song changed:', activeSong);
         if (!activeSong && results.length > 0) {
+            console.log('No active song but have results, setting first result');
             setActiveSong(results[0]);
             setQueue(results.slice(1));
         }
     }, [activeSong, results]);
 
     useEffect(() => {
+        console.log('Clearing player error for active song:', activeSong?.id);
         setPlayerError(null);
     }, [activeSong?.id]);
+
+    // Global click listener to enable autoplay
+    useEffect(() => {
+        const handleFirstClick = () => {
+            if (!hasUserInteracted) {
+                console.log('First user interaction detected');
+                setHasUserInteracted(true);
+            }
+        };
+
+        document.addEventListener('click', handleFirstClick);
+        document.addEventListener('touchstart', handleFirstClick);
+
+        return () => {
+            document.removeEventListener('click', handleFirstClick);
+            document.removeEventListener('touchstart', handleFirstClick);
+        };
+    }, [hasUserInteracted]);
 
     const handleSearchClick = () => {
         searchVideoke(query);
@@ -363,9 +496,19 @@ export const VideokePage = () => {
         searchVideoke(value);
     };
 
-    const handleSelectSong = (song, options = {}) => {
+    const handleSelectSong = useCallback((song, options = {}) => {
+        console.log('handleSelectSong called with:', song, options);
         const { fromQueue = false } = options;
         const previousActive = activeSong;
+        
+        // Mark user interaction for autoplay permission
+        setHasUserInteracted(true);
+        
+        // Clear any previous player errors and set loading when switching songs
+        setPlayerError(null);
+        setIsPlayerLoading(true);
+        
+        console.log('Setting active song:', song);
         setActiveSong(song);
         setQueue((prevQueue) => {
             const withoutSong = prevQueue.filter((item) => item.id !== song.id);
@@ -386,7 +529,7 @@ export const VideokePage = () => {
         if (typeof window !== 'undefined') {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-    };
+    }, [activeSong]);
 
     const handleOpenYoutube = () => {
         if (!activeSong) {
@@ -436,15 +579,34 @@ export const VideokePage = () => {
 
     const handlePlayerError = useCallback((event) => {
         console.error('YouTube player error', event);
-        let message = 'Playback error. Try another track or open it on YouTube.';
+        setIsPlayerLoading(false); // Clear loading state on error
+        
+        let message = 'Playback error. Trying next song...';
+        
         if (event?.data === 150 || event?.data === 101) {
-            message = 'This track is blocked from being played in embedded players.';
+            message = 'This track is blocked from being played. Skipping to next song...';
+        } else if (event?.data === 5) {
+            message = 'HTML5 player error. Trying next song...';
+        } else if (event?.data === 2) {
+            message = 'Invalid video ID. Skipping to next song...';
         } else if (event instanceof Error && event.message) {
-            message = event.message;
+            message = `Error: ${event.message}. Trying next song...`;
         }
+        
         setPlayerError(message);
-        showToast(message, 'error', 3200);
-    }, [showToast]);
+        showToast(message, 'error', 2000);
+        
+        // Auto-play next song in queue if available
+        setTimeout(() => {
+            if (queue.length > 0) {
+                const nextSong = queue[0];
+                handleSelectSong(nextSong, { fromQueue: true });
+                showToast(`Skipped to: ${nextSong.title}`, 'info', 2000);
+            } else {
+                showToast('No more songs in queue. Please add more tracks.', 'info', 3000);
+            }
+        }, 1500);
+    }, [showToast, queue, handleSelectSong]);
 
     const handleQueueAdd = (song) => {
         if (queue.some((queued) => queued.id === song.id)) {
@@ -606,15 +768,41 @@ export const VideokePage = () => {
             {activeSong && !isLoading && (
                 <section className={`videoke-stage ${ambientMode ? 'ambient' : ''}`}>
                     <div className="videoke-stage-frame">
-                        <YouTubeStagePlayer
-                            key={activeSong.id}
-                            videoId={activeSong.id}
-                            onReady={attemptPlay}
-                            onEnded={handleStageEnded}
-                            onError={handlePlayerError}
-                            registerPlayer={registerPlayer}
-                        />
-                        {playerError && (
+                        <VideoPlayerErrorBoundary videoId={activeSong.id}>
+                            <YouTubeStagePlayer
+                                key={activeSong.id}
+                                videoId={activeSong.id}
+                                onReady={attemptPlay}
+                                onEnded={handleStageEnded}
+                                onError={handlePlayerError}
+                                registerPlayer={registerPlayer}
+                            />
+                        </VideoPlayerErrorBoundary>
+                        {!hasUserInteracted && !isPlayerLoading && !playerError && (
+                            <div className="videoke-stage-fallback">
+                                <div className="text-center">
+                                    <h3 className="text-lg font-semibold mb-2">🎵 Ready to Sing?</h3>
+                                    <p className="mb-4">Click the Play button below to start your karaoke session!</p>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => {
+                                            setHasUserInteracted(true);
+                                            attemptPlay();
+                                        }}
+                                        className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold"
+                                    >
+                                        ▶ Start Karaoke
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        {isPlayerLoading && (
+                            <div className="videoke-stage-fallback">
+                                <div className="player-loading" />
+                                <p>Loading video...</p>
+                            </div>
+                        )}
+                        {playerError && !isPlayerLoading && (
                             <div className="videoke-stage-fallback">
                                 <p>{playerError}</p>
                                 <button type="button" onClick={handleOpenYoutube}>
@@ -627,6 +815,25 @@ export const VideokePage = () => {
                         <span className="videoke-badge">Now Playing</span>
                         <h2>{activeSong.title}</h2>
                         <p>{activeSong.description}</p>
+                        <div className="mt-4">
+                            <button 
+                                type="button" 
+                                onClick={() => {
+                                    setHasUserInteracted(true);
+                                    attemptPlay();
+                                }}
+                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 mr-2"
+                            >
+                                ▶ Play Video
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={() => console.log('Current player:', playerRef.current, 'Active song:', activeSong, 'Has interacted:', hasUserInteracted)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                                🔍 Debug Info
+                            </button>
+                        </div>
                     </div>
                     <div className="videoke-controls">
                         {controls.map(({ id, label, icon, onClick }) => (

@@ -68,16 +68,49 @@ export const API_ENDPOINTS = {
   discoverMovies: (params) => `${tmdb('/discover/movie')}&${toQS(params)}`,
 };
 
-// --- ORIGINAL EMBED SOURCES ---
+// --- EMBED SOURCES ---
 export const EMBED_URLS = {
+  // Premium ad-free sources (cleanest experience)
+  vidsrcpro: {
+    movie: (id) => `https://vidsrc.pro/embed/movie/${id}`,
+    tv: (id, s, e) => `https://vidsrc.pro/embed/tv/${id}/${s}/${e}`
+  },
+  vidsrccc: {
+    movie: (id) => `https://vidsrc.cc/v2/embed/movie/${id}`,
+    tv: (id, s, e) => `https://vidsrc.cc/v2/embed/tv/${id}/${s}/${e}`
+  },
+  embedflix: {
+    movie: (id) => `https://www.embedflix.to/movie/${id}`,
+    tv: (id, s, e) => `https://www.embedflix.to/tv/${id}/${s}/${e}`
+  },
+  streamwish: {
+    movie: (id) => `https://streamwish.to/embed-movie/${id}`,
+    tv: (id, s, e) => `https://streamwish.to/embed-tv/${id}/${s}/${e}`
+  },
+  
+  // Working reliable sources (tested and verified)
   vidsrc: {
     movie: (id) => `https://vidsrc.to/embed/movie/${id}`,
     tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}`
+  },
+  vidsrcme: {
+    movie: (id) => `https://vidsrc.me/embed/movie?tmdb=${id}`,
+    tv: (id, s, e) => `https://vidsrc.me/embed/tv?tmdb=${id}&season=${s}&episode=${e}`
+  },
+  embedsoap: {
+    movie: (id) => `https://www.embedsoap.com/embed/movie/${id}`,
+    tv: (id, s, e) => `https://www.embedsoap.com/embed/tv/${id}/${s}/${e}`
   },
   multiembed: {
     movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`,
     tv: (id, s, e) => `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${s}&e=${e}`
   },
+  superembed: {
+    movie: (id) => `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1`,
+    tv: (id, s, e) => `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${s}&e=${e}`
+  },
+  
+  // Alternative working sources
   vidlink: {
     movie: (id) => `https://vidlink.pro/movie/${id}`,
     tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}`
@@ -86,17 +119,61 @@ export const EMBED_URLS = {
     movie: (id) => `https://vidfast.pro/movie/${id}?autoPlay=true`,
     tv: (id, s, e) => `https://vidfast.pro/tv/${id}/${s}/${e}?autoPlay=true`
   },
-  autoembed: {
-    movie: (id) => `https://autoembed.pro/embed/movie/${id}`,
-    tv: (id, s, e) => `https://autoembed.pro/embed/tv/${id}/${s}/${e}`
+  embedsu: {
+    movie: (id) => `https://embed.su/embed/movie/${id}`,
+    tv: (id, s, e) => `https://embed.su/embed/tv/${id}/${s}/${e}`
   },
+  embed2: {
+    movie: (id) => `https://www.2embed.to/embed/tmdb/movie?id=${id}`,
+    tv: (id, s, e) => `https://www.2embed.to/embed/tmdb/tv?id=${id}&s=${s}&e=${e}`
+  },
+  
+  // Additional backup sources
+  videasy: {
+    movie: (id) => `https://videasy.org/embed/movie/${id}`,
+    tv: (id, s, e) => `https://videasy.org/embed/tv/${id}/${s}/${e}`
+  },
+  autoembed: {
+    movie: (id) => `https://autoembed.co/movie/tmdb/${id}`,
+    tv: (id, s, e) => `https://autoembed.co/tv/tmdb/${id}/${s}/${e}`
+  },
+  
+  // Last resort sources
+  moviesapi: {
+    movie: (id) => `https://moviesapi.club/movie/${id}`,
+    tv: (id, s, e) => `https://moviesapi.club/tv/${id}/${s}/${e}`
+  },
+  smashystream: {
+    movie: (id) => `https://player.smashy.stream/movie/${id}`,
+    tv: (id, s, e) => `https://player.smashy.stream/tv/${id}/${s}/${e}`
+  },
+  
+  // Anime specific
   vidlink_anime: {
     anime: (mal_id, e, type = "sub") => `https://vidlink.pro/anime/${mal_id}/${e}/${type}?fallback=true`
   }
 };
 
-// --- SOURCE ORDER ---
-export const SOURCE_ORDER = ['autoembed', 'vidlink', 'vidfast', 'vidsrc', 'multiembed'];
+// --- SOURCE ORDER (Priority-based) ---
+export const SOURCE_ORDER = [
+  'vidsrcpro',    // 🚫 No ads - Premium version
+  'vidsrccc',     // 🚫 No ads - Clean interface
+  'embedflix',    // 🚫 No ads - Minimal popups
+  'streamwish',   // 🚫 No ads - Clean streaming
+  'vidsrc',       // Most reliable
+  'vidsrcme',     // Alternative vidsrc
+  'multiembed',   // Proven working
+  'superembed',   // Same as multiembed
+  'embedsoap',    // Clean interface
+  'vidlink',      // Backup
+  'vidfast',      // Backup
+  'embed2',       // Reliable backup
+  'embedsu',      // Alternative
+  'videasy',      // More backup
+  'autoembed',    // Updated URL
+  'moviesapi',    // Last resort
+  'smashystream'  // Final backup
+];
 
 // --- IPTV CHANNELS (NAAY SULOD) ---
 export const IPTV_CHANNELS = [

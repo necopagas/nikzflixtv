@@ -155,19 +155,24 @@ export const Modal = ({ item: initialItem, onClose, isItemInMyList, onToggleMyLi
 
     // --- RENDER SOURCES FUNCTION (CONFIRMED PRESENT) ---
     const renderSources = () => (
-        <div className="flex flex-wrap items-center gap-2 mb-4 px-8 pt-4 sm:px-0 sm:pt-0"> {/* Added padding for mobile */}
-            <span className="font-semibold text-[var(--text-secondary)]">Source:</span>
-            {SOURCE_ORDER.map(source => (
-                <button
-                    key={source}
-                    onClick={() => handleSourceChange(source)}
-                    tabIndex="0"
-                    onKeyDown={(e) => handleKeyDown(e, () => handleSourceChange(source))}
-                    className={`source-btn px-3 py-1 rounded-full text-sm transition-colors ${currentSource === source ? 'active bg-[var(--brand-color)] text-white font-bold' : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)]'}`}
-                >
-                    {source.replace('_', '.')}
-                </button>
-            ))}
+        <div className="mb-4 px-8 pt-4 sm:px-0 sm:pt-0"> {/* Added padding for mobile */}
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span className="font-semibold text-[var(--text-secondary)]">Source:</span>
+                {SOURCE_ORDER.map(source => (
+                    <button
+                        key={source}
+                        onClick={() => handleSourceChange(source)}
+                        tabIndex="0"
+                        onKeyDown={(e) => handleKeyDown(e, () => handleSourceChange(source))}
+                        className={`source-btn px-3 py-1 rounded-full text-sm transition-colors ${currentSource === source ? 'active bg-[var(--brand-color)] text-white font-bold' : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary-hover)]'}`}
+                    >
+                        {source.replace('_', '.')}
+                    </button>
+                ))}
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] opacity-75 italic">
+                💡 Tip: Dili mo gana ang video? Suwayi ang lain nga source sa taas kung naay problema.
+            </p>
         </div>
     );
     // --- END RENDER SOURCES ---
