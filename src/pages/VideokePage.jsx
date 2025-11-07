@@ -99,16 +99,33 @@ const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer
     const [useIframe, setUseIframe] = useState(false);
 
     const destroyPlayer = useCallback(() => {
-        if (playerRef.current?.destroy) {
+        if (playerRef.current) {
             try {
-                playerRef.current.destroy();
+                // Stop video before destroying to prevent audio-only playback
+                if (typeof playerRef.current.stopVideo === 'function') {
+                    playerRef.current.stopVideo();
+                    console.log('Stopped video before destroying player');
+                }
+                
+                // Clear video content
+                if (typeof playerRef.current.clearVideo === 'function') {
+                    playerRef.current.clearVideo();
+                }
+                
+                // Destroy the player
+                if (typeof playerRef.current.destroy === 'function') {
+                    playerRef.current.destroy();
+                    console.log('Player destroyed successfully');
+                }
             } catch (destroyError) {
                 console.error('Failed to destroy YouTube player instance.', destroyError);
             }
         }
+        
         playerRef.current = null;
         readyRef.current = false;
         lastVideoRef.current = null;
+        
         if (isMountedRef.current) {
             registerPlayer?.(null);
         }
@@ -161,14 +178,35 @@ const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer
                     }
                     try {
                         if (lastVideoRef.current !== videoId) {
-                            // Add a small delay to ensure previous video is cleared
+                            console.log('Switching from video:', lastVideoRef.current, 'to:', videoId);
+                            
+                            // Stop current video first to prevent audio-only playback
+                            if (typeof playerRef.current.stopVideo === 'function') {
+                                playerRef.current.stopVideo();
+                                console.log('Stopped previous video');
+                            }
+                            
+                            // Clear video with a longer delay to ensure proper cleanup
                             setTimeout(() => {
                                 if (playerRef.current && isMountedRef.current) {
-                                    console.log('Loading video:', videoId);
-                                    playerRef.current.loadVideoById(videoId);
+                                    console.log('Loading new video:', videoId);
+                                    
+                                    // Use cueVideoById first, then play
+                                    if (typeof playerRef.current.cueVideoById === 'function') {
+                                        playerRef.current.cueVideoById(videoId);
+                                        setTimeout(() => {
+                                            if (playerRef.current && isMountedRef.current) {
+                                                playerRef.current.playVideo();
+                                            }
+                                        }, 500);
+                                    } else {
+                                        // Fallback to loadVideoById
+                                        playerRef.current.loadVideoById(videoId);
+                                    }
+                                    
                                     lastVideoRef.current = videoId;
                                 }
-                            }, 100);
+                            }, 300); // Longer delay for proper cleanup
                         }
                         registerPlayer?.(playerRef.current);
                         onReady?.({ target: playerRef.current });
@@ -203,8 +241,30 @@ const YouTubeStagePlayer = ({ videoId, onReady, onEnded, onError, registerPlayer
                                 if (!isActive || !isMountedRef.current) {
                                     return;
                                 }
+                                
+                                // Handle video ended
                                 if (event.data === YT.PlayerState.ENDED) {
+                                    console.log('Video ended, triggering onEnded');
                                     onEnded?.();
+                                }
+                                
+                                // Handle video playing - ensure video is visible
+                                if (event.data === YT.PlayerState.PLAYING) {
+                                    console.log('Video is playing, checking visibility');
+                                    // Force a small resize to ensure video is visible
+                                    setTimeout(() => {
+                                        if (playerRef.current && isMountedRef.current) {
+                                            try {
+                                                const iframe = containerRef.current?.querySelector('iframe');
+                                                if (iframe) {
+                                                    iframe.style.visibility = 'visible';
+                                                    iframe.style.opacity = '1';
+                                                }
+                                            } catch (err) {
+                                                console.log('Minor iframe visibility fix failed:', err);
+                                            }
+                                        }
+                                    }, 100);
                                 }
                             },
                             onError: (event) => {
@@ -272,6 +332,7 @@ export const VideokePage = () => {
     const [isPlayerLoading, setIsPlayerLoading] = useState(false);
     const [hasUserInteracted, setHasUserInteracted] = useState(false);
     const [showAutoplayPrompt, setShowAutoplayPrompt] = useState(false);
+    const [isTransitioning, setIsTransitioning] = useState(false);
     const playerRef = useRef(null);
     const searchRequestIdRef = useRef(0);
 
@@ -512,6 +573,7 @@ export const VideokePage = () => {
         setPlayerError(null);
         setIsPlayerLoading(true);
         setShowAutoplayPrompt(false); // Hide autoplay prompt when switching songs
+        setIsTransitioning(true); // Mark as transitioning
         
         console.log('Setting active song:', song);
         setActiveSong(song);
@@ -531,6 +593,12 @@ export const VideokePage = () => {
 
             return [previousActive, ...withoutSong];
         });
+        
+        // Clear transition state after a delay
+        setTimeout(() => {
+            setIsTransitioning(false);
+        }, 1000);
+        
         if (typeof window !== 'undefined') {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
