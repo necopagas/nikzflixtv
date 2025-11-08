@@ -1164,6 +1164,25 @@ body::-webkit-scrollbar-thumb:hover {
   border-bottom: 1px solid var(--border-color);
 }
 
+/* Header Compartments - Organized Sections */
+.header-compartment {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.header-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--border-color);
+  opacity: 0.5;
+}
+
+/* Search Compartment Styling */
+.search-compartment {
+  min-width: 200px;
+}
+
 .search-input {
   background: linear-gradient(135deg, var(--bg-tertiary) 0%, rgba(30, 31, 38, 0.8) 100%);
   backdrop-filter: blur(10px);
@@ -1172,6 +1191,7 @@ body::-webkit-scrollbar-thumb:hover {
   border: 1px solid var(--border-color);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
+
 .search-input:focus {
   background: linear-gradient(135deg, rgba(60, 60, 70, 0.4) 0%, rgba(40, 40, 50, 0.6) 100%);
   border-color: var(--brand-color);
@@ -1180,10 +1200,21 @@ body::-webkit-scrollbar-thumb:hover {
     0 4px 16px rgba(0, 0, 0, 0.3);
   transform: scale(1.02);
 }
+
 .search-container:hover .clear-search-btn,
 .search-input:focus + .clear-search-btn {
   opacity: 1;
   visibility: visible;
+}
+
+/* Actions Compartment */
+.actions-compartment {
+  gap: 12px;
+}
+
+/* User Compartment */
+.user-compartment {
+  min-width: fit-content;
 }
 
 .skeleton {
@@ -1862,6 +1893,34 @@ body::-webkit-scrollbar-thumb:hover {
   gap: 1.75rem;
   overflow-y: auto;
   padding-right: 0.25rem;
+}
+
+/* Mobile Menu Compartments */
+.mobile-menu__compartment {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.mobile-search-compartment {
+  background: var(--bg-tertiary);
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.mobile-nav-compartment {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mobile-user-compartment {
+  background: var(--bg-tertiary);
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
 }
 
 .mobile-menu__nav {
