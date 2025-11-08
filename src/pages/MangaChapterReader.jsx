@@ -18,6 +18,26 @@ const MangaChapterReader = () => {
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
 
+  // Helper function to fetch from MangaDex (with proxy fallback for production)
+  const fetchMangaDex = async endpoint => {
+    try {
+      const isProduction = window.location.hostname !== 'localhost';
+
+      if (isProduction) {
+        const response = await fetch(`/api/mangadex?endpoint=${encodeURIComponent(endpoint)}`);
+        if (!response.ok) throw new Error('Proxy request failed');
+        return await response.json();
+      } else {
+        const response = await fetch(`https://api.mangadex.org${endpoint}`);
+        if (!response.ok) throw new Error('MangaDex request failed');
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Error fetching from MangaDex:', error);
+      throw error;
+    }
+  };
+
   // Fetch chapter pages
   useEffect(() => {
     const fetchChapterPages = async () => {
@@ -26,11 +46,8 @@ const MangaChapterReader = () => {
         setError(null);
 
         // Fetch chapter data (to get base URL and hash)
-        const response = await fetch(`https://api.mangadex.org/at-home/server/${chapterId}`);
-
-        if (!response.ok) throw new Error('Failed to fetch chapter pages');
-
-        const data = await response.json();
+        const endpoint = `/at-home/server/${chapterId}`;
+        const data = await fetchMangaDex(endpoint);
 
         // Build page URLs
         const baseUrl = data.baseUrl;
@@ -57,13 +74,8 @@ const MangaChapterReader = () => {
   useEffect(() => {
     const fetchChapters = async () => {
       try {
-        const response = await fetch(
-          `https://api.mangadex.org/manga/${id}/feed?limit=500&order[chapter]=asc&translatedLanguage[]=en`
-        );
-
-        if (!response.ok) return;
-
-        const data = await response.json();
+        const endpoint = `/manga/${id}/feed?limit=500&order[chapter]=asc&translatedLanguage[]=en`;
+        const data = await fetchMangaDex(endpoint);
         const chaptersList = data.data.map(ch => ({
           id: ch.id,
           chapter: ch.attributes.chapter,

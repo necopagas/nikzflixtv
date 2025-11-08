@@ -114,16 +114,33 @@ const MangaReaderPage = () => {
 
   const { isVerified, verifyAge } = useAgeVerification();
 
+  // Helper function to fetch from MangaDex (with proxy fallback for production)
+  const fetchMangaDex = async endpoint => {
+    try {
+      // In production, use the proxy to avoid CORS issues
+      const isProduction = window.location.hostname !== 'localhost';
+
+      if (isProduction) {
+        const response = await fetch(`/api/mangadex?endpoint=${encodeURIComponent(endpoint)}`);
+        if (!response.ok) throw new Error('Proxy request failed');
+        return await response.json();
+      } else {
+        // In development, call MangaDex directly
+        const response = await fetch(`https://api.mangadex.org${endpoint}`);
+        if (!response.ok) throw new Error('MangaDex request failed');
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Error fetching from MangaDex:', error);
+      throw error;
+    }
+  };
+
   // Fetch manga from MangaDex API
   const searchMangaDex = async query => {
     try {
-      const response = await fetch(
-        `https://api.mangadex.org/manga?title=${encodeURIComponent(query)}&limit=20&includes[]=cover_art&includes[]=author`
-      );
-
-      if (!response.ok) throw new Error('Failed to fetch manga');
-
-      const data = await response.json();
+      const endpoint = `/manga?title=${encodeURIComponent(query)}&limit=20&includes[]=cover_art&includes[]=author`;
+      const data = await fetchMangaDex(endpoint);
 
       return data.data.map(manga => {
         const coverArt = manga.relationships.find(rel => rel.type === 'cover_art');
@@ -161,19 +178,15 @@ const MangaReaderPage = () => {
       setError(null);
 
       // Build query with genre filter
-      let url =
-        'https://api.mangadex.org/manga?limit=20&includes[]=cover_art&includes[]=author&order[followedCount]=desc';
+      let endpoint =
+        '/manga?limit=20&includes[]=cover_art&includes[]=author&order[followedCount]=desc';
 
       // Add genre filter if not "all"
       if (selectedGenre !== 'all') {
-        url += `&includedTags[]=${selectedGenre}`;
+        endpoint += `&includedTags[]=${selectedGenre}`;
       }
 
-      const response = await fetch(url);
-
-      if (!response.ok) throw new Error('Failed to fetch popular manga');
-
-      const data = await response.json();
+      const data = await fetchMangaDex(endpoint);
 
       const manga = data.data.map(manga => {
         const coverArt = manga.relationships.find(rel => rel.type === 'cover_art');
@@ -215,13 +228,9 @@ const MangaReaderPage = () => {
       setError(null);
 
       // Fetch recently updated chapters to get manga IDs
-      const chaptersResponse = await fetch(
-        'https://api.mangadex.org/chapter?limit=30&order[publishAt]=desc&translatedLanguage[]=en&includes[]=manga'
-      );
-
-      if (!chaptersResponse.ok) throw new Error('Failed to fetch recent updates');
-
-      const chaptersData = await chaptersResponse.json();
+      const endpoint =
+        '/chapter?limit=30&order[publishAt]=desc&translatedLanguage[]=en&includes[]=manga';
+      const chaptersData = await fetchMangaDex(endpoint);
 
       // Extract unique manga from chapters
       const mangaMap = new Map();
@@ -247,13 +256,9 @@ const MangaReaderPage = () => {
       const mangaIds = Array.from(mangaMap.keys());
       const mangaDetailsPromises = mangaIds.map(async mangaId => {
         try {
-          const response = await fetch(
-            `https://api.mangadex.org/manga/${mangaId}?includes[]=cover_art&includes[]=author`
-          );
+          const endpoint = `/manga/${mangaId}?includes[]=cover_art&includes[]=author`;
+          const data = await fetchMangaDex(endpoint);
 
-          if (!response.ok) return null;
-
-          const data = await response.json();
           const manga = data.data;
           const coverArt = manga.relationships.find(rel => rel.type === 'cover_art');
           const coverId = coverArt?.attributes?.fileName;

@@ -10,19 +10,34 @@ export const MangaDetailPage = () => {
   const [chapters, setChapters] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Helper function to fetch from MangaDex (with proxy fallback for production)
+  const fetchMangaDex = async endpoint => {
+    try {
+      const isProduction = window.location.hostname !== 'localhost';
+
+      if (isProduction) {
+        const response = await fetch(`/api/mangadex?endpoint=${encodeURIComponent(endpoint)}`);
+        if (!response.ok) throw new Error('Proxy request failed');
+        return await response.json();
+      } else {
+        const response = await fetch(`https://api.mangadex.org${endpoint}`);
+        if (!response.ok) throw new Error('MangaDex request failed');
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Error fetching from MangaDex:', error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     const fetchMangaDetails = async () => {
       try {
         setIsLoading(true);
 
         // Fetch manga info
-        const mangaResponse = await fetch(
-          `https://api.mangadex.org/manga/${id}?includes[]=cover_art&includes[]=author&includes[]=artist`
-        );
-
-        if (!mangaResponse.ok) throw new Error('Failed to fetch manga details');
-
-        const mangaData = await mangaResponse.json();
+        const endpoint = `/manga/${id}?includes[]=cover_art&includes[]=author&includes[]=artist`;
+        const mangaData = await fetchMangaDex(endpoint);
         const m = mangaData.data;
 
         const coverArt = m.relationships.find(rel => rel.type === 'cover_art');
@@ -49,13 +64,8 @@ export const MangaDetailPage = () => {
         });
 
         // Fetch chapters
-        const chaptersResponse = await fetch(
-          `https://api.mangadex.org/manga/${id}/feed?limit=500&order[chapter]=asc&translatedLanguage[]=en`
-        );
-
-        if (!chaptersResponse.ok) throw new Error('Failed to fetch chapters');
-
-        const chaptersData = await chaptersResponse.json();
+        const chaptersEndpoint = `/manga/${id}/feed?limit=500&order[chapter]=asc&translatedLanguage[]=en`;
+        const chaptersData = await fetchMangaDex(chaptersEndpoint);
 
         const chaptersList = chaptersData.data.map(ch => ({
           id: ch.id,
