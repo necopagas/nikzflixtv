@@ -15,20 +15,22 @@ export const VivamaxPage = ({ onOpenModal, isWatched }) => {
 
   return (
     <div className="pb-6">
-      <header className="mb-6">
+      <div className="mb-6 pt-20">
         <div className="px-6 max-w-7xl mx-auto">
           <h1 className="text-3xl sm:text-4xl font-extrabold leading-tight">Vivamax</h1>
         </div>
-      </header>
+      </div>
 
       <div className="space-y-1 px-6 max-w-7xl mx-auto">
         <div className="mb-4 max-w-xl">
-          <label htmlFor="vivamax-search" className="sr-only">Search Vivamax</label>
+          <label htmlFor="vivamax-search" className="sr-only">
+            Search Vivamax
+          </label>
           <div className="relative">
             <input
               id="vivamax-search"
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={e => setQ(e.target.value)}
               placeholder="Search Vivamax titles..."
               className="w-full pl-3 pr-10 py-2 text-sm rounded bg-[rgba(255,255,255,0.04)] placeholder:text-gray-400 text-white border border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
             />
