@@ -228,7 +228,31 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                   onClick={() => setIsMoreMenuOpen(false)}
                   aria-hidden="true"
                 />
-                <div className="absolute top-full mt-2 right-0 bg-[var(--bg-secondary)] rounded-md shadow-lg py-2 min-w-[160px] z-50 border border-[var(--border-color)]">
+                <div className="absolute top-full mt-2 right-0 bg-[var(--bg-secondary)] rounded-md shadow-lg py-2 min-w-[200px] z-50 border border-[var(--border-color)]">
+                  {/* Search in dropdown */}
+                  <div className="px-3 py-2 border-b border-[var(--border-color)]">
+                    <form onSubmit={handleSearch} className="flex items-center">
+                      <div className="search-container relative flex items-center w-full">
+                        <button
+                          type="submit"
+                          className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 z-10"
+                          aria-label="Search"
+                        >
+                          <FaSearch className="text-sm" />
+                        </button>
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={e => setSearchQuery(e.target.value)}
+                          className="search-input border-2 border-transparent p-2 pl-8 rounded-md w-full focus:outline-none text-sm"
+                          placeholder="Search..."
+                          aria-label="Search titles"
+                        />
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Navigation links */}
                   {MORE_NAV_LINKS.map(link => (
                     <NavLink
                       key={link.to}
@@ -275,32 +299,6 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
 
         {/* Desktop Right Section - Organized into compartments */}
         <div className="hidden md:flex items-center gap-6">
-          {/* Search Compartment */}
-          <div className="header-compartment search-compartment">
-            <form onSubmit={handleSearch} className="flex items-center">
-              <div className="search-container relative flex items-center">
-                <button
-                  type="submit"
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10"
-                  aria-label="Search"
-                >
-                  <FaSearch />
-                </button>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="search-input border-2 border-transparent p-2 pl-10 rounded-full w-40 focus:w-64 focus:outline-none"
-                  placeholder="Search..."
-                  aria-label="Search titles"
-                />
-              </div>
-            </form>
-          </div>
-
-          {/* Divider */}
-          <div className="header-divider"></div>
-
           {/* Actions Compartment */}
           <div className="header-compartment actions-compartment flex items-center gap-3">
             <button
