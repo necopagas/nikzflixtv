@@ -54,11 +54,7 @@ const VivamaxPage = lazy(() =>
 );
 
 export default function App() {
-  const [showSplash, setShowSplash] = useState(() => {
-    // Check if splash was already shown in this session
-    const splashShown = sessionStorage.getItem('splashShown');
-    return !splashShown;
-  });
+  const [showSplash, setShowSplash] = useState(true);
   const [modalItem, setModalItem] = useState(null);
   const [playOnOpen, setPlayOnOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -181,7 +177,6 @@ export default function App() {
 
   const handleSplashFinish = () => {
     setShowSplash(false);
-    sessionStorage.setItem('splashShown', 'true');
   };
 
   // Show splash screen first
