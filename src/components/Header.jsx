@@ -3,18 +3,32 @@ import { SANTA_HAT_USER } from '../assets/santaHatUser';
 import { useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 // Icons (use react-icons for consistent, lightweight icons)
-import { FaSearch, FaCog, FaMoon, FaSun, FaBars, FaTimes, FaPlay } from 'react-icons/fa';
+import {
+  FaSearch,
+  FaCog,
+  FaMoon,
+  FaSun,
+  FaBars,
+  FaTimes,
+  FaPlay,
+  FaChevronDown,
+} from 'react-icons/fa';
 
-const NAV_LINKS = [
+const PRIMARY_NAV_LINKS = [
   { to: '/', label: 'Home' },
   { to: '/anime', label: 'Anime' },
   { to: '/drama', label: 'Drama' },
   { to: '/my-list', label: 'My List' },
   { to: '/live-tv', label: 'Live TV' },
   { to: '/videoke', label: 'Videoke' },
+];
+
+const MORE_NAV_LINKS = [
   { to: '/vivamax', label: 'Vivamax' },
   { to: '/chat-room', label: 'Chat Room' },
 ];
+
+const ALL_NAV_LINKS = [...PRIMARY_NAV_LINKS, ...MORE_NAV_LINKS];
 
 const desktopNavLinkClass = ({ isActive }) =>
   `px-3 py-2 font-semibold hover:text-[var(--brand-color)] transition-all duration-200 rounded-md hover:bg-[var(--bg-tertiary)] ${
@@ -38,6 +52,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const clock = useClock();
 
   const { currentUser, logout } = useAuth();
@@ -185,11 +200,53 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
       {/* Centered nav for wider screens */}
       <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 top-4 z-50">
         <nav className="flex items-center gap-8" aria-label="Primary navigation">
-          {NAV_LINKS.map(link => (
+          {PRIMARY_NAV_LINKS.map(link => (
             <NavLink key={link.to} to={link.to} className={desktopNavLinkClass}>
               {link.label}
             </NavLink>
           ))}
+
+          {/* More Menu Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+              className="px-3 py-2 font-semibold hover:text-[var(--brand-color)] transition-all duration-200 rounded-md hover:bg-[var(--bg-tertiary)] flex items-center gap-2"
+              aria-expanded={isMoreMenuOpen}
+              aria-haspopup="true"
+            >
+              More
+              <FaChevronDown
+                className={`text-xs transition-transform duration-200 ${isMoreMenuOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {isMoreMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsMoreMenuOpen(false)}
+                  aria-hidden="true"
+                />
+                <div className="absolute top-full mt-2 right-0 bg-[var(--bg-secondary)] rounded-md shadow-lg py-2 min-w-[160px] z-50 border border-[var(--border-color)]">
+                  {MORE_NAV_LINKS.map(link => (
+                    <NavLink
+                      key={link.to}
+                      to={link.to}
+                      onClick={() => setIsMoreMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `block px-4 py-2 hover:bg-[var(--bg-tertiary)] hover:text-[var(--brand-color)] transition-colors ${
+                          isActive ? 'text-[var(--brand-color)] bg-[var(--bg-tertiary)]' : ''
+                        }`
+                      }
+                    >
+                      {link.label}
+                    </NavLink>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </nav>
       </div>
 
@@ -392,7 +449,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
           {/* Mobile Navigation Compartment */}
           <div className="mobile-menu__compartment mobile-nav-compartment">
             <nav className="mobile-menu__nav" role="navigation" aria-label="Mobile navigation">
-              {NAV_LINKS.map(link => (
+              {ALL_NAV_LINKS.map(link => (
                 <NavLink
                   key={link.to}
                   to={link.to}
