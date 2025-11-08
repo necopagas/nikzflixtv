@@ -53,8 +53,8 @@ export const MangaDetailPage = () => {
             Object.values(m.attributes.description)[0] ||
             'No description available',
           coverImage: coverId
-            ? `https://uploads.mangadex.org/covers/${m.id}/${coverId}.512.jpg`
-            : null,
+            ? `https://mangadex.org/covers/${m.id}/${coverId}.512.jpg`
+            : 'https://via.placeholder.com/512x768?text=No+Cover',
           status: m.attributes.status,
           rating: m.attributes.contentRating,
           year: m.attributes.year,
