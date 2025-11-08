@@ -76,30 +76,56 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: id => {
-          // Core React dependencies
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+          // Core React dependencies - MUST be first and together
+          if (
+            id.includes('node_modules/react/') ||
+            id.includes('node_modules/react-dom/') ||
+            id.includes('node_modules/scheduler/')
+          ) {
             return 'vendor-react';
           }
-          // React Router
-          if (id.includes('node_modules/react-router')) {
+          // React Router - depends on React
+          if (id.includes('node_modules/react-router') || id.includes('node_modules/@remix-run')) {
             return 'vendor-router';
           }
-          // Icons
-          if (id.includes('react-icons')) {
-            return 'vendor-icons';
+          // React-based UI libraries
+          if (
+            id.includes('react-icons') ||
+            id.includes('react-player') ||
+            id.includes('node_modules/prop-types')
+          ) {
+            return 'vendor-react-ui';
           }
           // Firebase
-          if (id.includes('firebase')) {
+          if (id.includes('firebase') || id.includes('@firebase')) {
             return 'vendor-firebase';
           }
-          // Video players
-          if (id.includes('hls.js') || id.includes('shaka-player') || id.includes('dashjs')) {
+          // Video players (non-React)
+          if (
+            id.includes('hls.js') ||
+            id.includes('shaka-player') ||
+            id.includes('dashjs') ||
+            id.includes('video.js')
+          ) {
             return 'vendor-players';
           }
-          // Other large vendors
-          if (id.includes('node_modules')) {
-            return 'vendor-other';
+          // State management
+          if (
+            id.includes('zustand') ||
+            id.includes('@tanstack/react-query') ||
+            id.includes('@tanstack/query-core')
+          ) {
+            return 'vendor-state';
           }
+          // Utilities
+          if (
+            id.includes('node_modules/axios') ||
+            id.includes('node_modules/lodash') ||
+            id.includes('node_modules/date-fns')
+          ) {
+            return 'vendor-utils';
+          }
+          // Don't chunk other node_modules - let Vite handle it
         },
       },
     },
