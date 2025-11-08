@@ -7,6 +7,7 @@ import { BackToTopButton } from './components/BackToTopButton';
 import { SettingsModal } from './components/SettingsModal';
 import { ContentLoader } from './components/LoadingSpinner';
 import { BraveNotification } from './components/BraveNotification';
+import SplashScreen from './components/SplashScreen';
 import { useMyList } from './hooks/useMyList';
 import { useContinueWatching } from './hooks/useContinueWatching';
 import { useTheme } from './hooks/useTheme';
@@ -53,6 +54,11 @@ const VivamaxPage = lazy(() =>
 );
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(() => {
+    // Check if splash was already shown in this session
+    const splashShown = sessionStorage.getItem('splashShown');
+    return !splashShown;
+  });
   const [modalItem, setModalItem] = useState(null);
   const [playOnOpen, setPlayOnOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -172,6 +178,16 @@ export default function App() {
     setModalItem(null);
     setPlayOnOpen(false);
   };
+
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+    sessionStorage.setItem('splashShown', 'true');
+  };
+
+  // Show splash screen first
+  if (showSplash) {
+    return <SplashScreen onFinish={handleSplashFinish} />;
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
