@@ -18,39 +18,23 @@ import { PageTransitionIndicator } from './components/PageTransitionIndicator';
 import { useToast } from './components/toastContext.js';
 
 // Lazy load seasonal effects for better performance
-const SnowEffect = lazy(() =>
-  import('./components/SnowEffect').then(m => ({ default: m.SnowEffect }))
-);
-const ChristmasLights = lazy(() =>
-  import('./components/ChristmasLights').then(m => ({ default: m.ChristmasLights }))
-);
-const HalloweenEffects = lazy(() =>
-  import('./components/HalloweenEffects').then(m => ({ default: m.HalloweenEffects }))
-);
-const NewYearEffects = lazy(() =>
-  import('./components/NewYearEffects').then(m => ({ default: m.NewYearEffects }))
-);
+const SnowEffect = lazy(() => import('./components/SnowEffect').then(m => ({ default: m.SnowEffect })));
+const ChristmasLights = lazy(() => import('./components/ChristmasLights').then(m => ({ default: m.ChristmasLights })));
+const HalloweenEffects = lazy(() => import('./components/HalloweenEffects').then(m => ({ default: m.HalloweenEffects })));
+const NewYearEffects = lazy(() => import('./components/NewYearEffects').then(m => ({ default: m.NewYearEffects })));
 
 // Lazy load pages to keep the initial bundle fast
 const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
 const SearchPage = lazy(() => import('./pages/SearchPage').then(m => ({ default: m.SearchPage })));
 const AuthPage = lazy(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
-const ProfilePage = lazy(() =>
-  import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage }))
-);
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const MyListPage = lazy(() => import('./pages/MyListPage').then(m => ({ default: m.MyListPage })));
 const IPTVPage = lazy(() => import('./pages/IPTVPage').then(m => ({ default: m.IPTVPage })));
-const ChatRoomPage = lazy(() =>
-  import('./pages/ChatRoomPage').then(m => ({ default: m.ChatRoomPage }))
-);
+const ChatRoomPage = lazy(() => import('./pages/ChatRoomPage').then(m => ({ default: m.ChatRoomPage })));
 const AnimePage = lazy(() => import('./pages/AnimePage').then(m => ({ default: m.AnimePage })));
 const DramaPage = lazy(() => import('./pages/DramaPage').then(m => ({ default: m.DramaPage })));
-const VideokePage = lazy(() =>
-  import('./pages/VideokePage').then(m => ({ default: m.VideokePage }))
-);
-const VivamaxPage = lazy(() =>
-  import('./pages/VivamaxPage').then(m => ({ default: m.VivamaxPage }))
-);
+const VideokePage = lazy(() => import('./pages/VideokePage').then(m => ({ default: m.VideokePage })));
+const VivamaxPage = lazy(() => import('./pages/VivamaxPage').then(m => ({ default: m.VivamaxPage })));
 
 export default function App() {
   const [modalItem, setModalItem] = useState(null);
@@ -117,7 +101,7 @@ export default function App() {
   }, [showToast]);
 
   useEffect(() => {
-    const handler = event => {
+    const handler = (event) => {
       const target = event.target;
       const tag = target && target.tagName ? target.tagName.toLowerCase() : '';
       if (tag === 'input' || tag === 'textarea' || target?.isContentEditable) {
@@ -154,11 +138,7 @@ export default function App() {
     const storageKey = 'nikzflixtv_shortcuts_v1';
     const hasSeen = sessionStorage.getItem(storageKey);
     if (!hasSeen) {
-      showToast(
-        'Pro tip: Press / for search, Shift + L for My List, Shift + S for settings.',
-        'info',
-        5200
-      );
+      showToast('Pro tip: Press / for search, Shift + L for My List, Shift + S for settings.', 'info', 5200);
       sessionStorage.setItem(storageKey, '1');
     }
   }, [showToast]);
@@ -185,45 +165,35 @@ export default function App() {
 
       <main className="flex-grow">
         <Suspense fallback={<ContentLoader message="Loading NikzFlix..." />}>
-          <Routes location={location} key={location.pathname}>
+          <Routes>
             <Route
               path="/"
-              element={<HomePage key="home" onOpenModal={handleOpenModal} isWatched={isWatched} />}
+              element={<HomePage onOpenModal={handleOpenModal} isWatched={isWatched} />}
             />
             <Route
               path="/search"
-              element={
-                <SearchPage key="search" onOpenModal={handleOpenModal} isWatched={isWatched} />
-              }
+              element={<SearchPage onOpenModal={handleOpenModal} isWatched={isWatched} />}
             />
-            <Route path="/auth" element={<AuthPage key="auth" />} />
-            <Route path="/profile" element={<ProfilePage key="profile" />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route
               path="/anime"
-              element={
-                <AnimePage key="anime" onOpenModal={handleOpenModal} isWatched={isWatched} />
-              }
+              element={<AnimePage onOpenModal={handleOpenModal} isWatched={isWatched} />}
             />
             <Route
               path="/drama"
-              element={
-                <DramaPage key="drama" onOpenModal={handleOpenModal} isWatched={isWatched} />
-              }
+              element={<DramaPage onOpenModal={handleOpenModal} isWatched={isWatched} />}
             />
             <Route
               path="/my-list"
-              element={
-                <MyListPage key="mylist" onOpenModal={handleOpenModal} isWatched={isWatched} />
-              }
+              element={<MyListPage onOpenModal={handleOpenModal} isWatched={isWatched} />}
             />
-            <Route path="/live-tv" element={<IPTVPage key="livetv" />} />
-            <Route path="/chat-room" element={<ChatRoomPage key="chat" />} />
-            <Route path="/videoke" element={<VideokePage key="videoke" />} />
+            <Route path="/live-tv" element={<IPTVPage />} />
+            <Route path="/chat-room" element={<ChatRoomPage />} />
+            <Route path="/videoke" element={<VideokePage />} />
             <Route
               path="/vivamax"
-              element={
-                <VivamaxPage key="vivamax" onOpenModal={handleOpenModal} isWatched={isWatched} />
-              }
+              element={<VivamaxPage onOpenModal={handleOpenModal} isWatched={isWatched} />}
             />
           </Routes>
         </Suspense>
@@ -231,7 +201,7 @@ export default function App() {
 
       <Footer />
       <BackToTopButton />
-      <AdsterraSocialBar />
+    <AdsterraSocialBar />
 
       <Suspense fallback={null}>
         {isChristmasMode && (
