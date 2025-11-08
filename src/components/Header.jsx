@@ -17,8 +17,8 @@ const NAV_LINKS = [
 ];
 
 const desktopNavLinkClass = ({ isActive }) =>
-  `font-semibold hover:text-[var(--brand-color)] transition-colors ${
-    isActive ? 'text-[var(--brand-color)]' : ''
+  `px-3 py-2 font-semibold hover:text-[var(--brand-color)] transition-all duration-200 rounded-md hover:bg-[var(--bg-tertiary)] ${
+    isActive ? 'text-[var(--brand-color)] bg-[var(--bg-tertiary)]' : ''
   }`;
 
 const mobileNavLinkClass = ({ isActive }) =>
@@ -184,7 +184,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
 
       {/* Centered nav for wider screens */}
       <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 top-4 z-50">
-        <nav className="flex items-center space-x-6" aria-label="Primary navigation">
+        <nav className="flex items-center gap-8" aria-label="Primary navigation">
           {NAV_LINKS.map(link => (
             <NavLink key={link.to} to={link.to} className={desktopNavLinkClass}>
               {link.label}
