@@ -24,7 +24,7 @@ const PRIMARY_NAV_LINKS = [
 ];
 
 const MORE_NAV_LINKS = [
-  { to: '/vivamax', label: 'Vivamax' },
+  { to: '/vivamax', label: 'Vivamax', isLogo: true },
   { to: '/chat-room', label: 'Chat Room' },
 ];
 
@@ -264,7 +264,15 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                         }`
                       }
                     >
-                      {link.label}
+                      {link.isLogo ? (
+                        <img
+                          src="https://raw.githubusercontent.com/necopagas/nikzflixtv/refs/heads/main/public/vivamax-logo.png"
+                          alt={link.label}
+                          className="h-5 inline-block"
+                        />
+                      ) : (
+                        link.label
+                      )}
                     </NavLink>
                   ))}
                 </div>
@@ -454,7 +462,15 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                   className={mobileNavLinkClass}
                   onClick={closeMobileMenu}
                 >
-                  {link.label}
+                  {link.isLogo ? (
+                    <img
+                      src="https://raw.githubusercontent.com/necopagas/nikzflixtv/refs/heads/main/public/vivamax-logo.png"
+                      alt={link.label}
+                      className="h-5 inline-block"
+                    />
+                  ) : (
+                    link.label
+                  )}
                 </NavLink>
               ))}
             </nav>
