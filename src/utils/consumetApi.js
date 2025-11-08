@@ -53,6 +53,28 @@ export const searchManga = async query => {
   return response?.results || [];
 };
 
+export const getTrendingManga = async () => {
+  try {
+    // MangaDex doesn't have a direct "trending" endpoint in Consumet
+    // So we'll fetch popular manga using a general search
+    const response = await fetchConsumetData('/manga/mangadex?page=1');
+    return response?.results || [];
+  } catch (error) {
+    console.error('Error fetching trending manga:', error);
+    return [];
+  }
+};
+
+export const getMangaDetails = async mangaId => {
+  try {
+    const response = await fetchConsumetData(`/manga/mangadex/info/${mangaId}`);
+    return response || null;
+  } catch (error) {
+    console.error('Error fetching manga details:', error);
+    return null;
+  }
+};
+
 export const searchYouTube = async query => {
   if (!query) return [];
 

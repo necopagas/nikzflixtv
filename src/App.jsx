@@ -52,6 +52,18 @@ const VideokePage = lazy(() =>
 const VivamaxPage = lazy(() =>
   import('./pages/VivamaxPage').then(m => ({ default: m.VivamaxPage }))
 );
+const MangaReaderPage = lazy(() =>
+  import('./pages/MangaReaderPage').then(m => ({ default: m.default }))
+);
+const MangaDetailPage = lazy(() =>
+  import('./pages/MangaDetailPage').then(m => ({ default: m.MangaDetailPage }))
+);
+const MangaChapterReader = lazy(() =>
+  import('./pages/MangaChapterReader').then(m => ({ default: m.default }))
+);
+const MangaExtensionsPage = lazy(() =>
+  import('./pages/MangaExtensionsPage').then(m => ({ default: m.default }))
+);
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -236,6 +248,13 @@ export default function App() {
                 <VivamaxPage key="vivamax" onOpenModal={handleOpenModal} isWatched={isWatched} />
               }
             />
+            <Route path="/manga" element={<MangaReaderPage key="manga-reader" />} />
+            <Route path="/manga/:id" element={<MangaDetailPage key="manga-detail" />} />
+            <Route
+              path="/manga/:id/chapter/:chapterId"
+              element={<MangaChapterReader key="manga-chapter" />}
+            />
+            <Route path="/manga-extensions" element={<MangaExtensionsPage key="manga-ext" />} />
           </Routes>
         </Suspense>
       </main>
