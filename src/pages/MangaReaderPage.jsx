@@ -136,6 +136,35 @@ const MangaReaderPage = () => {
     }
   };
 
+  // Fetch manga from MangaPill via Consumet API
+  const searchMangaPill = async query => {
+    try {
+      const response = await fetch(
+        `/api/consumet?provider=mangapill&action=search&query=${encodeURIComponent(query)}`
+      );
+
+      if (!response.ok) throw new Error('Failed to fetch from MangaPill');
+
+      const data = await response.json();
+
+      return (
+        data.results?.map(manga => ({
+          id: manga.id,
+          title: manga.title || 'Unknown Title',
+          description: manga.description || 'No description available',
+          coverImage: manga.image || 'https://via.placeholder.com/256x384?text=No+Cover',
+          status: manga.status || 'Unknown',
+          rating: 'safe',
+          year: null,
+          tags: manga.genres || [],
+        })) || []
+      );
+    } catch (err) {
+      console.error('Error fetching from MangaPill:', err);
+      return [];
+    }
+  };
+
   // Fetch manga from MangaDex API
   const searchMangaDex = async query => {
     try {
@@ -163,6 +192,7 @@ const MangaReaderPage = () => {
           rating: manga.attributes.contentRating,
           year: manga.attributes.year,
           tags: manga.attributes.tags?.slice(0, 5).map(tag => tag.attributes.name.en) || [],
+          source: 'mangadex',
         };
       });
     } catch (err) {
@@ -177,42 +207,69 @@ const MangaReaderPage = () => {
       setIsLoading(true);
       setError(null);
 
-      // Build query with genre filter
-      let endpoint =
-        '/manga?limit=20&includes[]=cover_art&includes[]=author&order[followedCount]=desc';
+      if (selectedSource === 'mangapill') {
+        // Fetch from MangaPill - search for popular terms
+        const response = await fetch(
+          '/api/consumet?provider=mangapill&action=search&query=popular'
+        );
 
-      // Add genre filter if not "all"
-      if (selectedGenre !== 'all') {
-        endpoint += `&includedTags[]=${selectedGenre}`;
+        if (!response.ok) throw new Error('Failed to fetch popular manga from MangaPill');
+
+        const data = await response.json();
+
+        const manga =
+          data.results?.map(manga => ({
+            id: manga.id,
+            title: manga.title || 'Unknown Title',
+            description: manga.description || 'No description available',
+            coverImage: manga.image || 'https://via.placeholder.com/256x384?text=No+Cover',
+            status: manga.status || 'Unknown',
+            rating: 'safe',
+            year: null,
+            tags: manga.genres || [],
+            source: 'mangapill',
+          })) || [];
+
+        setMangaList(manga);
+      } else {
+        // Fetch from MangaDex (default)
+        let endpoint =
+          '/manga?limit=20&includes[]=cover_art&includes[]=author&order[followedCount]=desc';
+
+        // Add genre filter if not "all"
+        if (selectedGenre !== 'all') {
+          endpoint += `&includedTags[]=${selectedGenre}`;
+        }
+
+        const data = await fetchMangaDex(endpoint);
+
+        const manga = data.data.map(manga => {
+          const coverArt = manga.relationships.find(rel => rel.type === 'cover_art');
+          const coverId = coverArt?.attributes?.fileName;
+
+          return {
+            id: manga.id,
+            title:
+              manga.attributes.title.en ||
+              Object.values(manga.attributes.title)[0] ||
+              'Unknown Title',
+            description:
+              manga.attributes.description?.en ||
+              Object.values(manga.attributes.description)[0] ||
+              'No description available',
+            coverImage: coverId
+              ? `/api/manga-cover?mangaId=${manga.id}&fileName=${coverId}&size=256`
+              : 'https://via.placeholder.com/256x384?text=No+Cover',
+            status: manga.attributes.status,
+            rating: manga.attributes.contentRating,
+            year: manga.attributes.year,
+            tags: manga.attributes.tags?.slice(0, 5).map(tag => tag.attributes.name.en) || [],
+            source: 'mangadex',
+          };
+        });
+
+        setMangaList(manga);
       }
-
-      const data = await fetchMangaDex(endpoint);
-
-      const manga = data.data.map(manga => {
-        const coverArt = manga.relationships.find(rel => rel.type === 'cover_art');
-        const coverId = coverArt?.attributes?.fileName;
-
-        return {
-          id: manga.id,
-          title:
-            manga.attributes.title.en ||
-            Object.values(manga.attributes.title)[0] ||
-            'Unknown Title',
-          description:
-            manga.attributes.description?.en ||
-            Object.values(manga.attributes.description)[0] ||
-            'No description available',
-          coverImage: coverId
-            ? `/api/manga-cover?mangaId=${manga.id}&fileName=${coverId}&size=256`
-            : 'https://via.placeholder.com/256x384?text=No+Cover',
-          status: manga.attributes.status,
-          rating: manga.attributes.contentRating,
-          year: manga.attributes.year,
-          tags: manga.attributes.tags?.slice(0, 5).map(tag => tag.attributes.name.en) || [],
-        };
-      });
-
-      setMangaList(manga);
     } catch (err) {
       console.error('Error fetching popular manga:', err);
       setError('Failed to load manga. Please try again.');
@@ -349,7 +406,13 @@ const MangaReaderPage = () => {
       setIsLoading(true);
       setError(null);
 
-      const results = await searchMangaDex(query);
+      let results;
+      if (selectedSource === 'mangapill') {
+        results = await searchMangaPill(query);
+      } else {
+        results = await searchMangaDex(query);
+      }
+
       setMangaList(results);
       setSearchParams({ q: query }, { replace: true });
     } catch (err) {
@@ -562,7 +625,9 @@ const MangaReaderPage = () => {
                   <div
                     key={manga.id}
                     className="group cursor-pointer"
-                    onClick={() => navigate(`/manga/${manga.id}`)}
+                    onClick={() =>
+                      navigate(`/manga/${manga.id}?source=${manga.source || selectedSource}`)
+                    }
                   >
                     <div className="relative overflow-hidden rounded-lg bg-gray-800 shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-purple-500/50">
                       {/* Cover Image */}
