@@ -157,7 +157,7 @@ const MangaReaderPage = () => {
             Object.values(manga.attributes.description)[0] ||
             'No description available',
           coverImage: coverId
-            ? `https://mangadex.org/covers/${manga.id}/${coverId}.256.jpg`
+            ? `/api/manga-cover?mangaId=${manga.id}&fileName=${coverId}&size=256`
             : 'https://via.placeholder.com/256x384?text=No+Cover',
           status: manga.attributes.status,
           rating: manga.attributes.contentRating,
@@ -203,7 +203,7 @@ const MangaReaderPage = () => {
             Object.values(manga.attributes.description)[0] ||
             'No description available',
           coverImage: coverId
-            ? `https://mangadex.org/covers/${manga.id}/${coverId}.256.jpg`
+            ? `/api/manga-cover?mangaId=${manga.id}&fileName=${coverId}&size=256`
             : 'https://via.placeholder.com/256x384?text=No+Cover',
           status: manga.attributes.status,
           rating: manga.attributes.contentRating,
@@ -274,7 +274,7 @@ const MangaReaderPage = () => {
               Object.values(manga.attributes.description)[0] ||
               'No description available',
             coverImage: coverId
-              ? `https://mangadex.org/covers/${manga.id}/${coverId}.256.jpg`
+              ? `/api/manga-cover?mangaId=${manga.id}&fileName=${coverId}&size=256`
               : 'https://via.placeholder.com/256x384?text=No+Cover',
             status: manga.attributes.status,
             rating: manga.attributes.contentRating,
