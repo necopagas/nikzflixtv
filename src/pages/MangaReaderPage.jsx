@@ -458,84 +458,109 @@ const MangaReaderPage = () => {
         />
       )}
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Manga Reader
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Header with Gradient */}
+        <div className="mb-10 text-center relative">
+          <div className="absolute inset-0 blur-3xl opacity-20 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600" />
+          <h1 className="relative text-5xl md:text-6xl font-black mb-4 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent animate-gradient">
+            📚 Manga Reader
           </h1>
-          <p className="text-gray-400 text-lg">Read manga online from multiple sources</p>
+          <p className="relative text-gray-300 text-lg font-medium">
+            Discover and read thousands of manga from multiple sources
+          </p>
         </div>
 
-        {/* Search Bar */}
-        <form onSubmit={onSearchSubmit} className="mb-8">
-          <div className="relative max-w-2xl mx-auto">
-            <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search manga..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-700 rounded-xl focus:outline-none focus:border-purple-500 text-white text-lg"
-            />
+        {/* Enhanced Search Bar */}
+        <form onSubmit={onSearchSubmit} className="mb-10">
+          <div className="relative max-w-3xl mx-auto group">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition-opacity" />
+            <div className="relative flex items-center">
+              <FaSearch className="absolute left-5 text-purple-400 text-xl" />
+              <input
+                type="text"
+                placeholder="Search for your favorite manga..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full pl-14 pr-6 py-5 bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded-2xl focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/50 text-white text-lg placeholder-gray-500 transition-all"
+              />
+            </div>
           </div>
         </form>
 
-        {/* Source Selector */}
-        <div className="mb-8">
+        {/* Enhanced Source Selector */}
+        <div className="mb-10">
+          <h3 className="text-center text-sm font-semibold text-gray-400 mb-4 uppercase tracking-wider">
+            Select Source
+          </h3>
           <div className="flex flex-wrap justify-center gap-3">
             {MANGA_SOURCES.map(source => (
               <button
                 key={source.id}
                 onClick={() => handleSourceChange(source.id)}
-                className={`relative px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                className={`group relative px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 ${
                   selectedSource === source.id
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700'
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
+                    : 'bg-gray-800/60 text-gray-300 hover:bg-gray-700/80 hover:text-white backdrop-blur-sm border border-gray-700'
                 }`}
               >
-                {source.name}
-                {source.nsfw && (
-                  <span className="ml-2 text-xs bg-red-600 px-2 py-0.5 rounded-full">18+</span>
+                {selectedSource === source.id && (
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 blur opacity-50" />
                 )}
+                <span className="relative flex items-center gap-2">
+                  {source.name}
+                  {source.nsfw && (
+                    <span className="text-xs bg-red-500 px-2 py-0.5 rounded-full font-bold">
+                      18+
+                    </span>
+                  )}
+                </span>
               </button>
             ))}
           </div>
 
-          {/* Source Info */}
+          {/* Source Info with Icon */}
           {MANGA_SOURCES.find(s => s.id === selectedSource)?.info && (
-            <p className="text-center text-sm text-gray-400 mt-3">
-              {MANGA_SOURCES.find(s => s.id === selectedSource).info}
-            </p>
+            <div className="text-center mt-4">
+              <p className="inline-flex items-center gap-2 text-sm text-gray-400 bg-gray-800/50 px-4 py-2 rounded-lg backdrop-blur-sm">
+                <FaBook className="text-purple-400" />
+                {MANGA_SOURCES.find(s => s.id === selectedSource).info}
+              </p>
+            </div>
           )}
 
-          {/* Age Warning */}
+          {/* Enhanced Age Warning */}
           {MANGA_SOURCES.find(s => s.id === selectedSource)?.nsfw && (
-            <div className="max-w-2xl mx-auto mt-4 p-3 bg-red-900/30 border border-red-700 rounded-lg flex items-center gap-3">
-              <FaExclamationTriangle className="text-red-500 text-xl flex-shrink-0" />
-              <p className="text-sm text-red-200">
-                This source contains adult content (18+). By continuing, you confirm you are 18
-                years or older.
-              </p>
+            <div className="max-w-2xl mx-auto mt-5 p-4 bg-gradient-to-r from-red-900/40 to-red-800/40 border-2 border-red-600/50 rounded-xl backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                <FaExclamationTriangle className="text-red-400 text-2xl flex-shrink-0 animate-pulse" />
+                <p className="text-sm text-red-100 font-medium">
+                  This source contains adult content (18+). By continuing, you confirm you are 18
+                  years or older.
+                </p>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Genre Filter */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <FaFilter className="text-purple-400" />
-            <h3 className="text-lg font-semibold">Filter by Genre</h3>
+        {/* Enhanced Genre Filter */}
+        <div className="mb-10">
+          <div className="flex items-center justify-center gap-3 mb-5">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-purple-500" />
+            <div className="flex items-center gap-2 text-purple-400">
+              <FaFilter className="text-xl" />
+              <h3 className="text-lg font-bold uppercase tracking-wide">Genres</h3>
+            </div>
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-purple-500" />
           </div>
-          <div className="flex flex-wrap justify-center gap-2">
+          <div className="flex flex-wrap justify-center gap-2 max-w-5xl mx-auto">
             {MANGA_GENRES.map(genre => (
               <button
                 key={genre.id}
                 onClick={() => handleGenreChange(genre.id)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
                   selectedGenre === genre.id
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700'
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
+                    : 'bg-gray-800/60 text-gray-400 hover:bg-gray-700/80 hover:text-white backdrop-blur-sm border border-gray-700'
                 }`}
               >
                 {genre.name}
@@ -544,38 +569,43 @@ const MangaReaderPage = () => {
           </div>
         </div>
 
-        {/* View Mode Toggle */}
-        <div className="mb-8">
-          <div className="flex justify-center gap-4">
+        {/* Enhanced View Mode Toggle */}
+        <div className="mb-10">
+          <div className="flex justify-center gap-4 max-w-xl mx-auto">
             <button
               onClick={() => setViewMode('popular')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
+              className={`group flex-1 flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 ${
                 viewMode === 'popular'
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                  : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700'
+                  ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-xl shadow-orange-500/50'
+                  : 'bg-gray-800/60 text-gray-400 hover:bg-gray-700/80 backdrop-blur-sm border border-gray-700'
               }`}
             >
-              <FaFire />
-              Popular Manga
+              <FaFire className={`text-2xl ${viewMode === 'popular' ? 'animate-pulse' : ''}`} />
+              <span>Popular</span>
             </button>
             <button
               onClick={() => setViewMode('recent')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
+              className={`group flex-1 flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 ${
                 viewMode === 'recent'
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                  : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl shadow-blue-500/50'
+                  : 'bg-gray-800/60 text-gray-400 hover:bg-gray-700/80 backdrop-blur-sm border border-gray-700'
               }`}
             >
-              <FaBook />
-              Recent Updates
+              <FaBook className={`text-2xl ${viewMode === 'recent' ? 'animate-bounce' : ''}`} />
+              <span>Recent</span>
             </button>
           </div>
         </div>
 
-        {/* Error Message */}
+        {/* Enhanced Error Message */}
         {error && (
-          <div className="mb-8 p-4 bg-red-900/50 border border-red-700 rounded-lg text-center">
-            <p className="text-red-200">{error}</p>
+          <div className="mb-8 max-w-2xl mx-auto">
+            <div className="p-5 bg-gradient-to-r from-red-900/60 to-red-800/60 border-2 border-red-600/50 rounded-xl backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                <FaExclamationTriangle className="text-red-400 text-xl" />
+                <p className="text-red-100 font-medium">{error}</p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -613,14 +643,18 @@ const MangaReaderPage = () => {
               </p>
             </div>
 
-            {/* Manga Grid */}
+            {/* Enhanced Manga Grid */}
             {(viewMode === 'recent' ? recentUpdates : mangaList).length === 0 ? (
-              <div className="text-center py-16">
-                <FaBook className="w-16 h-16 mx-auto mb-4 text-gray-600" />
-                <p className="text-xl text-gray-400">No manga found</p>
+              <div className="text-center py-20">
+                <div className="relative inline-block">
+                  <div className="absolute inset-0 blur-2xl opacity-30 bg-purple-600 animate-pulse" />
+                  <FaBook className="relative w-20 h-20 mx-auto mb-6 text-gray-600" />
+                </div>
+                <p className="text-2xl font-bold text-gray-400">No manga found</p>
+                <p className="text-gray-500 mt-2">Try adjusting your filters or search query</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                 {(viewMode === 'recent' ? recentUpdates : mangaList).map(manga => (
                   <div
                     key={manga.id}
@@ -629,40 +663,43 @@ const MangaReaderPage = () => {
                       navigate(`/manga/${manga.id}?source=${manga.source || selectedSource}`)
                     }
                   >
-                    <div className="relative overflow-hidden rounded-lg bg-gray-800 shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-purple-500/50">
+                    <div className="relative overflow-hidden rounded-xl bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 shadow-lg transition-all duration-500 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-purple-500/50 group-hover:border-purple-500/50">
                       {/* Cover Image */}
-                      <div className="aspect-[2/3] relative">
+                      <div className="aspect-[2/3] relative overflow-hidden">
                         <img
                           src={manga.coverImage}
                           alt={manga.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                           onError={e => {
                             e.target.src = 'https://via.placeholder.com/256x384?text=No+Image';
                           }}
                         />
 
-                        {/* Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <div className="absolute bottom-0 left-0 right-0 p-4">
-                            <p className="text-xs text-gray-300 line-clamp-3 mb-2">
+                        {/* Gradient Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-60" />
+
+                        {/* Hover Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <div className="absolute bottom-0 left-0 right-0 p-3">
+                            <p className="text-xs text-gray-300 line-clamp-3 mb-2 leading-relaxed">
                               {manga.description}
                             </p>
-                            <div className="flex items-center gap-2 text-xs">
+                            <div className="flex flex-wrap items-center gap-1.5 text-xs">
                               {manga.rating && (
                                 <span
-                                  className={`px-2 py-1 rounded ${
+                                  className={`px-2 py-1 rounded-full font-semibold ${
                                     manga.rating === 'safe'
-                                      ? 'bg-green-600'
+                                      ? 'bg-green-500/90 text-white'
                                       : manga.rating === 'suggestive'
-                                        ? 'bg-yellow-600'
-                                        : 'bg-red-600'
+                                        ? 'bg-yellow-500/90 text-white'
+                                        : 'bg-red-500/90 text-white'
                                   }`}
                                 >
                                   {manga.rating}
                                 </span>
                               )}
                               {manga.status && (
-                                <span className="px-2 py-1 bg-purple-600 rounded">
+                                <span className="px-2 py-1 bg-purple-500/90 text-white rounded-full font-semibold">
                                   {manga.status}
                                 </span>
                               )}
@@ -671,21 +708,35 @@ const MangaReaderPage = () => {
                         </div>
                       </div>
 
-                      {/* Info */}
-                      <div className="p-3">
-                        <h3 className="font-semibold text-sm line-clamp-2 mb-1 group-hover:text-purple-400 transition-colors">
+                      {/* Enhanced Info Card */}
+                      <div className="p-3 bg-gradient-to-t from-gray-900/50 to-transparent">
+                        <h3 className="font-bold text-sm line-clamp-2 mb-2 group-hover:text-purple-400 transition-colors leading-tight">
                           {manga.title}
                         </h3>
-                        {manga.year && <p className="text-xs text-gray-400">{manga.year}</p>}
-                        {manga.lastUpdate && viewMode === 'recent' && (
-                          <p className="text-xs text-green-400 mt-1">
-                            Updated: {new Date(manga.lastUpdate).toLocaleDateString()}
-                          </p>
-                        )}
+
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                          {manga.year && (
+                            <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded-full font-medium">
+                              {manga.year}
+                            </span>
+                          )}
+                          {manga.lastUpdate && viewMode === 'recent' && (
+                            <span className="px-2 py-0.5 bg-green-500/20 text-green-300 rounded-full font-medium">
+                              {new Date(manga.lastUpdate).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                              })}
+                            </span>
+                          )}
+                        </div>
+
                         {manga.tags && manga.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {manga.tags.slice(0, 2).map((tag, idx) => (
-                              <span key={idx} className="text-xs px-2 py-0.5 bg-gray-700 rounded">
+                              <span
+                                key={idx}
+                                className="text-xs px-2 py-0.5 bg-gray-700/50 text-gray-300 rounded-full font-medium hover:bg-purple-500/30 transition-colors"
+                              >
                                 {tag}
                               </span>
                             ))}
