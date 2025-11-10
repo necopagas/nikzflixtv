@@ -382,9 +382,16 @@ const MangaReaderPage = () => {
       setMangaList(manga);
     } catch (err) {
       console.error('Error fetching popular manga:', err);
-      setError(
-        `Failed to load manga from ${selectedSource === 'weebcentral' ? 'WeebCentral' : selectedSource === 'anilist' ? 'AniList' : selectedSource === 'kitsu' ? 'Kitsu' : 'MangaDex'}. Please try again or check your connection.`
-      );
+
+      // Check if it's a Cloudflare/Vercel protection error
+      const errorMessage = err.message || '';
+      if (errorMessage.includes('Cloudflare') || errorMessage.includes('protected')) {
+        setError(errorMessage);
+      } else {
+        setError(
+          `Failed to load manga from ${selectedSource === 'weebcentral' ? 'WeebCentral' : selectedSource === 'anilist' ? 'AniList' : selectedSource === 'kitsu' ? 'Kitsu' : 'MangaDex'}. Please try again or check your connection.`
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -666,9 +673,39 @@ const MangaReaderPage = () => {
         {error && (
           <div className="mb-8 max-w-2xl mx-auto">
             <div className="p-5 bg-gradient-to-r from-red-900/60 to-red-800/60 border-2 border-red-600/50 rounded-xl backdrop-blur-sm">
-              <div className="flex items-center gap-3">
-                <FaExclamationTriangle className="text-red-400 text-xl" />
-                <p className="text-red-100 font-medium">{error}</p>
+              <div className="flex items-start gap-3">
+                <FaExclamationTriangle className="text-red-400 text-xl mt-1 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-red-100 font-medium mb-3">{error}</p>
+                  {(error.includes('Cloudflare') || error.includes('protected')) &&
+                    selectedSource === 'weebcentral' && (
+                      <div className="mt-3 pt-3 border-t border-red-500/30">
+                        <p className="text-red-200 text-sm mb-3">
+                          ✨ Try these working alternatives instead:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => setSelectedSource('anilist')}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors"
+                          >
+                            Switch to AniList
+                          </button>
+                          <button
+                            onClick={() => setSelectedSource('kitsu')}
+                            className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg text-sm font-medium transition-colors"
+                          >
+                            Switch to Kitsu
+                          </button>
+                          <button
+                            onClick={() => setSelectedSource('mangadex')}
+                            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium transition-colors"
+                          >
+                            Switch to MangaDex
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                </div>
               </div>
             </div>
           </div>
