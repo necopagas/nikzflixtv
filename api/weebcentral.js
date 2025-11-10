@@ -65,6 +65,22 @@ async function handlePopular(req, res) {
     console.log('Homepage HTML preview:', html.substring(0, 500));
     console.log('HTML contains "series/":', html.includes('series/'));
 
+    // Detect Vercel Deployment Protection / Authentication page
+    if (
+      html.includes('Vercel Authentication') ||
+      html.includes('Authentication Required') ||
+      html.includes('auto-vercel-auth-redirect')
+    ) {
+      console.error(
+        'Blocked by Vercel deployment protection. The preview deployment requires authentication to access serverless functions.'
+      );
+      return res.status(502).json({
+        error: 'Deployment protected by Vercel',
+        message:
+          'The deployment is protected by Vercel (preview auth). Disable deployment protection or use a protection-bypass token to allow serverless functions to fetch external sites.',
+      });
+    }
+
     const results = parsePopularManga(html);
 
     console.log('Parsed results count:', results.length);
