@@ -85,6 +85,19 @@ async function handlePopular(req, res) {
 
     console.log('Parsed results count:', results.length);
 
+    // Debug: return HTML preview in development
+    if (process.env.NODE_ENV !== 'production' || req.query.debug === 'true') {
+      return res.status(200).json({
+        results,
+        debug: {
+          htmlPreview: html.substring(0, 1000),
+          htmlLength: html.length,
+          containsSeries: html.includes('series/'),
+          containsCover: html.includes('temp.compsci88.com/cover'),
+        },
+      });
+    }
+
     return res.status(200).json({ results });
   } catch (error) {
     console.error('Popular manga error:', error);
