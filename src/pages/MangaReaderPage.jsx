@@ -116,8 +116,20 @@ const MangaReaderPage = () => {
       const queryParams = new URLSearchParams({ action, ...params }).toString();
       const response = await fetch(`/api/weebcentral?${queryParams}`);
 
-      if (!response.ok) throw new Error('WeebCentral request failed');
-      return await response.json();
+      const data = await response.json();
+
+      // Check for Cloudflare or deployment protection errors
+      if (!response.ok) {
+        if (
+          data.error &&
+          (data.error.includes('Cloudflare') || data.error.includes('Deployment protected'))
+        ) {
+          throw new Error(data.message || data.error);
+        }
+        throw new Error('WeebCentral request failed');
+      }
+
+      return data;
     } catch (error) {
       console.error('Error fetching from WeebCentral:', error);
       throw error;
