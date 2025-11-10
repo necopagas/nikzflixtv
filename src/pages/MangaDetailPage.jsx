@@ -10,6 +10,25 @@ export const MangaDetailPage = () => {
   const [chapters, setChapters] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Get source from URL params
+  const searchParams = new URLSearchParams(window.location.search);
+  const source = searchParams.get('source') || 'mangadex';
+  const slug = searchParams.get('slug') || '';
+
+  // Helper function to fetch from WeebCentral
+  const fetchWeebCentral = async (action, params = {}) => {
+    try {
+      const queryParams = new URLSearchParams({ action, ...params }).toString();
+      const response = await fetch(`/api/weebcentral?${queryParams}`);
+
+      if (!response.ok) throw new Error('WeebCentral request failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching from WeebCentral:', error);
+      throw error;
+    }
+  };
+
   // Helper function to fetch from MangaDex (with proxy fallback for production)
   const fetchMangaDex = async endpoint => {
     try {
@@ -35,47 +54,117 @@ export const MangaDetailPage = () => {
       try {
         setIsLoading(true);
 
-        // Fetch manga info
-        const endpoint = `/manga/${id}?includes[]=cover_art&includes[]=author&includes[]=artist`;
-        const mangaData = await fetchMangaDex(endpoint);
-        const m = mangaData.data;
+        if (source === 'weebcentral') {
+          // Fetch from WeebCentral
+          const seriesData = await fetchWeebCentral('series', { seriesId: id });
 
-        const coverArt = m.relationships.find(rel => rel.type === 'cover_art');
-        const coverId = coverArt?.attributes?.fileName;
-        const author = m.relationships.find(rel => rel.type === 'author');
-        const artist = m.relationships.find(rel => rel.type === 'artist');
+          if (seriesData?.series) {
+            const s = seriesData.series;
+            setManga({
+              id: id,
+              slug: slug,
+              title: s.title || 'Unknown Title',
+              description: s.description || 'No description available',
+              coverImage: s.coverImage || 'https://via.placeholder.com/512x768?text=No+Cover',
+              status: s.status || 'unknown',
+              rating: 'safe',
+              year: null,
+              author: 'Unknown',
+              artist: 'Unknown',
+              tags: [],
+            });
+          }
 
-        setManga({
-          id: m.id,
-          title: m.attributes.title.en || Object.values(m.attributes.title)[0] || 'Unknown Title',
-          description:
-            m.attributes.description?.en ||
-            Object.values(m.attributes.description)[0] ||
-            'No description available',
-          coverImage: coverId
-            ? `/api/manga-cover?mangaId=${m.id}&fileName=${coverId}&size=512`
-            : 'https://via.placeholder.com/512x768?text=No+Cover',
-          status: m.attributes.status,
-          rating: m.attributes.contentRating,
-          year: m.attributes.year,
-          author: author?.attributes?.name || 'Unknown',
-          artist: artist?.attributes?.name || 'Unknown',
-          tags: m.attributes.tags?.map(tag => tag.attributes.name.en) || [],
-        });
+          // Fetch chapters
+          const chaptersData = await fetchWeebCentral('chapters', { seriesId: id });
 
-        // Fetch chapters
-        const chaptersEndpoint = `/manga/${id}/feed?limit=500&order[chapter]=asc&translatedLanguage[]=en`;
-        const chaptersData = await fetchMangaDex(chaptersEndpoint);
+          if (chaptersData?.chapters) {
+            const chaptersList = chaptersData.chapters.map((ch, index) => ({
+              id: ch.id,
+              chapter: String(index + 1),
+              title: ch.title || `Chapter ${index + 1}`,
+              pages: 0,
+              publishAt: new Date(),
+            }));
 
-        const chaptersList = chaptersData.data.map(ch => ({
-          id: ch.id,
-          chapter: ch.attributes.chapter,
-          title: ch.attributes.title || `Chapter ${ch.attributes.chapter}`,
-          pages: ch.attributes.pages,
-          publishAt: new Date(ch.attributes.publishAt),
-        }));
+            setChapters(chaptersList);
+          }
+        } else {
+          // Fetch manga info from MangaDex
+          const endpoint = `/manga/${id}?includes[]=cover_art&includes[]=author&includes[]=artist`;
+          const mangaData = await fetchMangaDex(endpoint);
+          const m = mangaData.data;
 
-        setChapters(chaptersList);
+          const coverArt = m.relationships.find(rel => rel.type === 'cover_art');
+          const coverId = coverArt?.attributes?.fileName;
+          const author = m.relationships.find(rel => rel.type === 'author');
+          const artist = m.relationships.find(rel => rel.type === 'artist');
+
+          setManga({
+            id: m.id,
+            title: m.attributes.title.en || Object.values(m.attributes.title)[0] || 'Unknown Title',
+            description:
+              m.attributes.description?.en ||
+              Object.values(m.attributes.description)[0] ||
+              'No description available',
+            coverImage: coverId
+              ? `/api/manga-cover?mangaId=${m.id}&fileName=${coverId}&size=512`
+              : 'https://via.placeholder.com/512x768?text=No+Cover',
+            status: m.attributes.status,
+            rating: m.attributes.contentRating,
+            year: m.attributes.year,
+            author: author?.attributes?.name || 'Unknown',
+            artist: artist?.attributes?.name || 'Unknown',
+            tags: m.attributes.tags?.map(tag => tag.attributes.name.en) || [],
+          });
+
+          // Fetch chapters with pagination support (MangaDex max limit is 100 per request)
+          let allChapters = [];
+          let offset = 0;
+          const limit = 100;
+          let hasMore = true;
+
+          // Loop to fetch all chapters with pagination
+          while (hasMore) {
+            const chaptersEndpoint = `/manga/${id}/feed?limit=${limit}&offset=${offset}&order[chapter]=asc&translatedLanguage[]=en`;
+            const chaptersData = await fetchMangaDex(chaptersEndpoint);
+
+            if (chaptersData.data && chaptersData.data.length > 0) {
+              allChapters = allChapters.concat(chaptersData.data);
+              offset += limit;
+
+              // Check if there are more chapters to fetch
+              hasMore = chaptersData.data.length === limit && offset < (chaptersData.total || 1000);
+            } else {
+              hasMore = false;
+            }
+          }
+
+          // Remove duplicate chapters (sometimes MangaDex has multiple versions)
+          const uniqueChapters = new Map();
+          allChapters.forEach(ch => {
+            const chapterNum = ch.attributes.chapter;
+            if (
+              !uniqueChapters.has(chapterNum) ||
+              new Date(ch.attributes.publishAt) >
+                new Date(uniqueChapters.get(chapterNum).attributes.publishAt)
+            ) {
+              uniqueChapters.set(chapterNum, ch);
+            }
+          });
+
+          const chaptersList = Array.from(uniqueChapters.values())
+            .map(ch => ({
+              id: ch.id,
+              chapter: ch.attributes.chapter,
+              title: ch.attributes.title || `Chapter ${ch.attributes.chapter}`,
+              pages: ch.attributes.pages,
+              publishAt: new Date(ch.attributes.publishAt),
+            }))
+            .sort((a, b) => parseFloat(a.chapter) - parseFloat(b.chapter)); // Sort by chapter number
+
+          setChapters(chaptersList);
+        }
       } catch (err) {
         console.error('Error fetching manga details:', err);
         setManga(null);
@@ -87,10 +176,14 @@ export const MangaDetailPage = () => {
     if (id) {
       fetchMangaDetails();
     }
-  }, [id]);
+  }, [id, source, slug]);
 
   const handleChapterClick = chapterId => {
-    navigate(`/manga/${id}/chapter/${chapterId}`);
+    if (source === 'weebcentral') {
+      navigate(`/manga/${id}/chapter/${chapterId}?source=weebcentral&slug=${slug}`);
+    } else {
+      navigate(`/manga/${id}/chapter/${chapterId}`);
+    }
   };
 
   if (isLoading) {
@@ -231,11 +324,26 @@ export const MangaDetailPage = () => {
             Chapters ({chapters.length})
           </h2>
 
+          {/* Info Notice */}
+          {chapters.length > 0 && (
+            <div className="mb-4 p-4 bg-blue-900/30 border border-blue-500/50 rounded-lg">
+              <p className="text-sm text-blue-300">
+                <strong>📚 Chapter Availability:</strong> MangaDex provides free manga chapters
+                uploaded by the community. Some manga may have limited chapters due to licensing or
+                scanlation group policies. All available chapters are shown below.
+              </p>
+            </div>
+          )}
+
           {/* Chapters List */}
           {chapters.length === 0 ? (
             <div className="text-center py-8 text-gray-400">
               <FaBook className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No chapters available</p>
+              <p className="mb-2">No chapters available for this manga</p>
+              <p className="text-sm text-gray-500">
+                This manga may not have chapters uploaded to MangaDex yet, or they may be
+                exclusively licensed elsewhere.
+              </p>
             </div>
           ) : (
             <div className="grid gap-2">
@@ -254,7 +362,9 @@ export const MangaDetailPage = () => {
                           <span className="text-gray-400"> - {chapter.title}</span>
                         )}
                       </h3>
-                      <p className="text-sm text-gray-400">{chapter.pages} pages</p>
+                      {chapter.pages > 0 && (
+                        <p className="text-sm text-gray-400">{chapter.pages} pages</p>
+                      )}
                     </div>
                   </div>
                   <div className="text-sm text-gray-400">

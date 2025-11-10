@@ -24,6 +24,40 @@ export default defineConfig(({ mode }) => ({
         server.middlewares.use(async (req, res, next) => {
           try {
             const url = new URL(req.url, 'http://localhost');
+
+            // Handle WeebCentral API
+            if (url.pathname === '/api/weebcentral') {
+              if (req.method !== 'GET') {
+                res.statusCode = 405;
+                res.end(JSON.stringify({ error: 'Method not allowed' }));
+                return;
+              }
+
+              const action = url.searchParams.get('action');
+              const query = url.searchParams.get('query');
+              const seriesId = url.searchParams.get('seriesId');
+              const slug = url.searchParams.get('slug');
+              const chapterId = url.searchParams.get('chapterId');
+
+              // Import and execute the handler
+              const handler = await import('./api/weebcentral.js');
+              const mockReq = { query: { action, query, seriesId, slug, chapterId } };
+              const mockRes = {
+                status: code => ({
+                  json: data => {
+                    res.statusCode = code;
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify(data));
+                  },
+                }),
+                setHeader: (key, value) => res.setHeader(key, value),
+                end: data => res.end(data),
+              };
+
+              await handler.default(mockReq, mockRes);
+              return;
+            }
+
             if (url.pathname === '/api/vivamax') {
               if (req.method !== 'GET') {
                 res.statusCode = 405;

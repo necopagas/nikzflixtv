@@ -18,6 +18,25 @@ const MangaChapterReader = () => {
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
 
+  // Get source from URL params
+  const searchParams = new URLSearchParams(window.location.search);
+  const source = searchParams.get('source') || 'mangadex';
+  const slug = searchParams.get('slug') || '';
+
+  // Helper function to fetch from WeebCentral
+  const fetchWeebCentral = async (action, params = {}) => {
+    try {
+      const queryParams = new URLSearchParams({ action, ...params }).toString();
+      const response = await fetch(`/api/weebcentral?${queryParams}`);
+
+      if (!response.ok) throw new Error('WeebCentral request failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching from WeebCentral:', error);
+      throw error;
+    }
+  };
+
   // Helper function to fetch from MangaDex (with proxy fallback for production)
   const fetchMangaDex = async endpoint => {
     try {
@@ -45,18 +64,28 @@ const MangaChapterReader = () => {
         setIsLoading(true);
         setError(null);
 
-        // Fetch chapter data (to get base URL and hash)
-        const endpoint = `/at-home/server/${chapterId}`;
-        const data = await fetchMangaDex(endpoint);
+        if (source === 'weebcentral') {
+          // Fetch from WeebCentral
+          const data = await fetchWeebCentral('pages', { slug, chapterId });
 
-        // Build page URLs
-        const baseUrl = data.baseUrl;
-        const hash = data.chapter.hash;
-        const pageFiles = data.chapter.data; // High quality images
+          if (data?.pages) {
+            const pageUrls = data.pages.map(p => p.img);
+            setPages(pageUrls);
+          }
+        } else {
+          // Fetch chapter data from MangaDex (to get base URL and hash)
+          const endpoint = `/at-home/server/${chapterId}`;
+          const data = await fetchMangaDex(endpoint);
 
-        const pageUrls = pageFiles.map(filename => `${baseUrl}/data/${hash}/${filename}`);
+          // Build page URLs
+          const baseUrl = data.baseUrl;
+          const hash = data.chapter.hash;
+          const pageFiles = data.chapter.data; // High quality images
 
-        setPages(pageUrls);
+          const pageUrls = pageFiles.map(filename => `${baseUrl}/data/${hash}/${filename}`);
+
+          setPages(pageUrls);
+        }
       } catch (err) {
         console.error('Error fetching chapter pages:', err);
         setError('Failed to load chapter. Please try again.');
@@ -68,25 +97,76 @@ const MangaChapterReader = () => {
     if (chapterId) {
       fetchChapterPages();
     }
-  }, [chapterId]);
+  }, [chapterId, source, slug]);
 
   // Fetch all chapters for navigation
   useEffect(() => {
     const fetchChapters = async () => {
       try {
-        const endpoint = `/manga/${id}/feed?limit=500&order[chapter]=asc&translatedLanguage[]=en`;
-        const data = await fetchMangaDex(endpoint);
-        const chaptersList = data.data.map(ch => ({
-          id: ch.id,
-          chapter: ch.attributes.chapter,
-          title: ch.attributes.title || `Chapter ${ch.attributes.chapter}`,
-        }));
+        if (source === 'weebcentral') {
+          // Fetch from WeebCentral
+          const data = await fetchWeebCentral('chapters', { seriesId: id });
 
-        setChapters(chaptersList);
+          if (data?.chapters) {
+            const chaptersList = data.chapters.map((ch, index) => ({
+              id: ch.id,
+              chapter: String(index + 1),
+              title: ch.title || `Chapter ${index + 1}`,
+            }));
 
-        // Find current chapter index
-        const index = chaptersList.findIndex(ch => ch.id === chapterId);
-        setCurrentChapterIndex(index);
+            setChapters(chaptersList);
+
+            // Find current chapter index
+            const index = chaptersList.findIndex(ch => ch.id === chapterId);
+            setCurrentChapterIndex(index);
+          }
+        } else {
+          // Fetch all chapters from MangaDex with pagination (MangaDex max limit is 100)
+          let allChapters = [];
+          let offset = 0;
+          const limit = 100;
+          let hasMore = true;
+
+          while (hasMore) {
+            const endpoint = `/manga/${id}/feed?limit=${limit}&offset=${offset}&order[chapter]=asc&translatedLanguage[]=en`;
+            const data = await fetchMangaDex(endpoint);
+
+            if (data.data && data.data.length > 0) {
+              allChapters = allChapters.concat(data.data);
+              offset += limit;
+              hasMore = data.data.length === limit && offset < (data.total || 1000);
+            } else {
+              hasMore = false;
+            }
+          }
+
+          // Remove duplicates and keep the latest version
+          const uniqueChapters = new Map();
+          allChapters.forEach(ch => {
+            const chapterNum = ch.attributes.chapter;
+            if (
+              !uniqueChapters.has(chapterNum) ||
+              new Date(ch.attributes.publishAt) >
+                new Date(uniqueChapters.get(chapterNum).attributes.publishAt)
+            ) {
+              uniqueChapters.set(chapterNum, ch);
+            }
+          });
+
+          const chaptersList = Array.from(uniqueChapters.values())
+            .map(ch => ({
+              id: ch.id,
+              chapter: ch.attributes.chapter,
+              title: ch.attributes.title || `Chapter ${ch.attributes.chapter}`,
+            }))
+            .sort((a, b) => parseFloat(a.chapter) - parseFloat(b.chapter));
+
+          setChapters(chaptersList);
+
+          // Find current chapter index
+          const index = chaptersList.findIndex(ch => ch.id === chapterId);
+          setCurrentChapterIndex(index);
+        }
       } catch (err) {
         console.error('Error fetching chapters:', err);
       }
@@ -95,7 +175,7 @@ const MangaChapterReader = () => {
     if (id) {
       fetchChapters();
     }
-  }, [id, chapterId]);
+  }, [id, chapterId, source]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -164,21 +244,33 @@ const MangaChapterReader = () => {
     } else if (currentChapterIndex < chapters.length - 1) {
       // Go to next chapter
       const nextChapter = chapters[currentChapterIndex + 1];
-      navigate(`/manga/${id}/chapter/${nextChapter.id}`);
+      if (source === 'weebcentral') {
+        navigate(`/manga/${id}/chapter/${nextChapter.id}?source=weebcentral&slug=${slug}`);
+      } else {
+        navigate(`/manga/${id}/chapter/${nextChapter.id}`);
+      }
     }
   };
 
   const handlePrevChapter = () => {
     if (currentChapterIndex > 0) {
       const prevChapter = chapters[currentChapterIndex - 1];
-      navigate(`/manga/${id}/chapter/${prevChapter.id}`);
+      if (source === 'weebcentral') {
+        navigate(`/manga/${id}/chapter/${prevChapter.id}?source=weebcentral&slug=${slug}`);
+      } else {
+        navigate(`/manga/${id}/chapter/${prevChapter.id}`);
+      }
     }
   };
 
   const handleNextChapter = () => {
     if (currentChapterIndex < chapters.length - 1) {
       const nextChapter = chapters[currentChapterIndex + 1];
-      navigate(`/manga/${id}/chapter/${nextChapter.id}`);
+      if (source === 'weebcentral') {
+        navigate(`/manga/${id}/chapter/${nextChapter.id}?source=weebcentral&slug=${slug}`);
+      } else {
+        navigate(`/manga/${id}/chapter/${nextChapter.id}`);
+      }
     }
   };
 
@@ -196,7 +288,13 @@ const MangaChapterReader = () => {
         <div className="text-center">
           <p className="text-xl mb-4">{error || 'No pages available'}</p>
           <button
-            onClick={() => navigate(`/manga/${id}`)}
+            onClick={() => {
+              if (source === 'weebcentral') {
+                navigate(`/manga/${id}?source=weebcentral&slug=${slug}`);
+              } else {
+                navigate(`/manga/${id}`);
+              }
+            }}
             className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium"
           >
             Back to Manga
@@ -218,7 +316,13 @@ const MangaChapterReader = () => {
       >
         <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
           <button
-            onClick={() => navigate(`/manga/${id}`)}
+            onClick={() => {
+              if (source === 'weebcentral') {
+                navigate(`/manga/${id}?source=weebcentral&slug=${slug}`);
+              } else {
+                navigate(`/manga/${id}`);
+              }
+            }}
             className="flex items-center gap-1 sm:gap-2 text-gray-400 hover:text-white transition-colors text-sm sm:text-base"
           >
             <FaArrowLeft className="text-sm sm:text-base" />
@@ -272,7 +376,13 @@ const MangaChapterReader = () => {
                 <button
                   key={chapter.id}
                   onClick={() => {
-                    navigate(`/manga/${id}/chapter/${chapter.id}`);
+                    if (source === 'weebcentral') {
+                      navigate(
+                        `/manga/${id}/chapter/${chapter.id}?source=weebcentral&slug=${slug}`
+                      );
+                    } else {
+                      navigate(`/manga/${id}/chapter/${chapter.id}`);
+                    }
                     setShowChapterList(false);
                   }}
                   className={`w-full text-left p-3 rounded-lg mb-2 transition-colors ${

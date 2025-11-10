@@ -10,7 +10,6 @@ import {
   FaFilter,
 } from 'react-icons/fa';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { useAgeVerification, AgeVerificationModal } from '../utils/ageVerification';
 
 // Popular manga genres from MangaDex
 const MANGA_GENRES = [
@@ -34,65 +33,16 @@ const MANGA_GENRES = [
 // Manga sources from different providers
 const MANGA_SOURCES = [
   {
-    name: 'MangaDex',
-    id: 'mangadex',
-    api: 'mangadex',
-    baseUrl: 'https://api.mangadex.org',
+    name: 'WeebCentral',
+    id: 'weebcentral',
+    api: 'weebcentral',
+    baseUrl: 'https://weebcentral.com',
     lang: 'en',
     nsfw: false,
-    info: 'Free manga database with official API',
-    useConsumet: false,
-  },
-  {
-    name: 'MangaPill',
-    id: 'mangapill',
-    api: 'mangapill',
-    baseUrl: 'https://mangapill.com',
-    lang: 'en',
-    nsfw: false,
-    info: 'Fast loading manga reader',
-    useConsumet: true,
-  },
-  {
-    name: 'MangaReader',
-    id: 'mangareader',
-    api: 'mangareader',
-    baseUrl: 'https://mangareader.to',
-    lang: 'en',
-    nsfw: false,
-    info: 'Large collection with manhwa & manhua',
-    useConsumet: true,
-  },
-  {
-    name: 'ComicK',
-    id: 'comick',
-    api: 'comick',
-    baseUrl: 'https://comick.app',
-    lang: 'en',
-    nsfw: false,
-    info: 'Modern manga reader with great UI',
-    useConsumet: true,
-  },
-  {
-    name: 'MangaKakalot',
-    id: 'mangakakalot',
-    api: 'mangakakalot',
-    baseUrl: 'https://mangakakalot.com',
-    lang: 'en',
-    nsfw: false,
-    info: 'Popular manga site with huge library',
-    useConsumet: true,
-  },
-  {
-    name: 'nHentai',
-    id: 'nhentai',
-    api: 'nhentai',
-    baseUrl: 'https://nhentai.net',
-    lang: 'en',
-    nsfw: true,
-    requiresAge: true,
-    info: 'Adult manga content (18+ only)',
-    useConsumet: true,
+    info: 'Extensive manga library with full reading support - ✅ Best for Reading (Complete chapters available)',
+    useWeebCentral: true,
+    working: true,
+    canRead: true,
   },
 ];
 
@@ -105,14 +55,38 @@ const MangaReaderPage = () => {
   const [recentUpdates, setRecentUpdates] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingRecent, setIsLoadingRecent] = useState(false);
-  const [selectedSource, setSelectedSource] = useState('mangadex');
+  const [selectedSource, setSelectedSource] = useState('weebcentral');
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [viewMode, setViewMode] = useState('popular'); // 'popular' or 'recent'
   const [error, setError] = useState(null);
-  const [showAgeVerification, setShowAgeVerification] = useState(false);
-  const [pendingSource, setPendingSource] = useState(null);
 
-  const { isVerified, verifyAge } = useAgeVerification();
+  // Helper function to fetch from AniList
+  const fetchAniList = async (action, params = {}) => {
+    try {
+      const queryParams = new URLSearchParams({ action, ...params }).toString();
+      const response = await fetch(`/api/anilist?${queryParams}`);
+
+      if (!response.ok) throw new Error('AniList request failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching from AniList:', error);
+      throw error;
+    }
+  };
+
+  // Helper function to fetch from Kitsu
+  const fetchKitsu = async (action, params = {}) => {
+    try {
+      const queryParams = new URLSearchParams({ action, ...params }).toString();
+      const response = await fetch(`/api/kitsu?${queryParams}`);
+
+      if (!response.ok) throw new Error('Kitsu request failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching from Kitsu:', error);
+      throw error;
+    }
+  };
 
   // Helper function to fetch from MangaDex (with proxy fallback for production)
   const fetchMangaDex = async endpoint => {
@@ -136,32 +110,17 @@ const MangaReaderPage = () => {
     }
   };
 
-  // Fetch manga from MangaPill via Consumet API
-  const searchMangaPill = async query => {
+  // Helper function to fetch from WeebCentral
+  const fetchWeebCentral = async (action, params = {}) => {
     try {
-      const response = await fetch(
-        `/api/consumet?provider=mangapill&action=search&query=${encodeURIComponent(query)}`
-      );
+      const queryParams = new URLSearchParams({ action, ...params }).toString();
+      const response = await fetch(`/api/weebcentral?${queryParams}`);
 
-      if (!response.ok) throw new Error('Failed to fetch from MangaPill');
-
-      const data = await response.json();
-
-      return (
-        data.results?.map(manga => ({
-          id: manga.id,
-          title: manga.title || 'Unknown Title',
-          description: manga.description || 'No description available',
-          coverImage: manga.image || 'https://via.placeholder.com/256x384?text=No+Cover',
-          status: manga.status || 'Unknown',
-          rating: 'safe',
-          year: null,
-          tags: manga.genres || [],
-        })) || []
-      );
-    } catch (err) {
-      console.error('Error fetching from MangaPill:', err);
-      return [];
+      if (!response.ok) throw new Error('WeebCentral request failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching from WeebCentral:', error);
+      throw error;
     }
   };
 
@@ -201,36 +160,171 @@ const MangaReaderPage = () => {
     }
   };
 
+  // Fetch manga from AniList API
+  const searchAniList = async query => {
+    try {
+      const data = await fetchAniList('search', { query, perPage: 20 });
+
+      if (!data?.data?.Page?.media) return [];
+
+      return data.data.Page.media.map(manga => ({
+        id: manga.id,
+        title: manga.title.english || manga.title.romaji || 'Unknown Title',
+        description: manga.description?.replace(/<[^>]*>/g, '') || 'No description available',
+        coverImage: manga.coverImage.large || 'https://via.placeholder.com/256x384?text=No+Cover',
+        status: manga.status,
+        rating: 'safe',
+        year: manga.startDate?.year || null,
+        tags: manga.genres?.slice(0, 5) || [],
+        score: manga.averageScore,
+        chapters: manga.chapters,
+        volumes: manga.volumes,
+        source: 'anilist',
+      }));
+    } catch (err) {
+      console.error('Error fetching from AniList:', err);
+      return [];
+    }
+  };
+
+  // Fetch manga from Kitsu API
+  const searchKitsu = async query => {
+    try {
+      const data = await fetchKitsu('search', { query, page: 1 });
+
+      if (!data?.data) return [];
+
+      return data.data.map(manga => ({
+        id: manga.id,
+        title: manga.attributes.canonicalTitle || 'Unknown Title',
+        description:
+          manga.attributes.description || manga.attributes.synopsis || 'No description available',
+        coverImage:
+          manga.attributes.posterImage?.large ||
+          manga.attributes.posterImage?.medium ||
+          'https://via.placeholder.com/256x384?text=No+Cover',
+        status: manga.attributes.status,
+        rating: manga.attributes.ageRating || 'safe',
+        year: manga.attributes.startDate
+          ? new Date(manga.attributes.startDate).getFullYear()
+          : null,
+        tags: [],
+        score: manga.attributes.averageRating
+          ? Math.round(parseFloat(manga.attributes.averageRating) / 10)
+          : null,
+        chapters: manga.attributes.chapterCount,
+        volumes: manga.attributes.volumeCount,
+        source: 'kitsu',
+      }));
+    } catch (err) {
+      console.error('Error fetching from Kitsu:', err);
+      return [];
+    }
+  };
+
+  // Fetch manga from WeebCentral
+  const searchWeebCentral = async query => {
+    try {
+      const data = await fetchWeebCentral('search', { query });
+
+      if (!data?.results) return [];
+
+      return data.results.map(manga => ({
+        id: manga.id,
+        slug: manga.slug,
+        title: manga.title || 'Unknown Title',
+        description: 'Click to view details',
+        coverImage: manga.coverImage || 'https://via.placeholder.com/256x384?text=No+Cover',
+        status: 'unknown',
+        rating: 'safe',
+        year: null,
+        tags: [],
+        source: 'weebcentral',
+      }));
+    } catch (err) {
+      console.error('Error fetching from WeebCentral:', err);
+      return [];
+    }
+  };
+
   // Fetch popular manga based on selected source
   const fetchPopularManga = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      if (selectedSource === 'mangapill') {
-        // Fetch from MangaPill - search for popular terms
-        const response = await fetch(
-          '/api/consumet?provider=mangapill&action=search&query=popular'
-        );
+      let manga = [];
 
-        if (!response.ok) throw new Error('Failed to fetch popular manga from MangaPill');
+      if (selectedSource === 'weebcentral') {
+        // Fetch from WeebCentral
+        const data = await fetchWeebCentral('popular');
 
-        const data = await response.json();
-
-        const manga =
-          data.results?.map(manga => ({
-            id: manga.id,
-            title: manga.title || 'Unknown Title',
-            description: manga.description || 'No description available',
-            coverImage: manga.image || 'https://via.placeholder.com/256x384?text=No+Cover',
-            status: manga.status || 'Unknown',
+        if (data?.results) {
+          manga = data.results.map(item => ({
+            id: item.id,
+            slug: item.slug,
+            title: item.title || 'Unknown Title',
+            description: 'Click to view details',
+            coverImage: item.coverImage || 'https://via.placeholder.com/256x384?text=No+Cover',
+            status: 'unknown',
             rating: 'safe',
             year: null,
-            tags: manga.genres || [],
-            source: 'mangapill',
-          })) || [];
+            tags: [],
+            source: 'weebcentral',
+          }));
+        }
+      } else if (selectedSource === 'anilist') {
+        // Fetch from AniList
+        const data = await fetchAniList('popular', { perPage: 20 });
 
-        setMangaList(manga);
+        if (!data?.data?.Page?.media) {
+          throw new Error('No data received from AniList');
+        }
+
+        manga = data.data.Page.media.map(item => ({
+          id: item.id,
+          title: item.title.english || item.title.romaji || 'Unknown Title',
+          description: item.description?.replace(/<[^>]*>/g, '') || 'No description available',
+          coverImage: item.coverImage.large || 'https://via.placeholder.com/256x384?text=No+Cover',
+          status: item.status,
+          rating: 'safe',
+          year: item.startDate?.year || null,
+          tags: item.genres?.slice(0, 5) || [],
+          score: item.averageScore,
+          chapters: item.chapters,
+          volumes: item.volumes,
+          source: 'anilist',
+        }));
+      } else if (selectedSource === 'kitsu') {
+        // Fetch from Kitsu
+        const data = await fetchKitsu('popular', { page: 1 });
+
+        if (!data?.data) {
+          throw new Error('No data received from Kitsu');
+        }
+
+        manga = data.data.map(item => ({
+          id: item.id,
+          title: item.attributes.canonicalTitle || 'Unknown Title',
+          description:
+            item.attributes.description || item.attributes.synopsis || 'No description available',
+          coverImage:
+            item.attributes.posterImage?.large ||
+            item.attributes.posterImage?.medium ||
+            'https://via.placeholder.com/256x384?text=No+Cover',
+          status: item.attributes.status,
+          rating: item.attributes.ageRating || 'safe',
+          year: item.attributes.startDate
+            ? new Date(item.attributes.startDate).getFullYear()
+            : null,
+          tags: [],
+          score: item.attributes.averageRating
+            ? Math.round(parseFloat(item.attributes.averageRating) / 10)
+            : null,
+          chapters: item.attributes.chapterCount,
+          volumes: item.attributes.volumeCount,
+          source: 'kitsu',
+        }));
       } else {
         // Fetch from MangaDex (default)
         let endpoint =
@@ -243,36 +337,42 @@ const MangaReaderPage = () => {
 
         const data = await fetchMangaDex(endpoint);
 
-        const manga = data.data.map(manga => {
-          const coverArt = manga.relationships.find(rel => rel.type === 'cover_art');
+        if (!data || !data.data) {
+          throw new Error('No data received from MangaDex');
+        }
+
+        manga = data.data.map(item => {
+          const coverArt = item.relationships.find(rel => rel.type === 'cover_art');
           const coverId = coverArt?.attributes?.fileName;
 
           return {
-            id: manga.id,
+            id: item.id,
             title:
-              manga.attributes.title.en ||
-              Object.values(manga.attributes.title)[0] ||
+              item.attributes.title.en ||
+              Object.values(item.attributes.title)[0] ||
               'Unknown Title',
             description:
-              manga.attributes.description?.en ||
-              Object.values(manga.attributes.description)[0] ||
+              item.attributes.description?.en ||
+              Object.values(item.attributes.description)[0] ||
               'No description available',
             coverImage: coverId
-              ? `/api/manga-cover?mangaId=${manga.id}&fileName=${coverId}&size=256`
+              ? `/api/manga-cover?mangaId=${item.id}&fileName=${coverId}&size=256`
               : 'https://via.placeholder.com/256x384?text=No+Cover',
-            status: manga.attributes.status,
-            rating: manga.attributes.contentRating,
-            year: manga.attributes.year,
-            tags: manga.attributes.tags?.slice(0, 5).map(tag => tag.attributes.name.en) || [],
+            status: item.attributes.status,
+            rating: item.attributes.contentRating,
+            year: item.attributes.year,
+            tags: item.attributes.tags?.slice(0, 5).map(tag => tag.attributes.name.en) || [],
             source: 'mangadex',
           };
         });
-
-        setMangaList(manga);
       }
+
+      setMangaList(manga);
     } catch (err) {
       console.error('Error fetching popular manga:', err);
-      setError('Failed to load manga. Please try again.');
+      setError(
+        `Failed to load manga from ${selectedSource === 'weebcentral' ? 'WeebCentral' : selectedSource === 'anilist' ? 'AniList' : selectedSource === 'kitsu' ? 'Kitsu' : 'MangaDex'}. Please try again or check your connection.`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -355,16 +455,8 @@ const MangaReaderPage = () => {
     }
   };
 
-  // Handle source selection with age verification
+  // Handle source selection
   const handleSourceChange = sourceId => {
-    const source = MANGA_SOURCES.find(s => s.id === sourceId);
-
-    if (source?.requiresAge && !isVerified) {
-      setPendingSource(sourceId);
-      setShowAgeVerification(true);
-      return;
-    }
-
     setSelectedSource(sourceId);
     // Reload manga for new source
     if (searchQuery) {
@@ -384,17 +476,6 @@ const MangaReaderPage = () => {
     }
   };
 
-  // Handle age verification
-  const handleAgeVerify = birthYear => {
-    if (verifyAge(birthYear)) {
-      setShowAgeVerification(false);
-      if (pendingSource) {
-        setSelectedSource(pendingSource);
-        setPendingSource(null);
-      }
-    }
-  };
-
   // Search manga
   const handleSearch = async query => {
     if (!query.trim()) {
@@ -407,17 +488,25 @@ const MangaReaderPage = () => {
       setError(null);
 
       let results;
-      if (selectedSource === 'mangapill') {
-        results = await searchMangaPill(query);
+      if (selectedSource === 'weebcentral') {
+        results = await searchWeebCentral(query);
+      } else if (selectedSource === 'anilist') {
+        results = await searchAniList(query);
+      } else if (selectedSource === 'kitsu') {
+        results = await searchKitsu(query);
       } else {
         results = await searchMangaDex(query);
+      }
+
+      if (!results || results.length === 0) {
+        setError(`No results found for "${query}". Try different keywords.`);
       }
 
       setMangaList(results);
       setSearchParams({ q: query }, { replace: true });
     } catch (err) {
       console.error('Error searching manga:', err);
-      setError('Failed to search manga. Please try again.');
+      setError('Failed to search manga. Please check your connection and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -447,35 +536,24 @@ const MangaReaderPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white">
-      {/* Age Verification Modal */}
-      {showAgeVerification && (
-        <AgeVerificationModal
-          onVerify={handleAgeVerify}
-          onCancel={() => {
-            setShowAgeVerification(false);
-            setPendingSource(null);
-          }}
-        />
-      )}
-
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header with Gradient */}
-        <div className="mb-10 text-center relative">
-          <div className="absolute inset-0 blur-3xl opacity-20 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600" />
-          <h1 className="relative text-5xl md:text-6xl font-black mb-4 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent animate-gradient">
+        {/* Enhanced Header with Animated Gradient */}
+        <div className="mb-10 text-center relative overflow-hidden rounded-3xl p-8 bg-gradient-to-r from-purple-900/30 via-pink-900/30 to-blue-900/30 border border-purple-500/20 backdrop-blur-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-blue-600/10 animate-pulse" />
+          <h1 className="relative text-5xl md:text-6xl font-black mb-3 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent drop-shadow-lg">
             📚 Manga Reader
           </h1>
-          <p className="relative text-gray-300 text-lg font-medium">
-            Discover and read thousands of manga from multiple sources
+          <p className="relative text-gray-300 text-lg font-medium drop-shadow-md">
+            Discover and read thousands of manga from WeebCentral
           </p>
         </div>
 
-        {/* Enhanced Search Bar */}
+        {/* Enhanced Search Bar with Glow Effect */}
         <form onSubmit={onSearchSubmit} className="mb-10">
           <div className="relative max-w-3xl mx-auto group">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition-opacity" />
-            <div className="relative flex items-center">
-              <FaSearch className="absolute left-5 text-purple-400 text-xl" />
+            <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 group-focus-within:opacity-60 transition-all duration-300" />
+            <div className="relative flex items-center bg-gray-800/90 backdrop-blur-md rounded-2xl shadow-2xl border border-purple-500/30">
+              <FaSearch className="absolute left-5 text-purple-400 text-xl group-focus-within:text-pink-400 transition-colors" />
               <input
                 type="text"
                 placeholder="Search for your favorite manga..."
@@ -487,57 +565,32 @@ const MangaReaderPage = () => {
           </div>
         </form>
 
-        {/* Enhanced Source Selector */}
-        <div className="mb-10">
+        {/* Source Selector */}
+        <div className="mb-8">
           <h3 className="text-center text-sm font-semibold text-gray-400 mb-4 uppercase tracking-wider">
             Select Source
           </h3>
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="flex flex-wrap justify-center gap-3 max-w-xl mx-auto">
             {MANGA_SOURCES.map(source => (
               <button
                 key={source.id}
                 onClick={() => handleSourceChange(source.id)}
-                className={`group relative px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 ${
+                className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 ${
                   selectedSource === source.id
                     ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
                     : 'bg-gray-800/60 text-gray-300 hover:bg-gray-700/80 hover:text-white backdrop-blur-sm border border-gray-700'
                 }`}
               >
-                {selectedSource === source.id && (
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 blur opacity-50" />
-                )}
-                <span className="relative flex items-center gap-2">
-                  {source.name}
-                  {source.nsfw && (
-                    <span className="text-xs bg-red-500 px-2 py-0.5 rounded-full font-bold">
-                      18+
-                    </span>
-                  )}
-                </span>
+                {source.name}
               </button>
             ))}
           </div>
-
-          {/* Source Info with Icon */}
           {MANGA_SOURCES.find(s => s.id === selectedSource)?.info && (
             <div className="text-center mt-4">
               <p className="inline-flex items-center gap-2 text-sm text-gray-400 bg-gray-800/50 px-4 py-2 rounded-lg backdrop-blur-sm">
                 <FaBook className="text-purple-400" />
                 {MANGA_SOURCES.find(s => s.id === selectedSource).info}
               </p>
-            </div>
-          )}
-
-          {/* Enhanced Age Warning */}
-          {MANGA_SOURCES.find(s => s.id === selectedSource)?.nsfw && (
-            <div className="max-w-2xl mx-auto mt-5 p-4 bg-gradient-to-r from-red-900/40 to-red-800/40 border-2 border-red-600/50 rounded-xl backdrop-blur-sm">
-              <div className="flex items-center gap-3">
-                <FaExclamationTriangle className="text-red-400 text-2xl flex-shrink-0 animate-pulse" />
-                <p className="text-sm text-red-100 font-medium">
-                  This source contains adult content (18+). By continuing, you confirm you are 18
-                  years or older.
-                </p>
-              </div>
             </div>
           )}
         </div>
@@ -659,9 +712,14 @@ const MangaReaderPage = () => {
                   <div
                     key={manga.id}
                     className="group cursor-pointer"
-                    onClick={() =>
-                      navigate(`/manga/${manga.id}?source=${manga.source || selectedSource}`)
-                    }
+                    onClick={() => {
+                      const url = `/manga/${manga.id}?source=${manga.source || 'mangadex'}`;
+                      if (manga.source === 'weebcentral' && manga.slug) {
+                        navigate(`${url}&slug=${manga.slug}`);
+                      } else {
+                        navigate(url);
+                      }
+                    }}
                   >
                     <div className="relative overflow-hidden rounded-xl bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 shadow-lg transition-all duration-500 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-purple-500/50 group-hover:border-purple-500/50">
                       {/* Cover Image */}
