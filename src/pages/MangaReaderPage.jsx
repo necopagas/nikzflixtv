@@ -152,8 +152,12 @@ const MangaReaderPage = () => {
   // Helper function to fetch from WeebCentral
   const fetchWeebCentral = async (action, params = {}) => {
     try {
-      const queryParams = new URLSearchParams({ action, ...params }).toString();
-      const response = await fetch(`/api/weebcentral?${queryParams}`);
+      const queryParams = new URLSearchParams({
+        source: 'weebcentral',
+        action,
+        ...params,
+      }).toString();
+      const response = await fetch(`/api/manga?${queryParams}`);
 
       const data = await response.json();
 
@@ -178,8 +182,12 @@ const MangaReaderPage = () => {
   // Helper function to fetch from Mangakakalot
   const fetchMangakakalot = async (action, params = {}) => {
     try {
-      const queryParams = new URLSearchParams({ action, ...params }).toString();
-      const response = await fetch(`/api/mangakakalot?${queryParams}`);
+      const queryParams = new URLSearchParams({
+        source: 'mangakakalot',
+        action,
+        ...params,
+      }).toString();
+      const response = await fetch(`/api/manga?${queryParams}`);
 
       if (!response.ok) throw new Error('Mangakakalot request failed');
       return await response.json();
@@ -192,8 +200,12 @@ const MangaReaderPage = () => {
   // Helper function to fetch from Manganelo
   const fetchManganelo = async (action, params = {}) => {
     try {
-      const queryParams = new URLSearchParams({ action, ...params }).toString();
-      const response = await fetch(`/api/manganelo?${queryParams}`);
+      const queryParams = new URLSearchParams({
+        source: 'manganelo',
+        action,
+        ...params,
+      }).toString();
+      const response = await fetch(`/api/manga?${queryParams}`);
 
       if (!response.ok) throw new Error('Manganelo request failed');
       return await response.json();
@@ -206,8 +218,12 @@ const MangaReaderPage = () => {
   // Helper function to fetch from MangaPanda
   const fetchMangaPanda = async (action, params = {}) => {
     try {
-      const queryParams = new URLSearchParams({ action, ...params }).toString();
-      const response = await fetch(`/api/mangapanda?${queryParams}`);
+      const queryParams = new URLSearchParams({
+        source: 'mangapanda',
+        action,
+        ...params,
+      }).toString();
+      const response = await fetch(`/api/manga?${queryParams}`);
 
       if (!response.ok) throw new Error('MangaPanda request failed');
       return await response.json();
