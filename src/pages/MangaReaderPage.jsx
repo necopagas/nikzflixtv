@@ -43,6 +43,45 @@ const MANGA_SOURCES = [
     useWeebCentral: true,
     working: true,
     canRead: true,
+    cloudflareProtected: true,
+    fallbackMessage:
+      'WeebCentral uses Cloudflare protection. For full access, run the local proxy server with: npm run dev:with-proxy',
+  },
+  {
+    name: 'Mangakakalot',
+    id: 'mangakakalot',
+    api: 'mangakakalot',
+    baseUrl: 'https://mangakakalot.com',
+    lang: 'en',
+    nsfw: false,
+    info: 'Popular manga source with extensive collection - ✅ Full reading support',
+    working: true,
+    canRead: true,
+    cloudflareProtected: false,
+  },
+  {
+    name: 'Manganelo',
+    id: 'manganelo',
+    api: 'manganelo',
+    baseUrl: 'https://manganelo.com',
+    lang: 'en',
+    nsfw: false,
+    info: 'Large manga library with frequent updates - ✅ Full reading support',
+    working: true,
+    canRead: true,
+    cloudflareProtected: false,
+  },
+  {
+    name: 'MangaPanda',
+    id: 'mangapanda',
+    api: 'mangapanda',
+    baseUrl: 'https://www.mangapanda.com',
+    lang: 'en',
+    nsfw: false,
+    info: 'Classic manga reading site with vast collection - ✅ Full reading support',
+    working: true,
+    canRead: true,
+    cloudflareProtected: false,
   },
 ];
 
@@ -132,6 +171,48 @@ const MangaReaderPage = () => {
       return data;
     } catch (error) {
       console.error('Error fetching from WeebCentral:', error);
+      throw error;
+    }
+  };
+
+  // Helper function to fetch from Mangakakalot
+  const fetchMangakakalot = async (action, params = {}) => {
+    try {
+      const queryParams = new URLSearchParams({ action, ...params }).toString();
+      const response = await fetch(`/api/mangakakalot?${queryParams}`);
+
+      if (!response.ok) throw new Error('Mangakakalot request failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching from Mangakakalot:', error);
+      throw error;
+    }
+  };
+
+  // Helper function to fetch from Manganelo
+  const fetchManganelo = async (action, params = {}) => {
+    try {
+      const queryParams = new URLSearchParams({ action, ...params }).toString();
+      const response = await fetch(`/api/manganelo?${queryParams}`);
+
+      if (!response.ok) throw new Error('Manganelo request failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching from Manganelo:', error);
+      throw error;
+    }
+  };
+
+  // Helper function to fetch from MangaPanda
+  const fetchMangaPanda = async (action, params = {}) => {
+    try {
+      const queryParams = new URLSearchParams({ action, ...params }).toString();
+      const response = await fetch(`/api/mangapanda?${queryParams}`);
+
+      if (!response.ok) throw new Error('MangaPanda request failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching from MangaPanda:', error);
       throw error;
     }
   };
@@ -259,6 +340,78 @@ const MangaReaderPage = () => {
     }
   };
 
+  // Fetch manga from Mangakakalot
+  const searchMangakakalot = async query => {
+    try {
+      const data = await fetchMangakakalot('search', { query });
+
+      if (!data?.results) return [];
+
+      return data.results.map(manga => ({
+        id: manga.id,
+        title: manga.title || 'Unknown Title',
+        description: 'Click to view details',
+        coverImage: manga.coverImage || 'https://via.placeholder.com/256x384?text=No+Cover',
+        status: 'unknown',
+        rating: 'safe',
+        year: null,
+        tags: [],
+        source: 'mangakakalot',
+      }));
+    } catch (err) {
+      console.error('Error fetching from Mangakakalot:', err);
+      return [];
+    }
+  };
+
+  // Fetch manga from Manganelo
+  const searchManganelo = async query => {
+    try {
+      const data = await fetchManganelo('search', { query });
+
+      if (!data?.results) return [];
+
+      return data.results.map(manga => ({
+        id: manga.id,
+        title: manga.title || 'Unknown Title',
+        description: 'Click to view details',
+        coverImage: manga.coverImage || 'https://via.placeholder.com/256x384?text=No+Cover',
+        status: 'unknown',
+        rating: 'safe',
+        year: null,
+        tags: [],
+        source: 'manganelo',
+      }));
+    } catch (err) {
+      console.error('Error fetching from Manganelo:', err);
+      return [];
+    }
+  };
+
+  // Fetch manga from MangaPanda
+  const searchMangaPanda = async query => {
+    try {
+      const data = await fetchMangaPanda('search', { query });
+
+      if (!data?.results) return [];
+
+      return data.results.map(manga => ({
+        id: manga.id,
+        title: manga.title || 'Unknown Title',
+        description: 'Click to view details',
+        coverImage: manga.coverImage || 'https://via.placeholder.com/256x384?text=No+Cover',
+        status: 'unknown',
+        rating: 'safe',
+        year: null,
+        tags: [],
+        source: 'mangapanda',
+      }));
+    } catch (err) {
+      console.error('Error fetching from MangaPanda:', err);
+      return [];
+    }
+  };
+
   // Fetch popular manga based on selected source
   const fetchPopularManga = async () => {
     try {
@@ -337,6 +490,57 @@ const MangaReaderPage = () => {
           volumes: item.attributes.volumeCount,
           source: 'kitsu',
         }));
+      } else if (selectedSource === 'mangakakalot') {
+        // Fetch from Mangakakalot
+        const data = await fetchMangakakalot('popular');
+
+        if (data?.results) {
+          manga = data.results.map(item => ({
+            id: item.id,
+            title: item.title || 'Unknown Title',
+            description: 'Click to view details',
+            coverImage: item.coverImage || 'https://via.placeholder.com/256x384?text=No+Cover',
+            status: 'unknown',
+            rating: 'safe',
+            year: null,
+            tags: [],
+            source: 'mangakakalot',
+          }));
+        }
+      } else if (selectedSource === 'manganelo') {
+        // Fetch from Manganelo
+        const data = await fetchManganelo('popular');
+
+        if (data?.results) {
+          manga = data.results.map(item => ({
+            id: item.id,
+            title: item.title || 'Unknown Title',
+            description: 'Click to view details',
+            coverImage: item.coverImage || 'https://via.placeholder.com/256x384?text=No+Cover',
+            status: 'unknown',
+            rating: 'safe',
+            year: null,
+            tags: [],
+            source: 'manganelo',
+          }));
+        }
+      } else if (selectedSource === 'mangapanda') {
+        // Fetch from MangaPanda
+        const data = await fetchMangaPanda('popular');
+
+        if (data?.results) {
+          manga = data.results.map(item => ({
+            id: item.id,
+            title: item.title || 'Unknown Title',
+            description: 'Click to view details',
+            coverImage: item.coverImage || 'https://via.placeholder.com/256x384?text=No+Cover',
+            status: 'unknown',
+            rating: 'safe',
+            year: null,
+            tags: [],
+            source: 'mangapanda',
+          }));
+        }
       } else {
         // Fetch from MangaDex (default)
         let endpoint =
@@ -385,11 +589,22 @@ const MangaReaderPage = () => {
 
       // Check if it's a Cloudflare/Vercel protection error
       const errorMessage = err.message || '';
-      if (errorMessage.includes('Cloudflare') || errorMessage.includes('protected')) {
-        setError(errorMessage);
+      const selectedSourceObj = MANGA_SOURCES.find(s => s.id === selectedSource);
+
+      if (
+        errorMessage.includes('Cloudflare') ||
+        errorMessage.includes('protected') ||
+        errorMessage.includes('challenge')
+      ) {
+        const fallbackMessage =
+          selectedSourceObj?.fallbackMessage ||
+          `This source is protected and may not work in all environments. Try using Mangakakalot, Manganelo, or MangaPanda instead.`;
+        setError(
+          `${selectedSourceObj?.name || 'Source'} is currently unavailable due to protection measures. ${fallbackMessage}`
+        );
       } else {
         setError(
-          `Failed to load manga from ${selectedSource === 'weebcentral' ? 'WeebCentral' : selectedSource === 'anilist' ? 'AniList' : selectedSource === 'kitsu' ? 'Kitsu' : 'MangaDex'}. Please try again or check your connection.`
+          `Failed to load manga from ${selectedSourceObj?.name || 'selected source'}. Please try again or switch to a different source.`
         );
       }
     } finally {
@@ -509,6 +724,12 @@ const MangaReaderPage = () => {
       let results;
       if (selectedSource === 'weebcentral') {
         results = await searchWeebCentral(query);
+      } else if (selectedSource === 'mangakakalot') {
+        results = await searchMangakakalot(query);
+      } else if (selectedSource === 'manganelo') {
+        results = await searchManganelo(query);
+      } else if (selectedSource === 'mangapanda') {
+        results = await searchMangaPanda(query);
       } else if (selectedSource === 'anilist') {
         results = await searchAniList(query);
       } else if (selectedSource === 'kitsu') {
@@ -525,7 +746,27 @@ const MangaReaderPage = () => {
       setSearchParams({ q: query }, { replace: true });
     } catch (err) {
       console.error('Error searching manga:', err);
-      setError('Failed to search manga. Please check your connection and try again.');
+
+      // Check for Cloudflare or protection errors
+      const errorMessage = err.message || '';
+      const selectedSourceObj = MANGA_SOURCES.find(s => s.id === selectedSource);
+
+      if (
+        errorMessage.includes('Cloudflare') ||
+        errorMessage.includes('protected') ||
+        errorMessage.includes('challenge')
+      ) {
+        const fallbackMessage =
+          selectedSourceObj?.fallbackMessage ||
+          `This source is protected and may not work in all environments. Try using Mangakakalot, Manganelo, or MangaPanda instead.`;
+        setError(
+          `${selectedSourceObj?.name || 'Source'} is currently unavailable due to protection measures. ${fallbackMessage}`
+        );
+      } else {
+        setError(
+          `Failed to search manga from ${selectedSourceObj?.name || 'selected source'}. Please try again or switch to a different source.`
+        );
+      }
     } finally {
       setIsLoading(false);
     }

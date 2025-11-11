@@ -37,6 +37,48 @@ const MangaChapterReader = () => {
     }
   };
 
+  // Helper function to fetch from Mangakakalot
+  const fetchMangakakalot = async (action, params = {}) => {
+    try {
+      const queryParams = new URLSearchParams({ action, ...params }).toString();
+      const response = await fetch(`/api/mangakakalot?${queryParams}`);
+
+      if (!response.ok) throw new Error('Mangakakalot request failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching from Mangakakalot:', error);
+      throw error;
+    }
+  };
+
+  // Helper function to fetch from Manganelo
+  const fetchManganelo = async (action, params = {}) => {
+    try {
+      const queryParams = new URLSearchParams({ action, ...params }).toString();
+      const response = await fetch(`/api/manganelo?${queryParams}`);
+
+      if (!response.ok) throw new Error('Manganelo request failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching from Manganelo:', error);
+      throw error;
+    }
+  };
+
+  // Helper function to fetch from MangaPanda
+  const fetchMangaPanda = async (action, params = {}) => {
+    try {
+      const queryParams = new URLSearchParams({ action, ...params }).toString();
+      const response = await fetch(`/api/mangapanda?${queryParams}`);
+
+      if (!response.ok) throw new Error('MangaPanda request failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching from MangaPanda:', error);
+      throw error;
+    }
+  };
+
   // Helper function to fetch from MangaDex (with proxy fallback for production)
   const fetchMangaDex = async endpoint => {
     try {
@@ -67,6 +109,30 @@ const MangaChapterReader = () => {
         if (source === 'weebcentral') {
           // Fetch from WeebCentral
           const data = await fetchWeebCentral('pages', { slug, chapterId });
+
+          if (data?.pages) {
+            const pageUrls = data.pages.map(p => p.img);
+            setPages(pageUrls);
+          }
+        } else if (source === 'mangakakalot') {
+          // Fetch from Mangakakalot
+          const data = await fetchMangakakalot('pages', { chapterId });
+
+          if (data?.pages) {
+            const pageUrls = data.pages.map(p => p.img);
+            setPages(pageUrls);
+          }
+        } else if (source === 'manganelo') {
+          // Fetch from Manganelo
+          const data = await fetchManganelo('pages', { chapterId });
+
+          if (data?.pages) {
+            const pageUrls = data.pages.map(p => p.img);
+            setPages(pageUrls);
+          }
+        } else if (source === 'mangapanda') {
+          // Fetch from MangaPanda
+          const data = await fetchMangaPanda('pages', { chapterId });
 
           if (data?.pages) {
             const pageUrls = data.pages.map(p => p.img);
@@ -257,6 +323,12 @@ const MangaChapterReader = () => {
       const prevChapter = chapters[currentChapterIndex - 1];
       if (source === 'weebcentral') {
         navigate(`/manga/${id}/chapter/${prevChapter.id}?source=weebcentral&slug=${slug}`);
+      } else if (source === 'mangakakalot') {
+        navigate(`/manga/${id}/chapter/${prevChapter.id}?source=mangakakalot`);
+      } else if (source === 'manganelo') {
+        navigate(`/manga/${id}/chapter/${prevChapter.id}?source=manganelo`);
+      } else if (source === 'mangapanda') {
+        navigate(`/manga/${id}/chapter/${prevChapter.id}?source=mangapanda`);
       } else {
         navigate(`/manga/${id}/chapter/${prevChapter.id}`);
       }
@@ -268,6 +340,12 @@ const MangaChapterReader = () => {
       const nextChapter = chapters[currentChapterIndex + 1];
       if (source === 'weebcentral') {
         navigate(`/manga/${id}/chapter/${nextChapter.id}?source=weebcentral&slug=${slug}`);
+      } else if (source === 'mangakakalot') {
+        navigate(`/manga/${id}/chapter/${nextChapter.id}?source=mangakakalot`);
+      } else if (source === 'manganelo') {
+        navigate(`/manga/${id}/chapter/${nextChapter.id}?source=manganelo`);
+      } else if (source === 'mangapanda') {
+        navigate(`/manga/${id}/chapter/${nextChapter.id}?source=mangapanda`);
       } else {
         navigate(`/manga/${id}/chapter/${nextChapter.id}`);
       }
@@ -291,6 +369,12 @@ const MangaChapterReader = () => {
             onClick={() => {
               if (source === 'weebcentral') {
                 navigate(`/manga/${id}?source=weebcentral&slug=${slug}`);
+              } else if (source === 'mangakakalot') {
+                navigate(`/manga/${id}?source=mangakakalot`);
+              } else if (source === 'manganelo') {
+                navigate(`/manga/${id}?source=manganelo`);
+              } else if (source === 'mangapanda') {
+                navigate(`/manga/${id}?source=mangapanda`);
               } else {
                 navigate(`/manga/${id}`);
               }
@@ -319,6 +403,12 @@ const MangaChapterReader = () => {
             onClick={() => {
               if (source === 'weebcentral') {
                 navigate(`/manga/${id}?source=weebcentral&slug=${slug}`);
+              } else if (source === 'mangakakalot') {
+                navigate(`/manga/${id}?source=mangakakalot`);
+              } else if (source === 'manganelo') {
+                navigate(`/manga/${id}?source=manganelo`);
+              } else if (source === 'mangapanda') {
+                navigate(`/manga/${id}?source=mangapanda`);
               } else {
                 navigate(`/manga/${id}`);
               }
@@ -380,6 +470,12 @@ const MangaChapterReader = () => {
                       navigate(
                         `/manga/${id}/chapter/${chapter.id}?source=weebcentral&slug=${slug}`
                       );
+                    } else if (source === 'mangakakalot') {
+                      navigate(`/manga/${id}/chapter/${chapter.id}?source=mangakakalot`);
+                    } else if (source === 'manganelo') {
+                      navigate(`/manga/${id}/chapter/${chapter.id}?source=manganelo`);
+                    } else if (source === 'mangapanda') {
+                      navigate(`/manga/${id}/chapter/${chapter.id}?source=mangapanda`);
                     } else {
                       navigate(`/manga/${id}/chapter/${chapter.id}`);
                     }

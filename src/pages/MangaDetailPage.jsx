@@ -29,6 +29,48 @@ export const MangaDetailPage = () => {
     }
   };
 
+  // Helper function to fetch from Mangakakalot
+  const fetchMangakakalot = async (action, params = {}) => {
+    try {
+      const queryParams = new URLSearchParams({ action, ...params }).toString();
+      const response = await fetch(`/api/mangakakalot?${queryParams}`);
+
+      if (!response.ok) throw new Error('Mangakakalot request failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching from Mangakakalot:', error);
+      throw error;
+    }
+  };
+
+  // Helper function to fetch from Manganelo
+  const fetchManganelo = async (action, params = {}) => {
+    try {
+      const queryParams = new URLSearchParams({ action, ...params }).toString();
+      const response = await fetch(`/api/manganelo?${queryParams}`);
+
+      if (!response.ok) throw new Error('Manganelo request failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching from Manganelo:', error);
+      throw error;
+    }
+  };
+
+  // Helper function to fetch from MangaPanda
+  const fetchMangaPanda = async (action, params = {}) => {
+    try {
+      const queryParams = new URLSearchParams({ action, ...params }).toString();
+      const response = await fetch(`/api/mangapanda?${queryParams}`);
+
+      if (!response.ok) throw new Error('MangaPanda request failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching from MangaPanda:', error);
+      throw error;
+    }
+  };
+
   // Helper function to fetch from MangaDex (with proxy fallback for production)
   const fetchMangaDex = async endpoint => {
     try {
@@ -77,6 +119,108 @@ export const MangaDetailPage = () => {
 
           // Fetch chapters
           const chaptersData = await fetchWeebCentral('chapters', { seriesId: id });
+
+          if (chaptersData?.chapters) {
+            const chaptersList = chaptersData.chapters.map((ch, index) => ({
+              id: ch.id,
+              chapter: String(index + 1),
+              title: ch.title || `Chapter ${index + 1}`,
+              pages: 0,
+              publishAt: new Date(),
+            }));
+
+            setChapters(chaptersList);
+          }
+        } else if (source === 'mangakakalot') {
+          // Fetch from Mangakakalot
+          const seriesData = await fetchMangakakalot('series', { mangaId: id });
+
+          if (seriesData?.series) {
+            const s = seriesData.series;
+            setManga({
+              id: id,
+              title: s.title || 'Unknown Title',
+              description: s.description || 'No description available',
+              coverImage: s.coverImage || 'https://via.placeholder.com/512x768?text=No+Cover',
+              status: s.status || 'unknown',
+              rating: 'safe',
+              year: null,
+              author: 'Unknown',
+              artist: 'Unknown',
+              tags: [],
+            });
+          }
+
+          // Fetch chapters
+          const chaptersData = await fetchMangakakalot('chapters', { mangaId: id });
+
+          if (chaptersData?.chapters) {
+            const chaptersList = chaptersData.chapters.map((ch, index) => ({
+              id: ch.id,
+              chapter: String(index + 1),
+              title: ch.title || `Chapter ${index + 1}`,
+              pages: 0,
+              publishAt: new Date(),
+            }));
+
+            setChapters(chaptersList);
+          }
+        } else if (source === 'manganelo') {
+          // Fetch from Manganelo
+          const seriesData = await fetchManganelo('series', { mangaId: id });
+
+          if (seriesData?.series) {
+            const s = seriesData.series;
+            setManga({
+              id: id,
+              title: s.title || 'Unknown Title',
+              description: s.description || 'No description available',
+              coverImage: s.coverImage || 'https://via.placeholder.com/512x768?text=No+Cover',
+              status: s.status || 'unknown',
+              rating: 'safe',
+              year: null,
+              author: 'Unknown',
+              artist: 'Unknown',
+              tags: [],
+            });
+          }
+
+          // Fetch chapters
+          const chaptersData = await fetchManganelo('chapters', { mangaId: id });
+
+          if (chaptersData?.chapters) {
+            const chaptersList = chaptersData.chapters.map((ch, index) => ({
+              id: ch.id,
+              chapter: String(index + 1),
+              title: ch.title || `Chapter ${index + 1}`,
+              pages: 0,
+              publishAt: new Date(),
+            }));
+
+            setChapters(chaptersList);
+          }
+        } else if (source === 'mangapanda') {
+          // Fetch from MangaPanda
+          const seriesData = await fetchMangaPanda('series', { mangaId: id });
+
+          if (seriesData?.series) {
+            const s = seriesData.series;
+            setManga({
+              id: id,
+              title: s.title || 'Unknown Title',
+              description: s.description || 'No description available',
+              coverImage: s.coverImage || 'https://via.placeholder.com/512x768?text=No+Cover',
+              status: s.status || 'unknown',
+              rating: 'safe',
+              year: null,
+              author: 'Unknown',
+              artist: 'Unknown',
+              tags: [],
+            });
+          }
+
+          // Fetch chapters
+          const chaptersData = await fetchMangaPanda('chapters', { mangaId: id });
 
           if (chaptersData?.chapters) {
             const chaptersList = chaptersData.chapters.map((ch, index) => ({
@@ -181,6 +325,12 @@ export const MangaDetailPage = () => {
   const handleChapterClick = chapterId => {
     if (source === 'weebcentral') {
       navigate(`/manga/${id}/chapter/${chapterId}?source=weebcentral&slug=${slug}`);
+    } else if (source === 'mangakakalot') {
+      navigate(`/manga/${id}/chapter/${chapterId}?source=mangakakalot`);
+    } else if (source === 'manganelo') {
+      navigate(`/manga/${id}/chapter/${chapterId}?source=manganelo`);
+    } else if (source === 'mangapanda') {
+      navigate(`/manga/${id}/chapter/${chapterId}?source=mangapanda`);
     } else {
       navigate(`/manga/${id}/chapter/${chapterId}`);
     }
