@@ -233,36 +233,37 @@ const MangaReaderPage = () => {
     }
   };
 
+  const mapMangaDexEntries = items =>
+    items.map(item => {
+      const coverArt = item.relationships.find(rel => rel.type === 'cover_art');
+      const coverId = coverArt?.attributes?.fileName;
+
+      return {
+        id: item.id,
+        title:
+          item.attributes.title.en || Object.values(item.attributes.title)[0] || 'Unknown Title',
+        description:
+          item.attributes.description?.en ||
+          Object.values(item.attributes.description)[0] ||
+          'No description available',
+        coverImage: coverId
+          ? `/api/manga-cover?mangaId=${item.id}&fileName=${coverId}&size=256`
+          : 'https://via.placeholder.com/256x384?text=No+Cover',
+        status: item.attributes.status,
+        rating: item.attributes.contentRating,
+        year: item.attributes.year,
+        tags: item.attributes.tags?.slice(0, 5).map(tag => tag.attributes.name.en) || [],
+        source: 'mangadex',
+      };
+    });
+
   // Fetch manga from MangaDex API
   const searchMangaDex = async query => {
     try {
-      const endpoint = `/manga?title=${encodeURIComponent(query)}&limit=20&includes[]=cover_art&includes[]=author`;
+      const endpoint = `/manga?title=${encodeURIComponent(query)}&limit=100&includes[]=cover_art&includes[]=author`;
       const data = await fetchMangaDex(endpoint);
 
-      return data.data.map(manga => {
-        const coverArt = manga.relationships.find(rel => rel.type === 'cover_art');
-        const coverId = coverArt?.attributes?.fileName;
-
-        return {
-          id: manga.id,
-          title:
-            manga.attributes.title.en ||
-            Object.values(manga.attributes.title)[0] ||
-            'Unknown Title',
-          description:
-            manga.attributes.description?.en ||
-            Object.values(manga.attributes.description)[0] ||
-            'No description available',
-          coverImage: coverId
-            ? `/api/manga-cover?mangaId=${manga.id}&fileName=${coverId}&size=256`
-            : 'https://via.placeholder.com/256x384?text=No+Cover',
-          status: manga.attributes.status,
-          rating: manga.attributes.contentRating,
-          year: manga.attributes.year,
-          tags: manga.attributes.tags?.slice(0, 5).map(tag => tag.attributes.name.en) || [],
-          source: 'mangadex',
-        };
-      });
+      return mapMangaDexEntries(data.data || []);
     } catch (err) {
       console.error('Error fetching from MangaDex:', err);
       return [];
@@ -559,44 +560,41 @@ const MangaReaderPage = () => {
         }
       } else {
         // Fetch from MangaDex (default)
-        let endpoint =
-          '/manga?limit=20&includes[]=cover_art&includes[]=author&order[followedCount]=desc';
+        const desiredTotal = 200;
+        const perRequestLimit = 100;
+        let offset = 0;
+        let hasMore = true;
+        const aggregated = [];
 
-        // Add genre filter if not "all"
-        if (selectedGenre !== 'all') {
-          endpoint += `&includedTags[]=${selectedGenre}`;
+        while (aggregated.length < desiredTotal && hasMore) {
+          const currentLimit = Math.min(perRequestLimit, desiredTotal - aggregated.length);
+          let endpoint = `/manga?limit=${currentLimit}&offset=${offset}&includes[]=cover_art&includes[]=author&order[followedCount]=desc`;
+
+          if (selectedGenre !== 'all') {
+            endpoint += `&includedTags[]=${selectedGenre}`;
+          }
+
+          const data = await fetchMangaDex(endpoint);
+
+          if (!data || !data.data || data.data.length === 0) {
+            hasMore = false;
+            break;
+          }
+
+          aggregated.push(...mapMangaDexEntries(data.data));
+
+          if (data.data.length < currentLimit) {
+            hasMore = false;
+          } else {
+            offset += currentLimit;
+          }
         }
 
-        const data = await fetchMangaDex(endpoint);
-
-        if (!data || !data.data) {
+        if (aggregated.length === 0) {
           throw new Error('No data received from MangaDex');
         }
 
-        manga = data.data.map(item => {
-          const coverArt = item.relationships.find(rel => rel.type === 'cover_art');
-          const coverId = coverArt?.attributes?.fileName;
-
-          return {
-            id: item.id,
-            title:
-              item.attributes.title.en ||
-              Object.values(item.attributes.title)[0] ||
-              'Unknown Title',
-            description:
-              item.attributes.description?.en ||
-              Object.values(item.attributes.description)[0] ||
-              'No description available',
-            coverImage: coverId
-              ? `/api/manga-cover?mangaId=${item.id}&fileName=${coverId}&size=256`
-              : 'https://via.placeholder.com/256x384?text=No+Cover',
-            status: item.attributes.status,
-            rating: item.attributes.contentRating,
-            year: item.attributes.year,
-            tags: item.attributes.tags?.slice(0, 5).map(tag => tag.attributes.name.en) || [],
-            source: 'mangadex',
-          };
-        });
+        manga = aggregated.slice(0, desiredTotal);
       }
 
       setMangaList(manga);
@@ -1019,12 +1017,12 @@ const MangaReaderPage = () => {
                     key={manga.id}
                     className="group cursor-pointer"
                     onClick={() => {
-                      const url = `/manga/${manga.id}?source=${manga.source || 'mangadex'}`;
+                      const encodedId = encodeURIComponent(manga.id);
+                      let url = `/manga/${encodedId}?source=${manga.source || 'mangadex'}`;
                       if (manga.source === 'weebcentral' && manga.slug) {
-                        navigate(`${url}&slug=${manga.slug}`);
-                      } else {
-                        navigate(url);
+                        url += `&slug=${encodeURIComponent(manga.slug)}`;
                       }
+                      navigate(url);
                     }}
                   >
                     <div className="relative overflow-hidden rounded-xl bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 shadow-lg transition-all duration-500 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-purple-500/50 group-hover:border-purple-500/50">

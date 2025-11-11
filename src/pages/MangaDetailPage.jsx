@@ -4,7 +4,8 @@ import { FaArrowLeft, FaBook, FaClock, FaBookmark, FaPlay } from 'react-icons/fa
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
 export const MangaDetailPage = () => {
-  const { id } = useParams();
+  const { id: rawId } = useParams();
+  const mangaId = rawId ? decodeURIComponent(rawId) : '';
   const navigate = useNavigate();
   const [manga, setManga] = useState(null);
   const [chapters, setChapters] = useState([]);
@@ -114,12 +115,12 @@ export const MangaDetailPage = () => {
 
         if (source === 'weebcentral') {
           // Fetch from WeebCentral
-          const seriesData = await fetchWeebCentral('series', { seriesId: id });
+          const seriesData = await fetchWeebCentral('series', { seriesId: mangaId });
 
           if (seriesData?.series) {
             const s = seriesData.series;
             setManga({
-              id: id,
+              id: mangaId,
               slug: slug,
               title: s.title || 'Unknown Title',
               description: s.description || 'No description available',
@@ -134,7 +135,7 @@ export const MangaDetailPage = () => {
           }
 
           // Fetch chapters
-          const chaptersData = await fetchWeebCentral('chapters', { seriesId: id });
+          const chaptersData = await fetchWeebCentral('chapters', { seriesId: mangaId });
 
           if (chaptersData?.chapters) {
             const chaptersList = chaptersData.chapters.map((ch, index) => ({
@@ -149,12 +150,12 @@ export const MangaDetailPage = () => {
           }
         } else if (source === 'mangakakalot') {
           // Fetch from Mangakakalot
-          const seriesData = await fetchMangakakalot('series', { mangaId: id });
+          const seriesData = await fetchMangakakalot('series', { mangaId: mangaId });
 
           if (seriesData?.series) {
             const s = seriesData.series;
             setManga({
-              id: id,
+              id: mangaId,
               title: s.title || 'Unknown Title',
               description: s.description || 'No description available',
               coverImage: s.coverImage || 'https://via.placeholder.com/512x768?text=No+Cover',
@@ -168,7 +169,7 @@ export const MangaDetailPage = () => {
           }
 
           // Fetch chapters
-          const chaptersData = await fetchMangakakalot('chapters', { mangaId: id });
+          const chaptersData = await fetchMangakakalot('chapters', { mangaId: mangaId });
 
           if (chaptersData?.chapters) {
             const chaptersList = chaptersData.chapters.map((ch, index) => ({
@@ -183,12 +184,12 @@ export const MangaDetailPage = () => {
           }
         } else if (source === 'manganelo') {
           // Fetch from Manganelo
-          const seriesData = await fetchManganelo('series', { mangaId: id });
+          const seriesData = await fetchManganelo('series', { mangaId: mangaId });
 
           if (seriesData?.series) {
             const s = seriesData.series;
             setManga({
-              id: id,
+              id: mangaId,
               title: s.title || 'Unknown Title',
               description: s.description || 'No description available',
               coverImage: s.coverImage || 'https://via.placeholder.com/512x768?text=No+Cover',
@@ -202,7 +203,7 @@ export const MangaDetailPage = () => {
           }
 
           // Fetch chapters
-          const chaptersData = await fetchManganelo('chapters', { mangaId: id });
+          const chaptersData = await fetchManganelo('chapters', { mangaId: mangaId });
 
           if (chaptersData?.chapters) {
             const chaptersList = chaptersData.chapters.map((ch, index) => ({
@@ -217,12 +218,12 @@ export const MangaDetailPage = () => {
           }
         } else if (source === 'mangapanda') {
           // Fetch from MangaPanda
-          const seriesData = await fetchMangaPanda('series', { mangaId: id });
+          const seriesData = await fetchMangaPanda('series', { mangaId: mangaId });
 
           if (seriesData?.series) {
             const s = seriesData.series;
             setManga({
-              id: id,
+              id: mangaId,
               title: s.title || 'Unknown Title',
               description: s.description || 'No description available',
               coverImage: s.coverImage || 'https://via.placeholder.com/512x768?text=No+Cover',
@@ -236,7 +237,7 @@ export const MangaDetailPage = () => {
           }
 
           // Fetch chapters
-          const chaptersData = await fetchMangaPanda('chapters', { mangaId: id });
+          const chaptersData = await fetchMangaPanda('chapters', { mangaId: mangaId });
 
           if (chaptersData?.chapters) {
             const chaptersList = chaptersData.chapters.map((ch, index) => ({
@@ -251,7 +252,7 @@ export const MangaDetailPage = () => {
           }
         } else {
           // Fetch manga info from MangaDex
-          const endpoint = `/manga/${id}?includes[]=cover_art&includes[]=author&includes[]=artist`;
+          const endpoint = `/manga/${mangaId}?includes[]=cover_art&includes[]=author&includes[]=artist`;
           const mangaData = await fetchMangaDex(endpoint);
           const m = mangaData.data;
 
@@ -286,7 +287,7 @@ export const MangaDetailPage = () => {
 
           // Loop to fetch all chapters with pagination
           while (hasMore) {
-            const chaptersEndpoint = `/manga/${id}/feed?limit=${limit}&offset=${offset}&order[chapter]=asc&translatedLanguage[]=en`;
+            const chaptersEndpoint = `/manga/${mangaId}/feed?limit=${limit}&offset=${offset}&order[chapter]=asc&translatedLanguage[]=en`;
             const chaptersData = await fetchMangaDex(chaptersEndpoint);
 
             if (chaptersData.data && chaptersData.data.length > 0) {
@@ -333,22 +334,28 @@ export const MangaDetailPage = () => {
       }
     };
 
-    if (id) {
+    if (mangaId) {
       fetchMangaDetails();
     }
-  }, [id, source, slug]);
+  }, [mangaId, source, slug]);
 
   const handleChapterClick = chapterId => {
+    const encodedSeriesId = encodeURIComponent(mangaId);
+    const encodedChapterId = encodeURIComponent(chapterId);
+
     if (source === 'weebcentral') {
-      navigate(`/manga/${id}/chapter/${chapterId}?source=weebcentral&slug=${slug}`);
+      const slugQuery = slug ? `&slug=${encodeURIComponent(slug)}` : '';
+      navigate(
+        `/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=weebcentral${slugQuery}`
+      );
     } else if (source === 'mangakakalot') {
-      navigate(`/manga/${id}/chapter/${chapterId}?source=mangakakalot`);
+      navigate(`/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=mangakakalot`);
     } else if (source === 'manganelo') {
-      navigate(`/manga/${id}/chapter/${chapterId}?source=manganelo`);
+      navigate(`/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=manganelo`);
     } else if (source === 'mangapanda') {
-      navigate(`/manga/${id}/chapter/${chapterId}?source=mangapanda`);
+      navigate(`/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=mangapanda`);
     } else {
-      navigate(`/manga/${id}/chapter/${chapterId}`);
+      navigate(`/manga/${encodedSeriesId}/chapter/${encodedChapterId}`);
     }
   };
 

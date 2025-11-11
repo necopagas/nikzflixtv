@@ -588,7 +588,7 @@ function parseSearchResultsMangapill(html) {
     });
   }
 
-  return results.slice(0, 20);
+  return results.slice(0, 200);
 }
 
 function parsePopularResultsMangapill(html) {
@@ -608,7 +608,7 @@ function parsePopularResultsMangapill(html) {
     });
   }
 
-  return results.slice(0, 20);
+  return results.slice(0, 200);
 }
 
 function parseSeriesInfoMangapill(html) {

@@ -4,7 +4,9 @@ import { FaArrowLeft, FaArrowRight, FaList, FaTimes } from 'react-icons/fa';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
 const MangaChapterReader = () => {
-  const { id, chapterId } = useParams();
+  const { id: rawId, chapterId: rawChapterId } = useParams();
+  const mangaId = rawId ? decodeURIComponent(rawId) : '';
+  const chapterId = rawChapterId ? decodeURIComponent(rawChapterId) : '';
   const navigate = useNavigate();
 
   const [pages, setPages] = useState([]);
@@ -186,8 +188,7 @@ const MangaChapterReader = () => {
     const fetchChapters = async () => {
       try {
         if (source === 'weebcentral') {
-          // Fetch from WeebCentral
-          const data = await fetchWeebCentral('chapters', { seriesId: id });
+          const data = await fetchWeebCentral('chapters', { seriesId: mangaId });
 
           if (data?.chapters) {
             const chaptersList = data.chapters.map((ch, index) => ({
@@ -197,20 +198,83 @@ const MangaChapterReader = () => {
             }));
 
             setChapters(chaptersList);
+            const index = chaptersList.findIndex(ch => ch.id === chapterId);
+            setCurrentChapterIndex(index);
+          }
+        } else if (source === 'mangakakalot') {
+          const data = await fetchMangakakalot('chapters', { mangaId });
 
-            // Find current chapter index
+          if (data?.chapters) {
+            const chaptersList = data.chapters.map((ch, index) => {
+              const chapterNumber = ch.chapter ?? index + 1;
+              const chapterLabel =
+                chapterNumber !== null && chapterNumber !== undefined
+                  ? String(chapterNumber)
+                  : String(index + 1);
+              return {
+                id: ch.id,
+                chapter: chapterLabel,
+                title:
+                  ch.title && ch.title.trim().length > 0 ? ch.title : `Chapter ${chapterLabel}`,
+              };
+            });
+
+            setChapters(chaptersList);
+            const index = chaptersList.findIndex(ch => ch.id === chapterId);
+            setCurrentChapterIndex(index);
+          }
+        } else if (source === 'manganelo') {
+          const data = await fetchManganelo('chapters', { mangaId });
+
+          if (data?.chapters) {
+            const chaptersList = data.chapters.map((ch, index) => {
+              const chapterNumber = ch.chapter ?? index + 1;
+              const chapterLabel =
+                chapterNumber !== null && chapterNumber !== undefined
+                  ? String(chapterNumber)
+                  : String(index + 1);
+              return {
+                id: ch.id,
+                chapter: chapterLabel,
+                title:
+                  ch.title && ch.title.trim().length > 0 ? ch.title : `Chapter ${chapterLabel}`,
+              };
+            });
+
+            setChapters(chaptersList);
+            const index = chaptersList.findIndex(ch => ch.id === chapterId);
+            setCurrentChapterIndex(index);
+          }
+        } else if (source === 'mangapanda') {
+          const data = await fetchMangaPanda('chapters', { mangaId });
+
+          if (data?.chapters) {
+            const chaptersList = data.chapters.map((ch, index) => {
+              const chapterNumber = ch.chapter ?? index + 1;
+              const chapterLabel =
+                chapterNumber !== null && chapterNumber !== undefined
+                  ? String(chapterNumber)
+                  : String(index + 1);
+              return {
+                id: ch.id,
+                chapter: chapterLabel,
+                title:
+                  ch.title && ch.title.trim().length > 0 ? ch.title : `Chapter ${chapterLabel}`,
+              };
+            });
+
+            setChapters(chaptersList);
             const index = chaptersList.findIndex(ch => ch.id === chapterId);
             setCurrentChapterIndex(index);
           }
         } else {
-          // Fetch all chapters from MangaDex with pagination (MangaDex max limit is 100)
           let allChapters = [];
           let offset = 0;
           const limit = 100;
           let hasMore = true;
 
           while (hasMore) {
-            const endpoint = `/manga/${id}/feed?limit=${limit}&offset=${offset}&order[chapter]=asc&translatedLanguage[]=en`;
+            const endpoint = `/manga/${mangaId}/feed?limit=${limit}&offset=${offset}&order[chapter]=asc&translatedLanguage[]=en`;
             const data = await fetchMangaDex(endpoint);
 
             if (data.data && data.data.length > 0) {
@@ -222,7 +286,6 @@ const MangaChapterReader = () => {
             }
           }
 
-          // Remove duplicates and keep the latest version
           const uniqueChapters = new Map();
           allChapters.forEach(ch => {
             const chapterNum = ch.attributes.chapter;
@@ -244,8 +307,6 @@ const MangaChapterReader = () => {
             .sort((a, b) => parseFloat(a.chapter) - parseFloat(b.chapter));
 
           setChapters(chaptersList);
-
-          // Find current chapter index
           const index = chaptersList.findIndex(ch => ch.id === chapterId);
           setCurrentChapterIndex(index);
         }
@@ -254,10 +315,10 @@ const MangaChapterReader = () => {
       }
     };
 
-    if (id) {
+    if (mangaId) {
       fetchChapters();
     }
-  }, [id, chapterId, source]);
+  }, [mangaId, chapterId, source]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -276,6 +337,61 @@ const MangaChapterReader = () => {
 
   // Touch gestures for mobile
   const minSwipeDistance = 50;
+
+  const buildDetailUrl = () => {
+    if (!mangaId) {
+      return '/manga';
+    }
+
+    const encodedSeriesId = encodeURIComponent(mangaId);
+
+    switch (source) {
+      case 'weebcentral': {
+        const slugQuery = slug ? `&slug=${encodeURIComponent(slug)}` : '';
+        return `/manga/${encodedSeriesId}?source=weebcentral${slugQuery}`;
+      }
+      case 'mangakakalot':
+        return `/manga/${encodedSeriesId}?source=mangakakalot`;
+      case 'manganelo':
+        return `/manga/${encodedSeriesId}?source=manganelo`;
+      case 'mangapanda':
+        return `/manga/${encodedSeriesId}?source=mangapanda`;
+      case 'mangadex':
+      case null:
+      case undefined:
+        return `/manga/${encodedSeriesId}`;
+      default:
+        return `/manga/${encodedSeriesId}?source=${encodeURIComponent(source)}`;
+    }
+  };
+
+  const buildChapterUrl = targetChapterId => {
+    if (!mangaId || !targetChapterId) {
+      return '/manga';
+    }
+
+    const encodedSeriesId = encodeURIComponent(mangaId);
+    const encodedChapterId = encodeURIComponent(targetChapterId);
+
+    switch (source) {
+      case 'weebcentral': {
+        const slugQuery = slug ? `&slug=${encodeURIComponent(slug)}` : '';
+        return `/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=weebcentral${slugQuery}`;
+      }
+      case 'mangakakalot':
+        return `/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=mangakakalot`;
+      case 'manganelo':
+        return `/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=manganelo`;
+      case 'mangapanda':
+        return `/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=mangapanda`;
+      case 'mangadex':
+      case null:
+      case undefined:
+        return `/manga/${encodedSeriesId}/chapter/${encodedChapterId}`;
+      default:
+        return `/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=${encodeURIComponent(source)}`;
+    }
+  };
 
   const onTouchStart = e => {
     setTouchEnd(null);
@@ -324,47 +440,22 @@ const MangaChapterReader = () => {
       setCurrentPage(currentPage + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (currentChapterIndex < chapters.length - 1) {
-      // Go to next chapter
       const nextChapter = chapters[currentChapterIndex + 1];
-      if (source === 'weebcentral') {
-        navigate(`/manga/${id}/chapter/${nextChapter.id}?source=weebcentral&slug=${slug}`);
-      } else {
-        navigate(`/manga/${id}/chapter/${nextChapter.id}`);
-      }
+      navigate(buildChapterUrl(nextChapter.id));
     }
   };
 
   const handlePrevChapter = () => {
     if (currentChapterIndex > 0) {
       const prevChapter = chapters[currentChapterIndex - 1];
-      if (source === 'weebcentral') {
-        navigate(`/manga/${id}/chapter/${prevChapter.id}?source=weebcentral&slug=${slug}`);
-      } else if (source === 'mangakakalot') {
-        navigate(`/manga/${id}/chapter/${prevChapter.id}?source=mangakakalot`);
-      } else if (source === 'manganelo') {
-        navigate(`/manga/${id}/chapter/${prevChapter.id}?source=manganelo`);
-      } else if (source === 'mangapanda') {
-        navigate(`/manga/${id}/chapter/${prevChapter.id}?source=mangapanda`);
-      } else {
-        navigate(`/manga/${id}/chapter/${prevChapter.id}`);
-      }
+      navigate(buildChapterUrl(prevChapter.id));
     }
   };
 
   const handleNextChapter = () => {
     if (currentChapterIndex < chapters.length - 1) {
       const nextChapter = chapters[currentChapterIndex + 1];
-      if (source === 'weebcentral') {
-        navigate(`/manga/${id}/chapter/${nextChapter.id}?source=weebcentral&slug=${slug}`);
-      } else if (source === 'mangakakalot') {
-        navigate(`/manga/${id}/chapter/${nextChapter.id}?source=mangakakalot`);
-      } else if (source === 'manganelo') {
-        navigate(`/manga/${id}/chapter/${nextChapter.id}?source=manganelo`);
-      } else if (source === 'mangapanda') {
-        navigate(`/manga/${id}/chapter/${nextChapter.id}?source=mangapanda`);
-      } else {
-        navigate(`/manga/${id}/chapter/${nextChapter.id}`);
-      }
+      navigate(buildChapterUrl(nextChapter.id));
     }
   };
 
@@ -383,17 +474,7 @@ const MangaChapterReader = () => {
           <p className="text-xl mb-4">{error || 'No pages available'}</p>
           <button
             onClick={() => {
-              if (source === 'weebcentral') {
-                navigate(`/manga/${id}?source=weebcentral&slug=${slug}`);
-              } else if (source === 'mangakakalot') {
-                navigate(`/manga/${id}?source=mangakakalot`);
-              } else if (source === 'manganelo') {
-                navigate(`/manga/${id}?source=manganelo`);
-              } else if (source === 'mangapanda') {
-                navigate(`/manga/${id}?source=mangapanda`);
-              } else {
-                navigate(`/manga/${id}`);
-              }
+              navigate(buildDetailUrl());
             }}
             className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium"
           >
@@ -417,17 +498,7 @@ const MangaChapterReader = () => {
         <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
           <button
             onClick={() => {
-              if (source === 'weebcentral') {
-                navigate(`/manga/${id}?source=weebcentral&slug=${slug}`);
-              } else if (source === 'mangakakalot') {
-                navigate(`/manga/${id}?source=mangakakalot`);
-              } else if (source === 'manganelo') {
-                navigate(`/manga/${id}?source=manganelo`);
-              } else if (source === 'mangapanda') {
-                navigate(`/manga/${id}?source=mangapanda`);
-              } else {
-                navigate(`/manga/${id}`);
-              }
+              navigate(buildDetailUrl());
             }}
             className="flex items-center gap-1 sm:gap-2 text-gray-400 hover:text-white transition-colors text-sm sm:text-base"
           >
@@ -482,19 +553,7 @@ const MangaChapterReader = () => {
                 <button
                   key={chapter.id}
                   onClick={() => {
-                    if (source === 'weebcentral') {
-                      navigate(
-                        `/manga/${id}/chapter/${chapter.id}?source=weebcentral&slug=${slug}`
-                      );
-                    } else if (source === 'mangakakalot') {
-                      navigate(`/manga/${id}/chapter/${chapter.id}?source=mangakakalot`);
-                    } else if (source === 'manganelo') {
-                      navigate(`/manga/${id}/chapter/${chapter.id}?source=manganelo`);
-                    } else if (source === 'mangapanda') {
-                      navigate(`/manga/${id}/chapter/${chapter.id}?source=mangapanda`);
-                    } else {
-                      navigate(`/manga/${id}/chapter/${chapter.id}`);
-                    }
+                    navigate(buildChapterUrl(chapter.id));
                     setShowChapterList(false);
                   }}
                   className={`w-full text-left p-3 rounded-lg mb-2 transition-colors ${
