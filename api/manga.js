@@ -343,13 +343,54 @@ async function handleMangakakalot(req, res, params) {
   }
 }
 
-// Simplified handlers for other sources - they return empty results for now
-async function handleManganelo(req, res, _params) {
-  return res.status(200).json({ results: [] });
+// Manganelo handler (using Mangapill as fallback)
+async function handleManganelo(req, res, params) {
+  const { action, mangaId, chapterId, query } = params;
+
+  try {
+    switch (action) {
+      case 'search':
+        return await handleSearchMangapill(req, res, query);
+      case 'popular':
+        return await handlePopularMangapill(req, res);
+      case 'series':
+        return await handleSeriesInfoMangapill(req, res, mangaId);
+      case 'chapters':
+        return await handleChaptersMangapill(req, res, mangaId);
+      case 'pages':
+        return await handleChapterPagesMangapill(req, res, chapterId);
+      default:
+        return res.status(400).json({ error: 'Invalid action' });
+    }
+  } catch (error) {
+    console.error('Manganelo API Error:', error);
+    return res.status(500).json({ error: 'Failed to fetch data', details: error.message });
+  }
 }
 
-async function handleMangapanda(req, res, _params) {
-  return res.status(200).json({ results: [] });
+// MangaPanda handler (using Mangapill as fallback)
+async function handleMangapanda(req, res, params) {
+  const { action, mangaId, chapterId, query } = params;
+
+  try {
+    switch (action) {
+      case 'search':
+        return await handleSearchMangapill(req, res, query);
+      case 'popular':
+        return await handlePopularMangapill(req, res);
+      case 'series':
+        return await handleSeriesInfoMangapill(req, res, mangaId);
+      case 'chapters':
+        return await handleChaptersMangapill(req, res, mangaId);
+      case 'pages':
+        return await handleChapterPagesMangapill(req, res, chapterId);
+      default:
+        return res.status(400).json({ error: 'Invalid action' });
+    }
+  } catch (error) {
+    console.error('MangaPanda API Error:', error);
+    return res.status(500).json({ error: 'Failed to fetch data', details: error.message });
+  }
 }
 
 async function handleMangadex(req, res, _params) {
