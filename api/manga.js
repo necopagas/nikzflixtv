@@ -318,27 +318,27 @@ function parseWeebCentralHTML(action, html, params) {
   }
 }
 
-// Mangakakalot handler
+// Mangapill handler (replacement for Mangakakalot)
 async function handleMangakakalot(req, res, params) {
   const { action, mangaId, chapterId, query } = params;
 
   try {
     switch (action) {
       case 'search':
-        return await handleSearchMangakakalot(req, res, query);
+        return await handleSearchMangapill(req, res, query);
       case 'popular':
-        return await handlePopularMangakakalot(req, res);
+        return await handlePopularMangapill(req, res);
       case 'series':
-        return await handleSeriesInfoMangakakalot(req, res, mangaId);
+        return await handleSeriesInfoMangapill(req, res, mangaId);
       case 'chapters':
-        return await handleChaptersMangakakalot(req, res, mangaId);
+        return await handleChaptersMangapill(req, res, mangaId);
       case 'pages':
-        return await handleChapterPagesMangakakalot(req, res, chapterId);
+        return await handleChapterPagesMangapill(req, res, chapterId);
       default:
         return res.status(400).json({ error: 'Invalid action' });
     }
   } catch (error) {
-    console.error('Mangakakalot API Error:', error);
+    console.error('Mangapill API Error:', error);
     return res.status(500).json({ error: 'Failed to fetch data', details: error.message });
   }
 }
@@ -360,22 +360,19 @@ async function handleMangaCover(req, res, _params) {
   return res.status(200).json({ cover: null });
 }
 
-// Include the actual Mangakakalot implementations
-async function handleSearchMangakakalot(req, res, query) {
+// Include the actual Mangapill implementations (replacement for Mangakakalot)
+async function handleSearchMangapill(req, res, query) {
   if (!query) {
     return res.status(400).json({ error: 'Query parameter required' });
   }
 
   try {
-    const response = await fetch(
-      `https://mangakakalot.com/search/story/${encodeURIComponent(query)}`,
-      {
-        headers: { 'User-Agent': 'Mozilla/5.0' },
-      }
-    );
+    const response = await fetch(`https://mangapill.com/search?q=${encodeURIComponent(query)}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    });
 
     const html = await response.text();
-    const results = parseSearchResultsMangakakalot(html);
+    const results = parseSearchResultsMangapill(html);
 
     return res.status(200).json({ results });
   } catch (error) {
@@ -383,17 +380,14 @@ async function handleSearchMangakakalot(req, res, query) {
   }
 }
 
-async function handlePopularMangakakalot(req, res) {
+async function handlePopularMangapill(req, res) {
   try {
-    const response = await fetch(
-      'https://mangakakalot.com/manga_list?type=topview&category=all&state=all&page=1',
-      {
-        headers: { 'User-Agent': 'Mozilla/5.0' },
-      }
-    );
+    const response = await fetch('https://mangapill.com/mangas/new', {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    });
 
     const html = await response.text();
-    const results = parsePopularResultsMangakakalot(html);
+    const results = parsePopularResultsMangapill(html);
 
     return res.status(200).json({ results });
   } catch (error) {
@@ -401,18 +395,18 @@ async function handlePopularMangakakalot(req, res) {
   }
 }
 
-async function handleSeriesInfoMangakakalot(req, res, mangaId) {
+async function handleSeriesInfoMangapill(req, res, mangaId) {
   if (!mangaId) {
     return res.status(400).json({ error: 'mangaId parameter required' });
   }
 
   try {
-    const response = await fetch(`https://mangakakalot.com/manga/${mangaId}`, {
+    const response = await fetch(`https://mangapill.com/manga/${mangaId}`, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
     });
 
     const html = await response.text();
-    const series = parseSeriesInfoMangakakalot(html);
+    const series = parseSeriesInfoMangapill(html);
 
     return res.status(200).json({ series });
   } catch (error) {
@@ -420,18 +414,18 @@ async function handleSeriesInfoMangakakalot(req, res, mangaId) {
   }
 }
 
-async function handleChaptersMangakakalot(req, res, mangaId) {
+async function handleChaptersMangapill(req, res, mangaId) {
   if (!mangaId) {
     return res.status(400).json({ error: 'mangaId parameter required' });
   }
 
   try {
-    const response = await fetch(`https://mangakakalot.com/manga/${mangaId}`, {
+    const response = await fetch(`https://mangapill.com/manga/${mangaId}`, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
     });
 
     const html = await response.text();
-    const chapters = parseChaptersMangakakalot(html);
+    const chapters = parseChaptersMangapill(html);
 
     return res.status(200).json({ chapters });
   } catch (error) {
@@ -439,18 +433,18 @@ async function handleChaptersMangakakalot(req, res, mangaId) {
   }
 }
 
-async function handleChapterPagesMangakakalot(req, res, chapterId) {
+async function handleChapterPagesMangapill(req, res, chapterId) {
   if (!chapterId) {
     return res.status(400).json({ error: 'chapterId parameter required' });
   }
 
   try {
-    const response = await fetch(`https://mangakakalot.com/chapter/${chapterId}`, {
+    const response = await fetch(`https://mangapill.com/chapters/${chapterId}`, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
     });
 
     const html = await response.text();
-    const pages = parseChapterPagesMangakakalot(html);
+    const pages = parseChapterPagesMangapill(html);
 
     return res.status(200).json({ pages });
   } catch (error) {
@@ -458,17 +452,18 @@ async function handleChapterPagesMangakakalot(req, res, chapterId) {
   }
 }
 
-// Parsing functions for Mangakakalot
-function parseSearchResultsMangakakalot(html) {
+// Parsing functions for Mangapill
+function parseSearchResultsMangapill(html) {
   const results = [];
-  const regex =
-    /<div class="story_item">[\s\S]*?<a href="\/manga\/([^"]+)"[^>]*>([^<]+)<\/a>[\s\S]*?<img[^>]+src="([^"]+)"[\s\S]*?<\/div>/g;
+  // Look for manga cards in search results
+  const mangaRegex =
+    /<a[^>]*href="\/manga\/([^/]+)\/([^"]+)"[^>]*>[\s\S]*?<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g;
 
   let match;
-  while ((match = regex.exec(html)) !== null) {
+  while ((match = mangaRegex.exec(html)) !== null) {
     results.push({
-      id: match[1],
-      title: match[2].trim(),
+      id: `${match[1]}/${match[2]}`,
+      title: match[4].trim(),
       coverImage: match[3],
     });
   }
@@ -476,16 +471,17 @@ function parseSearchResultsMangakakalot(html) {
   return results.slice(0, 20);
 }
 
-function parsePopularResultsMangakakalot(html) {
+function parsePopularResultsMangapill(html) {
   const results = [];
-  const regex =
-    /<div class="story_item">[\s\S]*?<a href="\/manga\/([^"]+)"[^>]*>([^<]+)<\/a>[\s\S]*?<img[^>]+src="([^"]+)"[\s\S]*?<\/div>/g;
+  // Look for manga cards on browse page
+  const mangaRegex =
+    /<a[^>]*href="\/manga\/([^/]+)\/([^"]+)"[^>]*>[\s\S]*?<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g;
 
   let match;
-  while ((match = regex.exec(html)) !== null) {
+  while ((match = mangaRegex.exec(html)) !== null) {
     results.push({
-      id: match[1],
-      title: match[2].trim(),
+      id: `${match[1]}/${match[2]}`,
+      title: match[4].trim(),
       coverImage: match[3],
     });
   }
@@ -493,10 +489,12 @@ function parsePopularResultsMangakakalot(html) {
   return results.slice(0, 20);
 }
 
-function parseSeriesInfoMangakakalot(html) {
+function parseSeriesInfoMangapill(html) {
   const titleMatch = html.match(/<h1[^>]*>([^<]+)<\/h1>/);
-  const descriptionMatch = html.match(/<div[^>]*class="summary"[^>]*>([\s\S]*?)<\/div>/);
-  const coverMatch = html.match(/<img[^>]+src="([^"]+)"[^>]*class="manga-info-pic"/);
+  const descriptionMatch = html.match(
+    /<div[^>]*class="[^"]*description[^"]*"[^>]*>([\s\S]*?)<\/div>/
+  );
+  const coverMatch = html.match(/<img[^>]*src="([^"]*)"[^>]*class="[^"]*cover[^"]*"/);
 
   return {
     title: titleMatch ? titleMatch[1].trim() : 'Unknown',
@@ -506,12 +504,13 @@ function parseSeriesInfoMangakakalot(html) {
   };
 }
 
-function parseChaptersMangakakalot(html) {
+function parseChaptersMangapill(html) {
   const chapters = [];
-  const regex = /<a[^>]+href="\/chapter\/([^"]+)"[^>]*>([^<]+)<\/a>/g;
+  // Look for chapter links
+  const chapterRegex = /<a[^>]*href="\/chapters\/([^"]+)"[^>]*>([^<]+)<\/a>/g;
 
   let match;
-  while ((match = regex.exec(html)) !== null) {
+  while ((match = chapterRegex.exec(html)) !== null) {
     chapters.push({
       id: match[1],
       title: match[2].trim(),
@@ -521,13 +520,14 @@ function parseChaptersMangakakalot(html) {
   return chapters.reverse();
 }
 
-function parseChapterPagesMangakakalot(html) {
+function parseChapterPagesMangapill(html) {
   const pages = [];
-  const regex = /<img[^>]+src="([^"]+)"[^>]*class="img-loading"/g;
+  // Look for image sources in chapter pages
+  const imageRegex = /<img[^>]*src="([^"]*)"[^>]*class="[^"]*page[^"]*"/g;
 
   let match;
   let pageNum = 1;
-  while ((match = regex.exec(html)) !== null) {
+  while ((match = imageRegex.exec(html)) !== null) {
     pages.push({
       page: pageNum,
       img: match[1],
