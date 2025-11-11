@@ -397,8 +397,72 @@ async function handleMangadex(req, res, _params) {
   return res.status(200).json({ results: [] });
 }
 
-async function handleMangaCover(req, res, _params) {
-  return res.status(200).json({ cover: null });
+async function handleMangaCover(req, res, params) {
+  const { imageUrl, referer, mangaId, fileName, size } = params;
+
+  let targetUrl = imageUrl;
+  let targetReferer = referer;
+
+  if (!targetUrl && mangaId && fileName) {
+    const baseUrl = `https://uploads.mangadex.org/covers/${mangaId}/${fileName}`;
+    if (size && ['256', '512'].includes(size)) {
+      const dotIndex = fileName.lastIndexOf('.');
+      if (dotIndex !== -1) {
+        const name = fileName.slice(0, dotIndex);
+        const ext = fileName.slice(dotIndex);
+        targetUrl = `https://uploads.mangadex.org/covers/${mangaId}/${name}.${size}${ext}`;
+      } else {
+        targetUrl = `${baseUrl}.${size}.jpg`;
+      }
+    } else {
+      targetUrl = baseUrl;
+    }
+    targetReferer = targetReferer || 'https://mangadex.org';
+  }
+
+  if (!targetUrl) {
+    return res.status(400).json({ error: 'Missing imageUrl or mangaId/fileName parameters' });
+  }
+
+  try {
+    const fetchHeaders = {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    };
+
+    if (targetReferer) {
+      fetchHeaders.Referer = targetReferer;
+    } else {
+      try {
+        const urlObj = new URL(targetUrl);
+        fetchHeaders.Referer = `${urlObj.protocol}//${urlObj.host}`;
+      } catch {
+        // Ignore invalid URL errors here; some hosts may not need referer
+      }
+    }
+
+    const response = await fetch(targetUrl, {
+      headers: fetchHeaders,
+    });
+
+    if (!response.ok) {
+      return res
+        .status(response.status)
+        .json({ error: 'Failed to fetch image', status: response.status, url: targetUrl });
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+
+    return res.status(200).send(buffer);
+  } catch (error) {
+    console.error('Cover proxy error:', error);
+    return res.status(500).json({ error: 'Failed to proxy image', details: error.message });
+  }
 }
 
 // Include the actual Mangapill implementations (replacement for Mangakakalot)
@@ -493,19 +557,34 @@ async function handleChapterPagesMangapill(req, res, chapterId) {
   }
 }
 
+function buildImageProxyUrl(imageUrl, referer) {
+  if (!imageUrl) {
+    return null;
+  }
+
+  const params = new URLSearchParams({ action: 'proxy', imageUrl });
+  if (referer) {
+    params.set('referer', referer);
+  }
+
+  return `/api/manga?source=cover&${params.toString()}`;
+}
+
 // Parsing functions for Mangapill
 function parseSearchResultsMangapill(html) {
   const results = [];
   // Look for manga cards in search results
   const mangaRegex =
-    /<a[^>]*href="\/manga\/([^/]+)\/([^"]+)"[^>]*>[\s\S]*?<img[^>]*data-src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g;
+    /<a[^>]*href="\/manga\/([^/]+)\/([^"]+)"[^>]*>[\s\S]*?<img[^>]*(?:data-)?src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g;
 
   let match;
   while ((match = mangaRegex.exec(html)) !== null) {
+    const coverImage = buildImageProxyUrl(match[3], 'https://mangapill.com') || match[3];
+
     results.push({
       id: `${match[1]}/${match[2]}`,
       title: match[4].trim(),
-      coverImage: match[3],
+      coverImage,
     });
   }
 
@@ -516,14 +595,16 @@ function parsePopularResultsMangapill(html) {
   const results = [];
   // Look for manga cards on browse page
   const mangaRegex =
-    /<a[^>]*href="\/manga\/([^/]+)\/([^"]+)"[^>]*>[\s\S]*?<img[^>]*data-src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g;
+    /<a[^>]*href="\/manga\/([^/]+)\/([^"]+)"[^>]*>[\s\S]*?<img[^>]*(?:data-)?src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g;
 
   let match;
   while ((match = mangaRegex.exec(html)) !== null) {
+    const coverImage = buildImageProxyUrl(match[3], 'https://mangapill.com') || match[3];
+
     results.push({
       id: `${match[1]}/${match[2]}`,
       title: match[4].trim(),
-      coverImage: match[3],
+      coverImage,
     });
   }
 
@@ -535,12 +616,14 @@ function parseSeriesInfoMangapill(html) {
   const descriptionMatch = html.match(
     /<div[^>]*class="[^"]*description[^"]*"[^>]*>([\s\S]*?)<\/div>/
   );
-  const coverMatch = html.match(/<img[^>]*data-src="([^"]*)"[^>]*class="[^"]*cover[^"]*"/);
+  const coverMatch = html.match(/<img[^>]*(?:data-)?src="([^"]*)"[^>]*class="[^"]*cover[^"]*"/);
 
   return {
     title: titleMatch ? titleMatch[1].trim() : 'Unknown',
     description: descriptionMatch ? descriptionMatch[1].replace(/<[^>]+>/g, '').trim() : '',
-    coverImage: coverMatch ? coverMatch[1] : '',
+    coverImage: coverMatch
+      ? buildImageProxyUrl(coverMatch[1], 'https://mangapill.com') || coverMatch[1]
+      : '',
     status: 'Ongoing',
   };
 }
@@ -568,14 +651,16 @@ function parseChaptersMangapill(html) {
 function parseChapterPagesMangapill(html) {
   const pages = [];
   // Look for page images with data-src
-  const imageRegex = /<img[^>]*data-src="([^"]*)"[^>]*class="[^"]*page[^"]*"/g;
+  const imageRegex = /<img[^>]*(?:data-)?src="([^"]*)"[^>]*class="[^"]*page[^"]*"/g;
 
   let match;
   let pageNum = 1;
   while ((match = imageRegex.exec(html)) !== null) {
+    const imageUrl = buildImageProxyUrl(match[1], 'https://mangapill.com') || match[1];
+
     pages.push({
       page: pageNum,
-      img: match[1],
+      img: imageUrl,
     });
     pageNum++;
   }
