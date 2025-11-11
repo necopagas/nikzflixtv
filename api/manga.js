@@ -457,7 +457,7 @@ function parseSearchResultsMangapill(html) {
   const results = [];
   // Look for manga cards in search results
   const mangaRegex =
-    /<a[^>]*href="\/manga\/([^/]+)\/([^"]+)"[^>]*>[\s\S]*?<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g;
+    /<a[^>]*href="\/manga\/([^/]+)\/([^"]+)"[^>]*>[\s\S]*?<img[^>]*data-src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g;
 
   let match;
   while ((match = mangaRegex.exec(html)) !== null) {
@@ -475,7 +475,7 @@ function parsePopularResultsMangapill(html) {
   const results = [];
   // Look for manga cards on browse page
   const mangaRegex =
-    /<a[^>]*href="\/manga\/([^/]+)\/([^"]+)"[^>]*>[\s\S]*?<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g;
+    /<a[^>]*href="\/manga\/([^/]+)\/([^"]+)"[^>]*>[\s\S]*?<img[^>]*data-src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g;
 
   let match;
   while ((match = mangaRegex.exec(html)) !== null) {
@@ -494,7 +494,7 @@ function parseSeriesInfoMangapill(html) {
   const descriptionMatch = html.match(
     /<div[^>]*class="[^"]*description[^"]*"[^>]*>([\s\S]*?)<\/div>/
   );
-  const coverMatch = html.match(/<img[^>]*src="([^"]*)"[^>]*class="[^"]*cover[^"]*"/);
+  const coverMatch = html.match(/<img[^>]*data-src="([^"]*)"[^>]*class="[^"]*cover[^"]*"/);
 
   return {
     title: titleMatch ? titleMatch[1].trim() : 'Unknown',
@@ -511,19 +511,23 @@ function parseChaptersMangapill(html) {
 
   let match;
   while ((match = chapterRegex.exec(html)) !== null) {
+    // Extract chapter number from title
+    const title = match[2].trim();
+    const chapterNum = title.match(/Chapter (\d+)/) || title.match(/(\d+)/);
     chapters.push({
       id: match[1],
-      title: match[2].trim(),
+      title: title,
+      chapter: chapterNum ? parseInt(chapterNum[1]) : null,
     });
   }
 
-  return chapters.reverse();
+  return chapters.reverse().slice(0, 100); // Limit to 100 most recent chapters
 }
 
 function parseChapterPagesMangapill(html) {
   const pages = [];
-  // Look for image sources in chapter pages
-  const imageRegex = /<img[^>]*src="([^"]*)"[^>]*class="[^"]*page[^"]*"/g;
+  // Look for page images with data-src
+  const imageRegex = /<img[^>]*data-src="([^"]*)"[^>]*class="[^"]*page[^"]*"/g;
 
   let match;
   let pageNum = 1;
