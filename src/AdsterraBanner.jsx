@@ -1,40 +1,58 @@
 // src/AdsterraBanner.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useLocalStorageState } from './hooks/useLocalStorageState';
 
 export default function AdsterraBanner() {
-  const containerRef = useRef(null);
-  const [visible, setVisible] = useState(true);
+  const adContainerRef = useRef(null);
+  const wrapperRef = useRef(null);
+  const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [scriptsLoaded, setScriptsLoaded] = useState(false);
   const [adStatus, setAdStatus] = useState('loading');
-  const location = useLocation();
+  const [readyToShow, setReadyToShow] = useState(false);
+  const [isDismissed, setIsDismissed] = useLocalStorageState('nikz_ads_hidden', false);
 
   useEffect(() => {
-    // Check if user previously dismissed ads
-    const dismissed = localStorage.getItem('nikz_ads_hidden');
-    if (dismissed === '1') {
-      setVisible(false);
+    if (isDismissed) {
+      setReadyToShow(false);
       return;
     }
 
-    // Show on all devices
     const currentPath = location?.pathname || '/';
     console.info('[AdsterraBanner] Current path:', currentPath);
 
-    setVisible(true);
-  }, [location?.pathname]);
+    const interactionHandler = () => {
+      setReadyToShow(true);
+      window.removeEventListener('scroll', interactionHandler);
+      window.removeEventListener('click', interactionHandler);
+    };
+
+    const timerId = window.setTimeout(() => setReadyToShow(true), 1800);
+
+    window.addEventListener('scroll', interactionHandler, { passive: true });
+    window.addEventListener('click', interactionHandler);
+
+    return () => {
+      window.clearTimeout(timerId);
+      window.removeEventListener('scroll', interactionHandler);
+      window.removeEventListener('click', interactionHandler);
+    };
+  }, [location?.pathname, isDismissed]);
+
+  const prefersReducedMotion =
+    typeof window !== 'undefined'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false;
 
   useEffect(() => {
-    if (!visible || scriptsLoaded || !containerRef.current) return;
+    if (isDismissed || !readyToShow || scriptsLoaded || !adContainerRef.current) return;
 
-    // YOUR ACTUAL ADSTERRA NATIVE BANNER
     const NATIVE_BANNER_CODE = '0b8e16ce5c5d7303bb2755058f2e65b4';
-    
     let timeoutId = null;
 
     const injectScripts = () => {
-      if (!containerRef.current) {
+      if (!adContainerRef.current) {
         console.warn('[AdsterraBanner] Container not ready');
         setAdStatus('error');
         return;
@@ -42,9 +60,9 @@ export default function AdsterraBanner() {
 
       console.info('[AdsterraBanner] Injecting native banner...');
       setAdStatus('loading');
-      
-      // Check if already loaded
-      const existing = containerRef.current.querySelector(`script[src*="${NATIVE_BANNER_CODE}"]`);
+
+      const existing = adContainerRef.current.querySelector(`script[src*="${NATIVE_BANNER_CODE}"]`);
+
       if (existing) {
         console.info('[AdsterraBanner] Already loaded');
         setScriptsLoaded(true);
@@ -52,37 +70,33 @@ export default function AdsterraBanner() {
         return;
       }
 
-      // Create container div
       const adDiv = document.createElement('div');
       adDiv.id = `container-${NATIVE_BANNER_CODE}`;
-      containerRef.current.appendChild(adDiv);
+      adContainerRef.current.appendChild(adDiv);
 
-      // Create script
       const script = document.createElement('script');
       script.async = true;
       script.setAttribute('data-cfasync', 'false');
       script.src = `//gainedspotsspun.com/${NATIVE_BANNER_CODE}/invoke.js`;
-      
+
       script.onload = () => {
         console.info('[AdsterraBanner] ✓ Native banner loaded');
         setScriptsLoaded(true);
         setAdStatus('loaded');
       };
-      
+
       script.onerror = () => {
         console.error('[AdsterraBanner] ✗ Failed to load');
         setAdStatus('error');
       };
 
-      containerRef.current.appendChild(script);
-      
-      // Set global telemetry
+      adContainerRef.current.appendChild(script);
+
       if (typeof window !== 'undefined') {
         window.__nikz_ads_loaded = [script.src];
         window.__nikz_ads_timestamp = new Date().toISOString();
       }
 
-      // Fallback timeout
       setTimeout(() => {
         if (!scriptsLoaded) {
           console.info('[AdsterraBanner] Timeout reached, marking as loaded');
@@ -92,12 +106,10 @@ export default function AdsterraBanner() {
       }, 5000);
     };
 
-    // Load after 500ms delay
-    timeoutId = setTimeout(injectScripts, 500);
+    timeoutId = window.setTimeout(injectScripts, prefersReducedMotion ? 250 : 500);
 
-    // Also load on first scroll/click
     const loadOnInteraction = () => {
-      clearTimeout(timeoutId);
+      window.clearTimeout(timeoutId);
       injectScripts();
       window.removeEventListener('scroll', loadOnInteraction);
       window.removeEventListener('click', loadOnInteraction);
@@ -107,49 +119,62 @@ export default function AdsterraBanner() {
     window.addEventListener('click', loadOnInteraction, { once: true });
 
     return () => {
-      clearTimeout(timeoutId);
+      window.clearTimeout(timeoutId);
       window.removeEventListener('scroll', loadOnInteraction);
       window.removeEventListener('click', loadOnInteraction);
     };
-  }, [visible, scriptsLoaded]);
+  }, [isDismissed, readyToShow, scriptsLoaded, prefersReducedMotion]);
+
+  useEffect(() => {
+    if (!wrapperRef.current) return;
+    wrapperRef.current.dataset.ready = readyToShow && !isDismissed ? '1' : '0';
+  }, [readyToShow, isDismissed]);
 
   const handleDismiss = () => {
-    localStorage.setItem('nikz_ads_hidden', '1');
-    setVisible(false);
+    setIsDismissed(true);
   };
 
-  if (!visible) return null;
-
-  // Don't show container until ad is loaded or error
-  if (adStatus === 'loading') return null;
+  if (isDismissed || !readyToShow || adStatus === 'loading') return null;
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] animate-fade-in">
-      <div 
+    <div
+      ref={wrapperRef}
+      className="fixed inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 bottom-[env(safe-area-inset-bottom,1.5rem)] pointer-events-none"
+      style={{ zIndex: 9999 }}
+      aria-live="polite"
+      data-banner-ready="true"
+    >
+      <div
         className={`
-          bg-gradient-to-br from-gray-900/95 to-gray-800/95 
-          backdrop-blur-md rounded-xl shadow-2xl 
+          pointer-events-auto backdrop-blur-md rounded-xl shadow-2xl
           border border-gray-700/50
           transition-all duration-500 ease-out
           ${collapsed ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}
         `}
-        style={{ minWidth: 320, maxWidth: '90vw' }}
+        style={{
+          minWidth: 320,
+          maxWidth: '90vw',
+          margin: '0 auto',
+          background: 'linear-gradient(225deg, rgba(15,23,42,0.95), rgba(15,23,42,0.6))',
+          transform: collapsed ? 'translateY(20%) scale(0.95)' : 'translateY(0) scale(1)',
+        }}
       >
         <div className="flex items-start gap-3 p-3">
           {/* Ad Container */}
-          <div 
-            ref={containerRef} 
+          <div
+            ref={adContainerRef}
             className="flex-1 flex items-center justify-center min-h-[90px] relative"
             id="nikz-ad-container"
           >
-            {/* Loading indicator removed - ad loads silently in background */}
             {adStatus === 'error' && (
               <div className="flex flex-col items-center gap-2 py-4 text-center">
                 <span className="text-xs text-orange-400">⚠️ Ad scripts loaded</span>
-                <span className="text-[10px] text-gray-500">If ads don't appear, check Adsterra dashboard</span>
+                <span className="text-[10px] text-gray-500">
+                  If ads don't appear, check Adsterra dashboard
+                </span>
               </div>
             )}
-            {adStatus === 'loaded' && !containerRef.current?.querySelector('script') && (
+            {adStatus === 'loaded' && !adContainerRef.current?.querySelector('script') && (
               <div className="text-xs text-gray-400 py-4">
                 📺 Ad space ready - waiting for impressions
               </div>
@@ -172,7 +197,7 @@ export default function AdsterraBanner() {
             >
               <span className="text-sm font-bold">{collapsed ? '▸' : '▾'}</span>
             </button>
-            
+
             <button
               onClick={handleDismiss}
               className="
@@ -194,11 +219,20 @@ export default function AdsterraBanner() {
         {import.meta.env.DEV && (
           <div className="px-3 pb-2 text-[10px] text-gray-500 font-mono border-t border-gray-700/30 pt-2">
             <div className="flex items-center justify-between gap-2">
-              <span>Status: <span className={`font-bold ${
-                adStatus === 'loaded' ? 'text-green-400' : 
-                adStatus === 'loading' ? 'text-yellow-400' : 
-                'text-orange-400'
-              }`}>{adStatus}</span></span>
+              <span>
+                Status:{' '}
+                <span
+                  className={`font-bold ${
+                    adStatus === 'loaded'
+                      ? 'text-green-400'
+                      : adStatus === 'loading'
+                        ? 'text-yellow-400'
+                        : 'text-orange-400'
+                  }`}
+                >
+                  {adStatus}
+                </span>
+              </span>
               <span>Path: {location?.pathname}</span>
               <span>Scripts: {scriptsLoaded ? '✓' : '⏳'}</span>
             </div>
