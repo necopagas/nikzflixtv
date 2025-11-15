@@ -36,25 +36,63 @@ async function handleWeebCentral(req, res, params) {
   const isDevelopment =
     (process.env.NODE_ENV !== 'production' && process.env.VERCEL_ENV === 'development') ||
     !process.env.VERCEL;
+  const queryParams = new URLSearchParams(
+    Object.fromEntries(
+      Object.entries(params).filter(
+        ([, value]) => value !== undefined && value !== null && value !== ''
+      )
+    )
+  );
 
-  // In development, try local proxy first
+  const bypassCandidates = [];
+  const configuredBypass = process.env.WEEBCENTRAL_BYPASS_URL?.trim();
+
+  const addCandidate = url => {
+    if (!url) {
+      return;
+    }
+
+    const trimmed = url.replace(/\/+$/u, '');
+
+    if (trimmed && !bypassCandidates.includes(trimmed)) {
+      bypassCandidates.push(trimmed);
+    }
+  };
+
+  if (configuredBypass) {
+    addCandidate(configuredBypass);
+  }
+
   if (isDevelopment) {
+    addCandidate('http://localhost:3001');
+  }
+
+  for (const candidate of bypassCandidates) {
     try {
-      const proxyUrl = `http://localhost:3001/api/weebcentral?${new URLSearchParams(params).toString()}`;
-      console.log('Redirecting to local proxy:', proxyUrl);
+      const baseEndpoint = candidate.endsWith('/api/weebcentral')
+        ? candidate
+        : `${candidate}/api/weebcentral`;
+      const proxyUrl = `${baseEndpoint}?${queryParams.toString()}`;
+
+      console.log('Redirecting WeebCentral request through bypass:', proxyUrl);
 
       const proxyResponse = await fetch(proxyUrl, {
-        timeout: 30000,
+        signal: AbortSignal.timeout(30000),
       });
 
       if (proxyResponse.ok) {
         const data = await proxyResponse.json();
         return res.status(proxyResponse.status).json(data);
-      } else {
-        console.log('Local proxy not available, using Vercel-compatible solution');
       }
+
+      console.log(
+        'Bypass returned non-OK status',
+        proxyResponse.status,
+        proxyResponse.statusText,
+        'trying next option'
+      );
     } catch (error) {
-      console.log('Local proxy error, using Vercel-compatible solution:', error.message);
+      console.log('Bypass attempt failed:', error.message);
     }
   }
 

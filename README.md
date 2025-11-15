@@ -16,22 +16,22 @@ NikzFlix TV is a React + Vite streaming hub that aggregates movies, anime, drama
 
 1. Install dependencies:
 
-	```bash
-	npm install
-	```
+   ```bash
+   npm install
+   ```
 
 2. Configure environment variables:
 
-	```bash
-	cp .env.example .env
-	# edit .env and add your TMDB key
-	```
+   ```bash
+   cp .env.example .env
+   # edit .env and add your TMDB key
+   ```
 
 3. Run the development server:
 
-	```bash
-	npm run dev
-	```
+   ```bash
+   npm run dev
+   ```
 
 ## Available Scripts
 
@@ -60,6 +60,12 @@ NikzFlix TV is a React + Vite streaming hub that aggregates movies, anime, drama
 - Provide a valid TMDB API key via `VITE_TMDB_API_KEY`
 - Ensure hosted assets (alarm audio, ad scripts) are reachable over HTTPS
 - For Capacitor builds, update Android config under `android/`
+
+## WeebCentral (Cloudflare-protected)
+
+WeebCentral is protected by Cloudflare, so the app cannot reliably scrape it from a serverless environment. During development run the bundled proxy server and start Vite with `npm run dev:with-proxy`, or start the proxy manually with `npm run proxy` and point the env var `WEEBCENTRAL_BYPASS_URL` to `http://localhost:3001`.
+
+In production you can also host the proxy on your own server or use a Cloudflare bypass service, then point `WEEBCENTRAL_BYPASS_URL` at the hosted endpoint. See `CLOUDFLARE_BYPASS_README.md` for details on the proxy API and alternative sources.
 
 ---
 

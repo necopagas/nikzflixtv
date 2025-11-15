@@ -56,6 +56,24 @@ This project implements a multi-layered approach to handle Cloudflare protection
    npm run dev
    ```
 
+### Hosted or remote bypass services
+
+If you already have a Cloudflare bypass endpoint (for example a remote proxy you control or a paid scraping service), point the API at that host by setting the `WEEBCENTRAL_BYPASS_URL` environment variable. The handler automatically routes WeebCentral requests through that URL before trying direct scraping.
+
+For example:
+
+```bash
+WEEBCENTRAL_BYPASS_URL="https://my-bypass-service.example/api/weebcentral" npm run build
+```
+
+Or when working locally you can still point to the local proxy explicitly:
+
+```bash
+WEEBCENTRAL_BYPASS_URL="http://localhost:3001" npm run dev
+```
+
+The server will try every configured host in order, so you can rely on the local proxy during development and fall back to a hosted bypass in other environments.
+
 ### For Production
 
 The app automatically detects the production environment and:
