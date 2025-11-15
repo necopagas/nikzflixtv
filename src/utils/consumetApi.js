@@ -8,8 +8,9 @@ const IS_DEV = import.meta.env.DEV;
 /**
  * Function to fetch data from the Consumet API.
  * (Dynamic based on environment)
+ * NOTE: Currently unused as manga functions are deprecated
  */
-const fetchConsumetData = async endpoint => {
+const _UNUSED_fetchConsumetData = async endpoint => {
   // During development we use the Vite dev server proxy at /api/proxy
   // which is configured in vite.config.js to forward to https://api.consumet.org
   const url = IS_DEV
@@ -46,33 +47,20 @@ const fetchConsumetData = async endpoint => {
 
 // --- GI-TANGGAL ANG searchMoviesAndTV ---
 
-// --- MANGA FUNCTIONS (using Consumet) ---
-export const searchManga = async query => {
-  if (!query) return [];
-  const response = await fetchConsumetData(`/manga/mangadex/${encodeURIComponent(query)}`);
-  return response?.results || [];
+// --- MANGA FUNCTIONS (deprecated - now using direct manga sources) ---
+export const searchManga = async () => {
+  console.warn('searchManga is deprecated - use manga sources directly');
+  return [];
 };
 
 export const getTrendingManga = async () => {
-  try {
-    // MangaDex doesn't have a direct "trending" endpoint in Consumet
-    // So we'll fetch popular manga using a general search
-    const response = await fetchConsumetData('/manga/mangadex?page=1');
-    return response?.results || [];
-  } catch (error) {
-    console.error('Error fetching trending manga:', error);
-    return [];
-  }
+  console.warn('getTrendingManga is deprecated - use manga sources directly');
+  return [];
 };
 
-export const getMangaDetails = async mangaId => {
-  try {
-    const response = await fetchConsumetData(`/manga/mangadex/info/${mangaId}`);
-    return response || null;
-  } catch (error) {
-    console.error('Error fetching manga details:', error);
-    return null;
-  }
+export const getMangaDetails = async () => {
+  console.warn('getMangaDetails is deprecated - use manga sources directly');
+  return null;
 };
 
 export const searchYouTube = async query => {

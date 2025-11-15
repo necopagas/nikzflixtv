@@ -1,5 +1,5 @@
 // Combined Manga API - handles all manga sources
-// This combines weebcentral, mangakakalot, manganelo, mangapanda, mangadex, and manga-cover
+// This combines weebcentral, mangakakalot, manganelo, mangapanda, and manga-cover
 export default async function handler(req, res) {
   const { source, action, ...params } = req.query;
 
@@ -13,8 +13,6 @@ export default async function handler(req, res) {
         return await handleManganelo(req, res, { action, ...params });
       case 'mangapanda':
         return await handleMangapanda(req, res, { action, ...params });
-      case 'mangadex':
-        return await handleMangadex(req, res, { action, ...params });
       case 'cover':
         return await handleMangaCover(req, res, { action, ...params });
       default:
@@ -429,10 +427,6 @@ async function handleMangapanda(req, res, params) {
     console.error('MangaPanda API Error:', error);
     return res.status(500).json({ error: 'Failed to fetch data', details: error.message });
   }
-}
-
-async function handleMangadex(req, res, _params) {
-  return res.status(200).json({ results: [] });
 }
 
 async function handleMangaCover(req, res, params) {

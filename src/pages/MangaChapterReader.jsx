@@ -22,7 +22,7 @@ const MangaChapterReader = () => {
 
   // Get source from URL params
   const searchParams = new URLSearchParams(window.location.search);
-  const source = searchParams.get('source') || 'mangadex';
+  const source = searchParams.get('source') || 'weebcentral';
   const slug = searchParams.get('slug') || '';
 
   // Helper function to fetch from WeebCentral
@@ -97,26 +97,6 @@ const MangaChapterReader = () => {
     }
   };
 
-  // Helper function to fetch from MangaDex (with proxy fallback for production)
-  const fetchMangaDex = async endpoint => {
-    try {
-      const isProduction = window.location.hostname !== 'localhost';
-
-      if (isProduction) {
-        const response = await fetch(`/api/mangadex?endpoint=${encodeURIComponent(endpoint)}`);
-        if (!response.ok) throw new Error('Proxy request failed');
-        return await response.json();
-      } else {
-        const response = await fetch(`https://api.mangadex.org${endpoint}`);
-        if (!response.ok) throw new Error('MangaDex request failed');
-        return await response.json();
-      }
-    } catch (error) {
-      console.error('Error fetching from MangaDex:', error);
-      throw error;
-    }
-  };
-
   // Fetch chapter pages
   useEffect(() => {
     const fetchChapterPages = async () => {
@@ -156,19 +136,6 @@ const MangaChapterReader = () => {
             const pageUrls = data.pages.map(p => p.img);
             setPages(pageUrls);
           }
-        } else {
-          // Fetch chapter data from MangaDex (to get base URL and hash)
-          const endpoint = `/at-home/server/${chapterId}`;
-          const data = await fetchMangaDex(endpoint);
-
-          // Build page URLs
-          const baseUrl = data.baseUrl;
-          const hash = data.chapter.hash;
-          const pageFiles = data.chapter.data; // High quality images
-
-          const pageUrls = pageFiles.map(filename => `${baseUrl}/data/${hash}/${filename}`);
-
-          setPages(pageUrls);
         }
       } catch (err) {
         console.error('Error fetching chapter pages:', err);
@@ -267,48 +234,6 @@ const MangaChapterReader = () => {
             const index = chaptersList.findIndex(ch => ch.id === chapterId);
             setCurrentChapterIndex(index);
           }
-        } else {
-          let allChapters = [];
-          let offset = 0;
-          const limit = 100;
-          let hasMore = true;
-
-          while (hasMore) {
-            const endpoint = `/manga/${mangaId}/feed?limit=${limit}&offset=${offset}&order[chapter]=asc&translatedLanguage[]=en`;
-            const data = await fetchMangaDex(endpoint);
-
-            if (data.data && data.data.length > 0) {
-              allChapters = allChapters.concat(data.data);
-              offset += limit;
-              hasMore = data.data.length === limit && offset < (data.total || 1000);
-            } else {
-              hasMore = false;
-            }
-          }
-
-          const uniqueChapters = new Map();
-          allChapters.forEach(ch => {
-            const chapterNum = ch.attributes.chapter;
-            if (
-              !uniqueChapters.has(chapterNum) ||
-              new Date(ch.attributes.publishAt) >
-                new Date(uniqueChapters.get(chapterNum).attributes.publishAt)
-            ) {
-              uniqueChapters.set(chapterNum, ch);
-            }
-          });
-
-          const chaptersList = Array.from(uniqueChapters.values())
-            .map(ch => ({
-              id: ch.id,
-              chapter: ch.attributes.chapter,
-              title: ch.attributes.title || `Chapter ${ch.attributes.chapter}`,
-            }))
-            .sort((a, b) => parseFloat(a.chapter) - parseFloat(b.chapter));
-
-          setChapters(chaptersList);
-          const index = chaptersList.findIndex(ch => ch.id === chapterId);
-          setCurrentChapterIndex(index);
         }
       } catch (err) {
         console.error('Error fetching chapters:', err);
@@ -356,7 +281,6 @@ const MangaChapterReader = () => {
         return `/manga/${encodedSeriesId}?source=manganelo`;
       case 'mangapanda':
         return `/manga/${encodedSeriesId}?source=mangapanda`;
-      case 'mangadex':
       case null:
       case undefined:
         return `/manga/${encodedSeriesId}`;
@@ -384,7 +308,6 @@ const MangaChapterReader = () => {
         return `/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=manganelo`;
       case 'mangapanda':
         return `/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=mangapanda`;
-      case 'mangadex':
       case null:
       case undefined:
         return `/manga/${encodedSeriesId}/chapter/${encodedChapterId}`;

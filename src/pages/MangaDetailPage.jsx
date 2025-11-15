@@ -13,7 +13,7 @@ export const MangaDetailPage = () => {
 
   // Get source from URL params
   const searchParams = new URLSearchParams(window.location.search);
-  const source = searchParams.get('source') || 'mangadex';
+  const source = searchParams.get('source') || 'weebcentral';
   const slug = searchParams.get('slug') || '';
 
   // Helper function to fetch from WeebCentral
@@ -84,26 +84,6 @@ export const MangaDetailPage = () => {
       return await response.json();
     } catch (error) {
       console.error('Error fetching from MangaPanda:', error);
-      throw error;
-    }
-  };
-
-  // Helper function to fetch from MangaDex (with proxy fallback for production)
-  const fetchMangaDex = async endpoint => {
-    try {
-      const isProduction = window.location.hostname !== 'localhost';
-
-      if (isProduction) {
-        const response = await fetch(`/api/mangadex?endpoint=${encodeURIComponent(endpoint)}`);
-        if (!response.ok) throw new Error('Proxy request failed');
-        return await response.json();
-      } else {
-        const response = await fetch(`https://api.mangadex.org${endpoint}`);
-        if (!response.ok) throw new Error('MangaDex request failed');
-        return await response.json();
-      }
-    } catch (error) {
-      console.error('Error fetching from MangaDex:', error);
       throw error;
     }
   };
@@ -250,81 +230,6 @@ export const MangaDetailPage = () => {
 
             setChapters(chaptersList);
           }
-        } else {
-          // Fetch manga info from MangaDex
-          const endpoint = `/manga/${mangaId}?includes[]=cover_art&includes[]=author&includes[]=artist`;
-          const mangaData = await fetchMangaDex(endpoint);
-          const m = mangaData.data;
-
-          const coverArt = m.relationships.find(rel => rel.type === 'cover_art');
-          const coverId = coverArt?.attributes?.fileName;
-          const author = m.relationships.find(rel => rel.type === 'author');
-          const artist = m.relationships.find(rel => rel.type === 'artist');
-
-          setManga({
-            id: m.id,
-            title: m.attributes.title.en || Object.values(m.attributes.title)[0] || 'Unknown Title',
-            description:
-              m.attributes.description?.en ||
-              Object.values(m.attributes.description)[0] ||
-              'No description available',
-            coverImage: coverId
-              ? `/api/manga-cover?mangaId=${m.id}&fileName=${coverId}&size=512`
-              : 'https://via.placeholder.com/512x768?text=No+Cover',
-            status: m.attributes.status,
-            rating: m.attributes.contentRating,
-            year: m.attributes.year,
-            author: author?.attributes?.name || 'Unknown',
-            artist: artist?.attributes?.name || 'Unknown',
-            tags: m.attributes.tags?.map(tag => tag.attributes.name.en) || [],
-          });
-
-          // Fetch chapters with pagination support (MangaDex max limit is 100 per request)
-          let allChapters = [];
-          let offset = 0;
-          const limit = 100;
-          let hasMore = true;
-
-          // Loop to fetch all chapters with pagination
-          while (hasMore) {
-            const chaptersEndpoint = `/manga/${mangaId}/feed?limit=${limit}&offset=${offset}&order[chapter]=asc&translatedLanguage[]=en`;
-            const chaptersData = await fetchMangaDex(chaptersEndpoint);
-
-            if (chaptersData.data && chaptersData.data.length > 0) {
-              allChapters = allChapters.concat(chaptersData.data);
-              offset += limit;
-
-              // Check if there are more chapters to fetch
-              hasMore = chaptersData.data.length === limit && offset < (chaptersData.total || 1000);
-            } else {
-              hasMore = false;
-            }
-          }
-
-          // Remove duplicate chapters (sometimes MangaDex has multiple versions)
-          const uniqueChapters = new Map();
-          allChapters.forEach(ch => {
-            const chapterNum = ch.attributes.chapter;
-            if (
-              !uniqueChapters.has(chapterNum) ||
-              new Date(ch.attributes.publishAt) >
-                new Date(uniqueChapters.get(chapterNum).attributes.publishAt)
-            ) {
-              uniqueChapters.set(chapterNum, ch);
-            }
-          });
-
-          const chaptersList = Array.from(uniqueChapters.values())
-            .map(ch => ({
-              id: ch.id,
-              chapter: ch.attributes.chapter,
-              title: ch.attributes.title || `Chapter ${ch.attributes.chapter}`,
-              pages: ch.attributes.pages,
-              publishAt: new Date(ch.attributes.publishAt),
-            }))
-            .sort((a, b) => parseFloat(a.chapter) - parseFloat(b.chapter)); // Sort by chapter number
-
-          setChapters(chaptersList);
         }
       } catch (err) {
         console.error('Error fetching manga details:', err);
@@ -501,9 +406,9 @@ export const MangaDetailPage = () => {
           {chapters.length > 0 && (
             <div className="mb-4 p-4 bg-blue-900/30 border border-blue-500/50 rounded-lg">
               <p className="text-sm text-blue-300">
-                <strong>📚 Chapter Availability:</strong> MangaDex provides free manga chapters
-                uploaded by the community. Some manga may have limited chapters due to licensing or
-                scanlation group policies. All available chapters are shown below.
+                <strong>📚 Chapter Availability:</strong> Free manga chapters from various sources.
+                Some manga may have limited chapters due to licensing or scanlation group policies.
+                All available chapters are shown below.
               </p>
             </div>
           )}
@@ -514,8 +419,8 @@ export const MangaDetailPage = () => {
               <FaBook className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <p className="mb-2">No chapters available for this manga</p>
               <p className="text-sm text-gray-500">
-                This manga may not have chapters uploaded to MangaDex yet, or they may be
-                exclusively licensed elsewhere.
+                This manga may not have chapters uploaded yet, or they may be exclusively licensed
+                elsewhere.
               </p>
             </div>
           ) : (

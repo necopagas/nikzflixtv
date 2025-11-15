@@ -127,28 +127,6 @@ const MangaReaderPage = () => {
     }
   };
 
-  // Helper function to fetch from MangaDex (with proxy fallback for production)
-  const fetchMangaDex = async endpoint => {
-    try {
-      // In production, use the proxy to avoid CORS issues
-      const isProduction = window.location.hostname !== 'localhost';
-
-      if (isProduction) {
-        const response = await fetch(`/api/mangadex?endpoint=${encodeURIComponent(endpoint)}`);
-        if (!response.ok) throw new Error('Proxy request failed');
-        return await response.json();
-      } else {
-        // In development, call MangaDex directly
-        const response = await fetch(`https://api.mangadex.org${endpoint}`);
-        if (!response.ok) throw new Error('MangaDex request failed');
-        return await response.json();
-      }
-    } catch (error) {
-      console.error('Error fetching from MangaDex:', error);
-      throw error;
-    }
-  };
-
   // Helper function to fetch from WeebCentral
   const fetchWeebCentral = async (action, params = {}) => {
     try {
@@ -230,43 +208,6 @@ const MangaReaderPage = () => {
     } catch (error) {
       console.error('Error fetching from MangaPanda:', error);
       throw error;
-    }
-  };
-
-  const mapMangaDexEntries = items =>
-    items.map(item => {
-      const coverArt = item.relationships.find(rel => rel.type === 'cover_art');
-      const coverId = coverArt?.attributes?.fileName;
-
-      return {
-        id: item.id,
-        title:
-          item.attributes.title.en || Object.values(item.attributes.title)[0] || 'Unknown Title',
-        description:
-          item.attributes.description?.en ||
-          Object.values(item.attributes.description)[0] ||
-          'No description available',
-        coverImage: coverId
-          ? `/api/manga-cover?mangaId=${item.id}&fileName=${coverId}&size=256`
-          : 'https://via.placeholder.com/256x384?text=No+Cover',
-        status: item.attributes.status,
-        rating: item.attributes.contentRating,
-        year: item.attributes.year,
-        tags: item.attributes.tags?.slice(0, 5).map(tag => tag.attributes.name.en) || [],
-        source: 'mangadex',
-      };
-    });
-
-  // Fetch manga from MangaDex API
-  const searchMangaDex = async query => {
-    try {
-      const endpoint = `/manga?title=${encodeURIComponent(query)}&limit=100&includes[]=cover_art&includes[]=author`;
-      const data = await fetchMangaDex(endpoint);
-
-      return mapMangaDexEntries(data.data || []);
-    } catch (err) {
-      console.error('Error fetching from MangaDex:', err);
-      return [];
     }
   };
 
@@ -558,43 +499,6 @@ const MangaReaderPage = () => {
             source: 'mangapanda',
           }));
         }
-      } else {
-        // Fetch from MangaDex (default)
-        const desiredTotal = 200;
-        const perRequestLimit = 100;
-        let offset = 0;
-        let hasMore = true;
-        const aggregated = [];
-
-        while (aggregated.length < desiredTotal && hasMore) {
-          const currentLimit = Math.min(perRequestLimit, desiredTotal - aggregated.length);
-          let endpoint = `/manga?limit=${currentLimit}&offset=${offset}&includes[]=cover_art&includes[]=author&order[followedCount]=desc`;
-
-          if (selectedGenre !== 'all') {
-            endpoint += `&includedTags[]=${selectedGenre}`;
-          }
-
-          const data = await fetchMangaDex(endpoint);
-
-          if (!data || !data.data || data.data.length === 0) {
-            hasMore = false;
-            break;
-          }
-
-          aggregated.push(...mapMangaDexEntries(data.data));
-
-          if (data.data.length < currentLimit) {
-            hasMore = false;
-          } else {
-            offset += currentLimit;
-          }
-        }
-
-        if (aggregated.length === 0) {
-          throw new Error('No data received from MangaDex');
-        }
-
-        manga = aggregated.slice(0, desiredTotal);
       }
 
       setMangaList(manga);
@@ -632,69 +536,10 @@ const MangaReaderPage = () => {
       setIsLoadingRecent(true);
       setError(null);
 
-      // Fetch recently updated chapters to get manga IDs
-      const endpoint =
-        '/chapter?limit=30&order[publishAt]=desc&translatedLanguage[]=en&includes[]=manga';
-      const chaptersData = await fetchMangaDex(endpoint);
-
-      // Extract unique manga from chapters
-      const mangaMap = new Map();
-
-      for (const chapter of chaptersData.data) {
-        const mangaRel = chapter.relationships.find(rel => rel.type === 'manga');
-        if (mangaRel && !mangaMap.has(mangaRel.id)) {
-          mangaMap.set(mangaRel.id, {
-            id: mangaRel.id,
-            title:
-              mangaRel.attributes?.title?.en ||
-              Object.values(mangaRel.attributes?.title || {})[0] ||
-              'Unknown',
-            lastUpdate: chapter.attributes.publishAt,
-          });
-        }
-
-        // Stop at 20 unique manga
-        if (mangaMap.size >= 20) break;
-      }
-
-      // Fetch full details for each manga
-      const mangaIds = Array.from(mangaMap.keys());
-      const mangaDetailsPromises = mangaIds.map(async mangaId => {
-        try {
-          const endpoint = `/manga/${mangaId}?includes[]=cover_art&includes[]=author`;
-          const data = await fetchMangaDex(endpoint);
-
-          const manga = data.data;
-          const coverArt = manga.relationships.find(rel => rel.type === 'cover_art');
-          const coverId = coverArt?.attributes?.fileName;
-
-          return {
-            id: manga.id,
-            title:
-              manga.attributes.title.en ||
-              Object.values(manga.attributes.title)[0] ||
-              'Unknown Title',
-            description:
-              manga.attributes.description?.en ||
-              Object.values(manga.attributes.description)[0] ||
-              'No description available',
-            coverImage: coverId
-              ? `/api/manga-cover?mangaId=${manga.id}&fileName=${coverId}&size=256`
-              : 'https://via.placeholder.com/256x384?text=No+Cover',
-            status: manga.attributes.status,
-            rating: manga.attributes.contentRating,
-            year: manga.attributes.year,
-            tags: manga.attributes.tags?.slice(0, 5).map(tag => tag.attributes.name.en) || [],
-            lastUpdate: mangaMap.get(mangaId).lastUpdate,
-          };
-        } catch (err) {
-          console.error(`Error fetching manga ${mangaId}:`, err);
-          return null;
-        }
-      });
-
-      const mangaDetails = (await Promise.all(mangaDetailsPromises)).filter(m => m !== null);
-      setRecentUpdates(mangaDetails);
+      // Recent updates not available for current sources
+      // Just show popular manga instead
+      await fetchPopularManga();
+      setRecentUpdates([]);
     } catch (err) {
       console.error('Error fetching recent updates:', err);
       setError('Failed to load recent updates. Please try again.');
@@ -749,7 +594,8 @@ const MangaReaderPage = () => {
       } else if (selectedSource === 'kitsu') {
         results = await searchKitsu(query);
       } else {
-        results = await searchMangaDex(query);
+        // Default to weebcentral if no source matches
+        results = await searchWeebCentral(query);
       }
 
       if (!results || results.length === 0) {
@@ -951,12 +797,6 @@ const MangaReaderPage = () => {
                           >
                             Switch to Kitsu
                           </button>
-                          <button
-                            onClick={() => setSelectedSource('mangadex')}
-                            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium transition-colors"
-                          >
-                            Switch to MangaDex
-                          </button>
                         </div>
                       </div>
                     )}
@@ -1018,7 +858,7 @@ const MangaReaderPage = () => {
                     className="group cursor-pointer"
                     onClick={() => {
                       const encodedId = encodeURIComponent(manga.id);
-                      let url = `/manga/${encodedId}?source=${manga.source || 'mangadex'}`;
+                      let url = `/manga/${encodedId}?source=${manga.source || 'weebcentral'}`;
                       if (manga.source === 'weebcentral' && manga.slug) {
                         url += `&slug=${encodeURIComponent(manga.slug)}`;
                       }
