@@ -68,7 +68,7 @@ export default defineConfig(({ mode }) => ({
               const page = parseInt(url.searchParams.get('page') || '1', 10) || 1;
               const DEFAULT_KEY =
                 import.meta.env.VITE_TMDB_API_KEY || '3b0f392b6173455e37624a78bd5f79d4';
-              const tmdbUrl = `https://api.themoviedb.org/3/company/149142/movies?api_key=${DEFAULT_KEY}&page=${page}`;
+              const tmdbUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${DEFAULT_KEY}&with_companies=149142&sort_by=popularity.desc&page=${page}`;
 
               const resp = await axios.get(tmdbUrl, { timeout: 10000 });
               res.setHeader('Content-Type', 'application/json');

@@ -3,86 +3,29 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaArrowRight, FaList, FaTimes } from 'react-icons/fa';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
-const fetchWeebCentral = async (action, params = {}) => {
+const fetchMangahere = async (action, params = {}) => {
   try {
     const queryParams = new URLSearchParams({
-      source: 'weebcentral',
+      source: 'mangahere',
       action,
       ...params,
     }).toString();
     const response = await fetch(`/api/manga?${queryParams}`);
 
-    if (!response.ok) throw new Error('WeebCentral request failed');
+    if (!response.ok) throw new Error('Mangahere request failed');
     return await response.json();
   } catch (error) {
-    console.error('Error fetching from WeebCentral:', error);
+    console.error('Error fetching from Mangahere:', error);
     throw error;
   }
 };
 
-const fetchMangakakalot = async (action, params = {}) => {
-  try {
-    const queryParams = new URLSearchParams({
-      source: 'mangakakalot',
-      action,
-      ...params,
-    }).toString();
-    const response = await fetch(`/api/manga?${queryParams}`);
-
-    if (!response.ok) throw new Error('Mangakakalot request failed');
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching from Mangakakalot:', error);
-    throw error;
-  }
-};
-
-const fetchManganelo = async (action, params = {}) => {
-  try {
-    const queryParams = new URLSearchParams({
-      source: 'manganelo',
-      action,
-      ...params,
-    }).toString();
-    const response = await fetch(`/api/manga?${queryParams}`);
-
-    if (!response.ok) throw new Error('Manganelo request failed');
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching from Manganelo:', error);
-    throw error;
-  }
-};
-
-const fetchMangaPanda = async (action, params = {}) => {
-  try {
-    const queryParams = new URLSearchParams({
-      source: 'mangapanda',
-      action,
-      ...params,
-    }).toString();
-    const response = await fetch(`/api/manga?${queryParams}`);
-
-    if (!response.ok) throw new Error('MangaPanda request failed');
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching from MangaPanda:', error);
-    throw error;
-  }
-};
-
-const SOURCE_ORDER = ['weebcentral', 'mangakakalot', 'manganelo', 'mangapanda'];
+const SOURCE_ORDER = ['mangahere'];
 const SOURCE_LABELS = {
-  weebcentral: 'WeebCentral',
-  mangakakalot: 'Mangakakalot',
-  manganelo: 'Manganelo',
-  mangapanda: 'MangaPanda',
+  mangahere: 'Mangahere',
 };
 const SOURCE_FETCHERS = {
-  weebcentral: fetchWeebCentral,
-  mangakakalot: fetchMangakakalot,
-  manganelo: fetchManganelo,
-  mangapanda: fetchMangaPanda,
+  mangahere: fetchMangahere,
 };
 
 const getFallbackChain = requested => [
@@ -98,8 +41,7 @@ const MangaChapterReader = () => {
 
   // Get source from URL params
   const searchParams = new URLSearchParams(window.location.search);
-  const source = searchParams.get('source') || 'weebcentral';
-  const slug = searchParams.get('slug') || '';
+  const source = searchParams.get('source') || 'mangahere';
 
   const [pages, setPages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -176,9 +118,7 @@ const MangaChapterReader = () => {
         setIsLoading(true);
         setError(null);
 
-        const { data } = await fetchWithFallback('pages', candidate =>
-          candidate === 'weebcentral' ? { slug, chapterId } : { chapterId }
-        );
+        const { data } = await fetchWithFallback('pages', () => ({ chapterId }));
 
         const pageUrls = data.pages?.map(p => p.img) ?? [];
 
@@ -198,15 +138,13 @@ const MangaChapterReader = () => {
     if (chapterId) {
       fetchChapterPages();
     }
-  }, [chapterId, source, slug, fetchWithFallback]);
+  }, [chapterId, source, fetchWithFallback]);
 
   // Fetch all chapters for navigation
   useEffect(() => {
     const fetchChapters = async () => {
       try {
-        const { data } = await fetchWithFallback('chapters', candidate =>
-          candidate === 'weebcentral' ? { seriesId: mangaId } : { mangaId }
-        );
+        const { data } = await fetchWithFallback('chapters', () => ({ mangaId }));
 
         const chaptersPayload = data.chapters || [];
         if (chaptersPayload.length === 0) {
@@ -263,24 +201,7 @@ const MangaChapterReader = () => {
     }
 
     const encodedSeriesId = encodeURIComponent(mangaId);
-
-    switch (source) {
-      case 'weebcentral': {
-        const slugQuery = slug ? `&slug=${encodeURIComponent(slug)}` : '';
-        return `/manga/${encodedSeriesId}?source=weebcentral${slugQuery}`;
-      }
-      case 'mangakakalot':
-        return `/manga/${encodedSeriesId}?source=mangakakalot`;
-      case 'manganelo':
-        return `/manga/${encodedSeriesId}?source=manganelo`;
-      case 'mangapanda':
-        return `/manga/${encodedSeriesId}?source=mangapanda`;
-      case null:
-      case undefined:
-        return `/manga/${encodedSeriesId}`;
-      default:
-        return `/manga/${encodedSeriesId}?source=${encodeURIComponent(source)}`;
-    }
+    return `/manga/${encodedSeriesId}?source=mangahere`;
   };
 
   const buildChapterUrl = targetChapterId => {
@@ -290,24 +211,7 @@ const MangaChapterReader = () => {
 
     const encodedSeriesId = encodeURIComponent(mangaId);
     const encodedChapterId = encodeURIComponent(targetChapterId);
-
-    switch (source) {
-      case 'weebcentral': {
-        const slugQuery = slug ? `&slug=${encodeURIComponent(slug)}` : '';
-        return `/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=weebcentral${slugQuery}`;
-      }
-      case 'mangakakalot':
-        return `/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=mangakakalot`;
-      case 'manganelo':
-        return `/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=manganelo`;
-      case 'mangapanda':
-        return `/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=mangapanda`;
-      case null:
-      case undefined:
-        return `/manga/${encodedSeriesId}/chapter/${encodedChapterId}`;
-      default:
-        return `/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=${encodeURIComponent(source)}`;
-    }
+    return `/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=mangahere`;
   };
 
   const onTouchStart = e => {

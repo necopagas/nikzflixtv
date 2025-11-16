@@ -5,67 +5,183 @@ import { useSearchParams } from 'react-router-dom';
 import { fetchData } from '../utils/fetchData'; // Gamiton ang fetchData
 import { API_ENDPOINTS, IMG_PATH } from '../config'; // Import API_ENDPOINTS
 import { Poster } from '../components/Poster';
+import AdvancedSearch from '../components/AdvancedSearch';
+import { OptimizedPoster, PosterSkeleton } from '../components/ProgressiveImage';
 
 export const SearchPage = ({ onOpenModal, isWatched }) => {
-    const [searchParams] = useSearchParams();
-    const query = searchParams.get('q');
-    const [results, setResults] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get('q') || '';
+  const [results, setResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [filters, setFilters] = useState({
+    year: '',
+    genre: '',
+    language: '',
+    rating: { min: 0, max: 10 },
+    sortBy: 'popularity',
+  });
 
-    useEffect(() => {
-        if (!query) {
-            setResults([]);
-            return;
-        };
+  useEffect(() => {
+    if (!query) {
+      setResults([]);
+      return;
+    }
 
-        const fetchSearchResults = async () => {
-            setIsLoading(true);
-            // --- GI-ILISAN OG TMDB SEARCH ---
-            const data = await fetchData(API_ENDPOINTS.search(query));
+    fetchSearchResults(query, filters);
+  }, [query]);
 
-            // Normalize TMDB data (parehas ra sa una pero gikan na sa TMDB)
-            const normalizedData = (data.results || [])
-                .filter(item => item.media_type === 'movie' || item.media_type === 'tv') // Filter lang para movies ug TV
-                .map(item => ({
-                    id: item.id,
-                    title: item.title || item.name, // Use title for movie, name for TV
-                    name: item.name || item.title,   // Use name for TV, title for movie
-                    poster_path: item.poster_path, // TMDB uses poster_path
-                    media_type: item.media_type,
-                    genre_ids: item.genre_ids || [], // Include genre_ids
-                }))
-                .filter(item => item.poster_path); // Filter out items without a poster path
+  const fetchSearchResults = async (searchQuery, searchFilters) => {
+    if (!searchQuery) return;
 
-            setResults(normalizedData);
-            setIsLoading(false);
-        };
+    setIsLoading(true);
 
-        fetchSearchResults();
-    }, [query]);
+    try {
+      // Build API endpoint with filters
+      let endpoint = API_ENDPOINTS.search(searchQuery);
 
-    return (
-        <div className="px-4 sm:px-8 md:px-16 pt-28 pb-20">
-            <h2 className="text-3xl font-bold mb-8">Search Results for "{query}"</h2>
-            {isLoading ? ( // Ipakita ang skeleton kung loading
-                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-                    {Array.from({ length: 12 }).map((_, i) => (
-                        <div key={`skeleton-search-${i}`} className="aspect-[2/3] skeleton"></div>
-                    ))}
-                </div>
-            ) : results.length > 0 ? ( // Ipakita ang results kung humana ug naay sulod
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-                    {results.map(item => (
-                        <Poster
-                            key={item.id} // Ang key dapat unique gyud per item
-                            item={item} // Ipasa ang tibuok item object
-                            onOpenModal={onOpenModal}
-                            isWatched={isWatched(item.id)}
-                        />
-                    ))}
-                </div>
-            ) : ( // Ipakita kung walay results human mag-load
-                <p>No results found for "{query}".</p>
-            )}
+      // Add filters as query params
+      const params = new URLSearchParams();
+      if (searchFilters.year) params.append('year', searchFilters.year);
+      if (searchFilters.genre) params.append('with_genres', searchFilters.genre);
+      if (searchFilters.language) params.append('language', searchFilters.language);
+      if (searchFilters.rating.min > 0) params.append('vote_average.gte', searchFilters.rating.min);
+      if (searchFilters.rating.max < 10)
+        params.append('vote_average.lte', searchFilters.rating.max);
+
+      const paramsString = params.toString();
+      if (paramsString) {
+        endpoint += (endpoint.includes('?') ? '&' : '?') + paramsString;
+      }
+
+      const data = await fetchData(endpoint);
+
+      // Normalize TMDB data
+      let normalizedData = (data.results || [])
+        .filter(item => item.media_type === 'movie' || item.media_type === 'tv')
+        .map(item => ({
+          id: item.id,
+          title: item.title || item.name,
+          name: item.name || item.title,
+          poster_path: item.poster_path,
+          backdrop_path: item.backdrop_path,
+          vote_average: item.vote_average,
+          media_type: item.media_type,
+          genre_ids: item.genre_ids || [],
+          release_date: item.release_date || item.first_air_date,
+        }))
+        .filter(item => item.poster_path);
+
+      // Apply sorting
+      if (searchFilters.sortBy === 'rating') {
+        normalizedData.sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0));
+      } else if (searchFilters.sortBy === 'release_date') {
+        normalizedData.sort(
+          (a, b) => new Date(b.release_date || 0) - new Date(a.release_date || 0)
+        );
+      } else if (searchFilters.sortBy === 'title') {
+        normalizedData.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      }
+
+      setResults(normalizedData);
+    } catch (error) {
+      console.error('Search error:', error);
+      setResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSearch = (searchQuery, searchFilters) => {
+    setSearchParams({ q: searchQuery });
+    fetchSearchResults(searchQuery, searchFilters || filters);
+  };
+
+  const handleFilterChange = newFilters => {
+    setFilters(newFilters);
+    if (query) {
+      fetchSearchResults(query, newFilters);
+    }
+  };
+
+  const popularSearches = [
+    'Avengers',
+    'Naruto',
+    'One Piece',
+    'Spider-Man',
+    'Demon Slayer',
+    'The Batman',
+    'Stranger Things',
+    'Breaking Bad',
+  ];
+
+  return (
+    <div className="px-4 sm:px-8 md:px-16 pt-28 pb-20">
+      {/* Advanced Search */}
+      <div className="mb-12">
+        <AdvancedSearch
+          onSearch={handleSearch}
+          onFilterChange={handleFilterChange}
+          placeholder="Search movies, anime, dramas, and more..."
+          showFilters={true}
+          popularSearches={popularSearches}
+        />
+      </div>
+
+      {/* Results Header */}
+      {query && (
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold mb-2">Search Results for "{query}"</h2>
+          <p className="text-gray-400">
+            {isLoading ? 'Searching...' : `${results.length} results found`}
+          </p>
         </div>
-    );
+      )}
+
+      {/* Results Grid */}
+      {isLoading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+          <PosterSkeleton count={12} />
+        </div>
+      ) : results.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+          {results.map(item => (
+            <OptimizedPoster
+              key={item.id}
+              item={item}
+              onClick={onOpenModal}
+              isWatched={id => isWatched(id)}
+              showTitle={true}
+            />
+          ))}
+        </div>
+      ) : query ? (
+        <div className="text-center py-20">
+          <div className="text-6xl mb-4">🔍</div>
+          <h3 className="text-2xl font-bold mb-2">No results found</h3>
+          <p className="text-gray-400 mb-6">Try adjusting your search or filters</p>
+          <button
+            onClick={() => {
+              setSearchParams({});
+              setFilters({
+                year: '',
+                genre: '',
+                language: '',
+                rating: { min: 0, max: 10 },
+                sortBy: 'popularity',
+              });
+            }}
+            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors"
+          >
+            Clear Search
+          </button>
+        </div>
+      ) : (
+        <div className="text-center py-20">
+          <div className="text-6xl mb-4">🎬</div>
+          <h3 className="text-2xl font-bold mb-2">Start searching</h3>
+          <p className="text-gray-400">Enter a query above to find movies, anime, and dramas</p>
+        </div>
+      )}
+    </div>
+  );
 };

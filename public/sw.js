@@ -77,4 +77,104 @@ self.addEventListener('fetch', event => {
   }
 });
 
+// ============================================
+// DOWNLOAD MANAGER SUPPORT
+// ============================================
+
+const DOWNLOAD_CACHE = 'nikzflix-downloads-v1';
+
+// Listen for download requests from the app
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'DOWNLOAD_VIDEO') {
+    const { url, id, metadata } = event.data;
+    handleDownload(url, id, metadata, event.ports[0]);
+  } else if (event.data && event.data.type === 'DELETE_DOWNLOAD') {
+    const { id } = event.data;
+    handleDeleteDownload(id);
+  }
+});
+
+// Handle video download with progress tracking
+async function handleDownload(url, id, metadata, port) {
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      port.postMessage({ type: 'ERROR', error: 'Failed to fetch video' });
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const contentLength = +response.headers.get('Content-Length');
+
+    let receivedLength = 0;
+    let chunks = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) break;
+
+      chunks.push(value);
+      receivedLength += value.length;
+
+      // Send progress update
+      if (contentLength) {
+        const progress = (receivedLength / contentLength) * 100;
+        port.postMessage({ type: 'PROGRESS', progress });
+      }
+    }
+
+    // Combine chunks into single blob
+    const blob = new Blob(chunks);
+
+    // Cache the downloaded video
+    const cache = await caches.open(DOWNLOAD_CACHE);
+    const cacheResponse = new Response(blob, {
+      headers: {
+        'Content-Type': response.headers.get('Content-Type'),
+        'Content-Length': receivedLength,
+        'X-Download-Metadata': JSON.stringify(metadata),
+      },
+    });
+
+    await cache.put(`/download/${id}`, cacheResponse);
+
+    // Notify completion
+    port.postMessage({ type: 'COMPLETE', size: receivedLength });
+  } catch (error) {
+    console.error('Download error:', error);
+    port.postMessage({ type: 'ERROR', error: error.message });
+  }
+}
+
+// Handle download deletion
+async function handleDeleteDownload(id) {
+  try {
+    const cache = await caches.open(DOWNLOAD_CACHE);
+    await cache.delete(`/download/${id}`);
+  } catch (error) {
+    console.error('Delete error:', error);
+  }
+}
+
+// Serve downloaded videos
+registerRoute(
+  ({ url }) => url.pathname.startsWith('/download/'),
+  async ({ url }) => {
+    const cache = await caches.open(DOWNLOAD_CACHE);
+    const response = await cache.match(url.pathname);
+
+    if (response) {
+      return response;
+    }
+
+    return new Response('Download not found', { status: 404 });
+  }
+);
+
+// ============================================
+// END DOWNLOAD MANAGER SUPPORT
+// ============================================
+
 console.log('🚀 Service Worker Loaded - NikzFlix TV PWA Ready!');

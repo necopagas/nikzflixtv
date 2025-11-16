@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SANTA_HAT_USER } from '../assets/santaHatUser';
 import { useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { LevelBadge } from './LevelBadge';
 // Icons (use react-icons for consistent, lightweight icons)
 import {
   FaSearch,
@@ -20,12 +21,17 @@ const PRIMARY_NAV_LINKS = [
   { to: '/drama', label: 'Drama' },
   { to: '/manga', label: 'Manga' },
   { to: '/my-list', label: 'My List' },
+  { to: '/recommendations', label: 'For You' },
   { to: '/live-tv', label: 'Live TV' },
   { to: '/videoke', label: 'Videoke' },
 ];
 
 const MORE_NAV_LINKS = [
   { to: '/vivamax', label: 'Vivamax' },
+  { to: '/stats', label: 'Stats' },
+  { to: '/playlists', label: 'Playlists' },
+  { to: '/achievements', label: 'Achievements' },
+  { to: '/downloads', label: 'Downloads' },
   { to: '/chat-room', label: 'Chat Room' },
 ];
 
@@ -320,6 +326,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
             >
               {theme === 'light' ? <FaMoon /> : <FaSun />}
             </button>
+            <LevelBadge />
             <div className="clock text-xl font-semibold whitespace-nowrap">{clock}</div>
           </div>
 

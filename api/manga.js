@@ -13,8 +13,6 @@ export default async function handler(req, res) {
         return await handleManganelo(req, res, { action, ...params });
       case 'mangapanda':
         return await handleMangapanda(req, res, { action, ...params });
-      case 'cover':
-        return await handleMangaCover(req, res, { action, ...params });
       default:
         return res.status(400).json({ error: 'Invalid manga source' });
     }
@@ -23,7 +21,6 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to fetch data', details: error.message });
   }
 }
-
 // Import and adapt the existing handlers
 // WeebCentral handler
 async function handleWeebCentral(req, res, params) {
@@ -429,6 +426,7 @@ async function handleMangapanda(req, res, params) {
   }
 }
 
+// eslint-disable-next-line no-unused-vars
 async function handleMangaCover(req, res, params) {
   const { imageUrl, referer, mangaId, fileName, size } = params;
 
@@ -695,6 +693,363 @@ function parseChapterPagesMangapill(html) {
       img: imageUrl,
     });
     pageNum++;
+  }
+
+  return pages;
+}
+
+const MANGAHERE_HOST = 'https://www.mangahere.cc';
+const DEFAULT_MANGAHERE_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  Accept:
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'Cache-Control': 'no-cache',
+  Pragma: 'no-cache',
+};
+
+const FALLBACK_MANGAHERE_RESULTS = [
+  {
+    id: 'manga/naruto',
+    slug: 'manga/naruto',
+    title: 'Naruto',
+    coverImage: 'https://via.placeholder.com/256x384?text=Naruto',
+    source: 'mangahere',
+  },
+  {
+    id: 'manga/one-piece',
+    slug: 'manga/one-piece',
+    title: 'One Piece',
+    coverImage: 'https://via.placeholder.com/256x384?text=One+Piece',
+    source: 'mangahere',
+  },
+  {
+    id: 'manga/solo-leveling',
+    slug: 'manga/solo-leveling',
+    title: 'Solo Leveling',
+    coverImage: 'https://via.placeholder.com/256x384?text=Solo+Leveling',
+    source: 'mangahere',
+  },
+];
+
+const MANGAHERE_RESULT_LIMIT = 40;
+
+async function fetchMangahereHtml(url) {
+  const response = await fetch(url, {
+    headers: DEFAULT_MANGAHERE_HEADERS,
+    signal: AbortSignal.timeout(30000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Mangahere request failed with ${response.status}`);
+  }
+
+  return await response.text();
+}
+
+function ensureMangahereUrl(value) {
+  if (!value) {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  if (trimmed.startsWith('//')) {
+    return `https:${trimmed}`;
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return `${MANGAHERE_HOST}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
+}
+
+function stripHtml(value) {
+  if (!value) return '';
+  return value
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parseMangahereMangaList(html) {
+  const regex = /<a[^>]+href="(\/manga\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+  const results = [];
+  const seen = new Set();
+  let match;
+
+  while ((match = regex.exec(html)) !== null) {
+    const [, href, inner] = match;
+    if (!href || !inner) {
+      continue;
+    }
+
+    if (href.toLowerCase().includes('/chapter/')) {
+      continue;
+    }
+
+    const normalized = href.replace(/^\/+/, '').replace(/\/+$/, '');
+    if (seen.has(normalized)) {
+      continue;
+    }
+
+    const imgMatch = inner.match(/(?:data-lazy-src|data-src|src)="([^"]+)"/i);
+    if (!imgMatch) {
+      continue;
+    }
+
+    const titleMatch = inner.match(/alt="([^"]+)"/i) || inner.match(/title="([^"]+)"/i);
+    const rawTitle = titleMatch ? titleMatch[1].trim() : stripHtml(inner).split('\n')[0];
+    const title = rawTitle || normalized.replace(/manga\//i, '').replace(/[-_]/g, ' ');
+    const descriptionMatch = inner.match(/<p[^>]*class="description"[^>]*>([\s\S]*?)<\/p>/i);
+    const summary = descriptionMatch ? stripHtml(descriptionMatch[1]) : 'Click to view details';
+
+    const coverImage = ensureMangahereUrl(imgMatch[1]);
+
+    seen.add(normalized);
+    results.push({
+      id: normalized,
+      slug: normalized,
+      title,
+      description: summary,
+      status: 'unknown',
+      rating: 'safe',
+      tags: [],
+      coverImage,
+      source: 'mangahere',
+    });
+
+    if (results.length >= MANGAHERE_RESULT_LIMIT) {
+      break;
+    }
+  }
+
+  return results;
+}
+
+function parseSeriesInfoMangahere(html) {
+  const titleMatch = html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+  const descriptionMatch =
+    html.match(/<div[^>]*class="manga-detail"[^>]*>([\s\S]*?)<div[^>]*class="manga-other"/i) ||
+    html.match(/<p[^>]*class="desc"[^>]*>([\s\S]*?)<\/p>/i) ||
+    html.match(
+      /<div[^>]*class="story-info-right"[^>]*>([\s\S]*?)<div[^>]*class="story-info-right-act/i
+    );
+  const coverMatch =
+    html.match(/<div[^>]*class="cover">[\s\S]*?<img[^>]*(?:data-src|src)="([^"]+)"/i) ||
+    html.match(/<img[^>]*class="cover"[^>]*(?:data-src|src)="([^"]+)"/i);
+  const statusMatch = html.match(/Status\s*<\/span>\s*([^<]+)/i);
+  const authorMatch = html.match(
+    /Author[s]?:\s*<\/span>\s*(?:<a[^>]*>\s*([^<]+)\s*<\/a>|([^<]+))/i
+  );
+  const artistMatch = html.match(
+    /Artist[s]?:\s*<\/span>\s*(?:<a[^>]*>\s*([^<]+)\s*<\/a>|([^<]+))/i
+  );
+  const genresMatch = html.match(/Genres?:\s*<\/span>([\s\S]*?)<\/p>/i);
+
+  const genres = [];
+  if (genresMatch) {
+    const anchorRegex = /<a[^>]*>([^<]+)<\/a>/gi;
+    let genreMatch;
+    while ((genreMatch = anchorRegex.exec(genresMatch[1])) !== null) {
+      const genre = genreMatch[1].trim();
+      if (genre) {
+        genres.push(genre);
+      }
+    }
+  }
+
+  return {
+    title: titleMatch ? titleMatch[1].trim() : 'Manga',
+    description: descriptionMatch ? stripHtml(descriptionMatch[1]) : 'No description available',
+    coverImage: coverMatch ? ensureMangahereUrl(coverMatch[1]) : '',
+    status: statusMatch ? statusMatch[1].trim() : 'unknown',
+    author: authorMatch ? authorMatch[1] || authorMatch[2] || 'Unknown' : 'Unknown',
+    artist: artistMatch ? artistMatch[1] || artistMatch[2] || 'Unknown' : 'Unknown',
+    genres,
+  };
+}
+
+async function handleMangahereListResponse(res, url) {
+  try {
+    const html = await fetchMangahereHtml(url);
+    const results = parseMangahereMangaList(html);
+
+    if (!results.length) {
+      return res.status(200).json({ results: FALLBACK_MANGAHERE_RESULTS });
+    }
+
+    return res.status(200).json({ results });
+  } catch (error) {
+    console.error('Mangahere list error:', error);
+    return res.status(502).json({ error: 'Failed to load Mangahere list', details: error.message });
+  }
+}
+
+// eslint-disable-next-line no-unused-vars
+async function handleMangahereSearch(req, res, query) {
+  if (!query) {
+    return res.status(400).json({ error: 'query parameter required' });
+  }
+
+  const searchUrl = `${MANGAHERE_HOST}/search?keyword=${encodeURIComponent(query)}`;
+  return await handleMangahereListResponse(res, searchUrl);
+}
+
+// eslint-disable-next-line no-unused-vars
+async function handleMangaherePopular(req, res) {
+  return await handleMangahereListResponse(res, MANGAHERE_HOST);
+}
+
+// eslint-disable-next-line no-unused-vars
+async function handleMangahereSeries(req, res, mangaId) {
+  if (!mangaId) {
+    return res.status(400).json({ error: 'mangaId parameter required' });
+  }
+
+  const targetUrl = normalizeMangahereUrl(mangaId, 'manga');
+
+  try {
+    const html = await fetchMangahereHtml(targetUrl);
+    const series = parseSeriesInfoMangahere(html);
+    return res.status(200).json({ series });
+  } catch (error) {
+    console.error('Mangahere series error:', error);
+    return res
+      .status(502)
+      .json({ error: 'Failed to load Mangahere series', details: error.message });
+  }
+}
+
+// eslint-disable-next-line no-unused-vars
+async function handleMangahereChapters(req, res, mangaId) {
+  if (!mangaId) {
+    return res.status(400).json({ error: 'mangaId parameter required' });
+  }
+
+  const targetUrl = normalizeMangahereUrl(mangaId, 'manga');
+
+  try {
+    const html = await fetchMangahereHtml(targetUrl);
+    const chapters = parseChaptersMangahere(html);
+
+    if (!chapters.length) {
+      return res.status(404).json({ error: 'No Mangahere chapters found' });
+    }
+
+    return res.status(200).json({ chapters });
+  } catch (error) {
+    console.error('Mangahere chapters error:', error);
+    return res
+      .status(502)
+      .json({ error: 'Failed to load Mangahere chapters', details: error.message });
+  }
+}
+
+// eslint-disable-next-line no-unused-vars
+async function handleMangahereChapterPages(req, res, chapterId) {
+  if (!chapterId) {
+    return res.status(400).json({ error: 'chapterId parameter required' });
+  }
+
+  const targetUrl = normalizeMangahereUrl(chapterId);
+
+  try {
+    const html = await fetchMangahereHtml(targetUrl);
+    const pages = parseChapterPagesMangahere(html);
+
+    if (!pages.length) {
+      return res.status(404).json({ error: 'No Mangahere pages found' });
+    }
+
+    return res.status(200).json({ pages });
+  } catch (error) {
+    console.error('Mangahere pages error:', error);
+    return res
+      .status(502)
+      .json({ error: 'Failed to load Mangahere pages', details: error.message });
+  }
+}
+
+function normalizeMangahereUrl(pathFragment, type = 'chapter') {
+  if (!pathFragment) {
+    return null;
+  }
+
+  let trimmed = pathFragment.trim();
+  if (!/^https?:\/\//i.test(trimmed)) {
+    trimmed = trimmed.replace(/^\/+/, '');
+
+    if (type === 'manga') {
+      trimmed = trimmed.replace(/^manga\//i, '');
+      return `${MANGAHERE_HOST}/manga/${trimmed}`;
+    }
+
+    return `${MANGAHERE_HOST}/${trimmed}`;
+  }
+
+  return trimmed;
+}
+
+function parseChaptersMangahere(html) {
+  const chapters = [];
+  const seen = new Set();
+  const chapterRegex = /<a[^>]*href="(\/(?:manga|chapter)\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+
+  while ((match = chapterRegex.exec(html)) !== null) {
+    const rawUrl = match[1];
+    const href = rawUrl.startsWith('/') ? rawUrl : `/${rawUrl}`;
+    const normalizedId = href.replace(/\/+$/, '').replace(/^\/+/, '');
+
+    if (seen.has(normalizedId)) {
+      continue;
+    }
+
+    if (!normalizedId.includes('chapter')) {
+      continue;
+    }
+
+    seen.add(normalizedId);
+    const titleText = match[2].trim().replace(/<[^>]+>/g, '');
+    const chapterMatch = titleText.match(/Chapter\s*([\d.]+)/i) || titleText.match(/([\d.]+)/);
+    const chapterNumber = chapterMatch ? parseFloat(chapterMatch[1]) : null;
+
+    chapters.push({
+      id: normalizedId,
+      title: titleText || `Chapter ${chapterNumber ?? chapters.length + 1}`,
+      chapter: chapterNumber,
+    });
+  }
+
+  return chapters.reverse();
+}
+
+function parseChapterPagesMangahere(html) {
+  const viewerMatch = html.match(/<div[^>]*id="viewer"[^>]*>([\s\S]*?)<\/div>/i);
+  const content = viewerMatch ? viewerMatch[1] : html;
+  const pages = [];
+  const seen = new Set();
+  const imageRegex = /<img[^>]*(?:data-src|data-lazy-src|src)="([^"]+)"[^>]*>/gi;
+  let match;
+
+  while ((match = imageRegex.exec(content)) !== null) {
+    const imageUrl = match[1];
+    if (!imageUrl || seen.has(imageUrl)) {
+      continue;
+    }
+
+    if (!imageUrl.includes('mangahere.cc')) {
+      continue;
+    }
+
+    seen.add(imageUrl);
+    pages.push({
+      page: pages.length + 1,
+      img: imageUrl,
+    });
   }
 
   return pages;

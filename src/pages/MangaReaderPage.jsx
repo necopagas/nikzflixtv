@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   FaSearch,
@@ -8,7 +8,14 @@ import {
   FaEye,
   FaExclamationTriangle,
   FaFilter,
+  FaDownload,
 } from 'react-icons/fa';
+import {
+  getContinueList,
+  getDownloadQueue,
+  removeContinueEntry,
+  removeQueueEntry,
+} from '../utils/tachiyomiStorage';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
 // Popular manga genres from MangaDex
@@ -33,55 +40,18 @@ const MANGA_GENRES = [
 // Manga sources from different providers
 const MANGA_SOURCES = [
   {
-    name: 'WeebCentral',
-    id: 'weebcentral',
-    api: 'weebcentral',
-    baseUrl: 'https://weebcentral.com',
+    name: 'Mangahere',
+    id: 'mangahere',
+    api: 'mangahere',
+    baseUrl: 'https://www.mangahere.cc',
     lang: 'en',
     nsfw: false,
-    info: 'Extensive manga library with full reading support - ✅ Best for Reading (Complete chapters available)',
-    useWeebCentral: true,
+    info: 'Official Mangahere catalog with the full library and chapters - currently the only supported source',
     working: true,
     canRead: true,
     cloudflareProtected: true,
     fallbackMessage:
-      'WeebCentral uses Cloudflare protection. For full access, run the local proxy server with: npm run dev:with-proxy',
-  },
-  {
-    name: 'Mangakakalot',
-    id: 'mangakakalot',
-    api: 'mangakakalot',
-    baseUrl: 'https://mangapill.com',
-    lang: 'en',
-    nsfw: false,
-    info: 'Popular manga source with extensive collection (now using Mangapill) - ✅ Full reading support',
-    working: true,
-    canRead: true,
-    cloudflareProtected: false,
-  },
-  {
-    name: 'Manganelo',
-    id: 'manganelo',
-    api: 'manganelo',
-    baseUrl: 'https://mangapill.com',
-    lang: 'en',
-    nsfw: false,
-    info: 'Large manga library (using Mangapill) - ✅ Full reading support',
-    working: true,
-    canRead: true,
-    cloudflareProtected: false,
-  },
-  {
-    name: 'MangaPanda',
-    id: 'mangapanda',
-    api: 'mangapanda',
-    baseUrl: 'https://mangapill.com',
-    lang: 'en',
-    nsfw: false,
-    info: 'Classic manga reading site (using Mangapill) - ✅ Full reading support',
-    working: true,
-    canRead: true,
-    cloudflareProtected: false,
+      'Mangahere pages may be protected depending on your location. If you hit barriers, try again in a few minutes.',
   },
 ];
 
@@ -94,10 +64,66 @@ const MangaReaderPage = () => {
   const [recentUpdates, setRecentUpdates] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingRecent, setIsLoadingRecent] = useState(false);
-  const [selectedSource, setSelectedSource] = useState('weebcentral');
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [viewMode, setViewMode] = useState('popular'); // 'popular' or 'recent'
   const [error, setError] = useState(null);
+  const currentSourceId = MANGA_SOURCES[0]?.id || 'mangahere';
+  const currentSourceObj = MANGA_SOURCES[0] || null;
+  const [continueList, setContinueList] = useState([]);
+  const [downloadQueue, setDownloadQueue] = useState([]);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortOrder, setSortOrder] = useState('recent');
+
+  useEffect(() => {
+    const loadLists = () => {
+      setContinueList(getContinueList());
+      setDownloadQueue(getDownloadQueue());
+    };
+
+    loadLists();
+    if (typeof window === 'undefined') return () => {};
+    const handleStorageUpdate = () => loadLists();
+    window.addEventListener('tachiyomi-storage', handleStorageUpdate);
+    return () => window.removeEventListener('tachiyomi-storage', handleStorageUpdate);
+  }, []);
+
+  const handleContinueNavigation = entry => {
+    if (!entry?.mangaId) return;
+    const encodedId = encodeURIComponent(entry.mangaId);
+    let url = `/manga/${encodedId}?source=${currentSourceId}`;
+    if (entry.chapterId) {
+      url += `&chapter=${encodeURIComponent(entry.chapterId)}`;
+    }
+    navigate(url);
+  };
+
+  const handleRemoveContinue = mangaId => {
+    if (!mangaId) return;
+    removeContinueEntry(mangaId);
+  };
+
+  const handleRemoveQueue = chapterId => {
+    if (!chapterId) return;
+    removeQueueEntry(chapterId);
+  };
+
+  const filteredContinueList = useMemo(() => {
+    if (!continueList || continueList.length === 0) return [];
+    let list = [...continueList];
+    if (statusFilter !== 'all') {
+      list = list.filter(entry => (entry.status || '').toLowerCase() === statusFilter);
+    }
+    if (sortOrder === 'alphabetical') {
+      list.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    } else {
+      list.sort(
+        (a, b) =>
+          new Date(b.updatedAt || b.timestamp || 0).getTime() -
+          new Date(a.updatedAt || a.timestamp || 0).getTime()
+      );
+    }
+    return list;
+  }, [continueList, statusFilter, sortOrder]);
 
   // Helper function to fetch from AniList
   const fetchAniList = async (action, params = {}) => {
@@ -207,6 +233,23 @@ const MangaReaderPage = () => {
       return await response.json();
     } catch (error) {
       console.error('Error fetching from MangaPanda:', error);
+      throw error;
+    }
+  };
+
+  const fetchMangahere = async (action, params = {}) => {
+    try {
+      const queryParams = new URLSearchParams({
+        source: 'mangahere',
+        action,
+        ...params,
+      }).toString();
+      const response = await fetch(`/api/manga?${queryParams}`);
+
+      if (!response.ok) throw new Error('Mangahere request failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching from Mangahere:', error);
       throw error;
     }
   };
@@ -370,6 +413,16 @@ const MangaReaderPage = () => {
     }
   };
 
+  const searchMangahere = async query => {
+    try {
+      const data = await fetchMangahere('search', { query });
+      return data?.results || [];
+    } catch (err) {
+      console.error('Error searching Mangahere:', err);
+      return [];
+    }
+  };
+
   // Fetch popular manga based on selected source
   const fetchPopularManga = async () => {
     try {
@@ -377,8 +430,26 @@ const MangaReaderPage = () => {
       setError(null);
 
       let manga = [];
+      const sourceId = currentSourceId;
 
-      if (selectedSource === 'weebcentral') {
+      if (sourceId === 'mangahere') {
+        const data = await fetchMangahere('popular');
+
+        if (data?.results) {
+          manga = data.results.map(item => ({
+            id: item.id,
+            slug: item.slug,
+            title: item.title || 'Unknown Title',
+            description: item.description || 'Click to view details',
+            coverImage: item.coverImage || 'https://via.placeholder.com/256x384?text=No+Cover',
+            status: item.status || 'unknown',
+            rating: 'safe',
+            year: null,
+            tags: item.tags || item.genres || [],
+            source: 'mangahere',
+          }));
+        }
+      } else if (sourceId === 'weebcentral') {
         // Fetch from WeebCentral
         const data = await fetchWeebCentral('popular');
 
@@ -396,7 +467,7 @@ const MangaReaderPage = () => {
             source: 'weebcentral',
           }));
         }
-      } else if (selectedSource === 'anilist') {
+      } else if (sourceId === 'anilist') {
         // Fetch from AniList
         const data = await fetchAniList('popular', { perPage: 20 });
 
@@ -418,7 +489,7 @@ const MangaReaderPage = () => {
           volumes: item.volumes,
           source: 'anilist',
         }));
-      } else if (selectedSource === 'kitsu') {
+      } else if (sourceId === 'kitsu') {
         // Fetch from Kitsu
         const data = await fetchKitsu('popular', { page: 1 });
 
@@ -448,7 +519,7 @@ const MangaReaderPage = () => {
           volumes: item.attributes.volumeCount,
           source: 'kitsu',
         }));
-      } else if (selectedSource === 'mangakakalot') {
+      } else if (sourceId === 'mangakakalot') {
         // Fetch from Mangakakalot
         const data = await fetchMangakakalot('popular');
 
@@ -465,7 +536,7 @@ const MangaReaderPage = () => {
             source: 'mangakakalot',
           }));
         }
-      } else if (selectedSource === 'manganelo') {
+      } else if (sourceId === 'manganelo') {
         // Fetch from Manganelo
         const data = await fetchManganelo('popular');
 
@@ -482,7 +553,7 @@ const MangaReaderPage = () => {
             source: 'manganelo',
           }));
         }
-      } else if (selectedSource === 'mangapanda') {
+      } else if (sourceId === 'mangapanda') {
         // Fetch from MangaPanda
         const data = await fetchMangaPanda('popular');
 
@@ -507,7 +578,7 @@ const MangaReaderPage = () => {
 
       // Check if it's a Cloudflare/Vercel protection error
       const errorMessage = err.message || '';
-      const selectedSourceObj = MANGA_SOURCES.find(s => s.id === selectedSource);
+      const selectedSourceObj = currentSourceObj;
 
       if (
         errorMessage.includes('Cloudflare') ||
@@ -516,13 +587,13 @@ const MangaReaderPage = () => {
       ) {
         const fallbackMessage =
           selectedSourceObj?.fallbackMessage ||
-          `This source is protected and may not work in all environments. Try using Mangakakalot, Manganelo, or MangaPanda instead.`;
+          `This source is protected and may not work in all environments. Please try again later.`;
         setError(
           `${selectedSourceObj?.name || 'Source'} is currently unavailable due to protection measures. ${fallbackMessage}`
         );
       } else {
         setError(
-          `Failed to load manga from ${selectedSourceObj?.name || 'selected source'}. Please try again or switch to a different source.`
+          `Failed to load manga from ${selectedSourceObj?.name || 'selected source'}. Please try again later.`
         );
       }
     } finally {
@@ -548,17 +619,6 @@ const MangaReaderPage = () => {
     }
   };
 
-  // Handle source selection
-  const handleSourceChange = sourceId => {
-    setSelectedSource(sourceId);
-    // Reload manga for new source
-    if (searchQuery) {
-      handleSearch(searchQuery);
-    } else {
-      fetchPopularManga();
-    }
-  };
-
   // Handle genre filter change
   const handleGenreChange = genre => {
     setSelectedGenre(genre);
@@ -580,18 +640,21 @@ const MangaReaderPage = () => {
       setIsLoading(true);
       setError(null);
 
+      const sourceId = currentSourceId;
       let results;
-      if (selectedSource === 'weebcentral') {
+      if (sourceId === 'mangahere') {
+        results = await searchMangahere(query);
+      } else if (sourceId === 'weebcentral') {
         results = await searchWeebCentral(query);
-      } else if (selectedSource === 'mangakakalot') {
+      } else if (sourceId === 'mangakakalot') {
         results = await searchMangakakalot(query);
-      } else if (selectedSource === 'manganelo') {
+      } else if (sourceId === 'manganelo') {
         results = await searchManganelo(query);
-      } else if (selectedSource === 'mangapanda') {
+      } else if (sourceId === 'mangapanda') {
         results = await searchMangaPanda(query);
-      } else if (selectedSource === 'anilist') {
+      } else if (sourceId === 'anilist') {
         results = await searchAniList(query);
-      } else if (selectedSource === 'kitsu') {
+      } else if (sourceId === 'kitsu') {
         results = await searchKitsu(query);
       } else {
         // Default to weebcentral if no source matches
@@ -609,7 +672,7 @@ const MangaReaderPage = () => {
 
       // Check for Cloudflare or protection errors
       const errorMessage = err.message || '';
-      const selectedSourceObj = MANGA_SOURCES.find(s => s.id === selectedSource);
+      const selectedSourceObj = currentSourceObj;
 
       if (
         errorMessage.includes('Cloudflare') ||
@@ -618,13 +681,13 @@ const MangaReaderPage = () => {
       ) {
         const fallbackMessage =
           selectedSourceObj?.fallbackMessage ||
-          `This source is protected and may not work in all environments. Try using Mangakakalot, Manganelo, or MangaPanda instead.`;
+          `This source is protected and may not work in all environments. Please try again later.`;
         setError(
           `${selectedSourceObj?.name || 'Source'} is currently unavailable due to protection measures. ${fallbackMessage}`
         );
       } else {
         setError(
-          `Failed to search manga from ${selectedSourceObj?.name || 'selected source'}. Please try again or switch to a different source.`
+          `Failed to search manga from ${selectedSourceObj?.name || 'selected source'}. Please try again later.`
         );
       }
     } finally {
@@ -646,7 +709,7 @@ const MangaReaderPage = () => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSource, selectedGenre, viewMode]); // Re-fetch when source, genre, or view mode changes
+  }, [selectedGenre, viewMode]); // Re-fetch when genre or view mode changes
 
   // Handle search input
   const onSearchSubmit = e => {
@@ -655,64 +718,62 @@ const MangaReaderPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Enhanced Header with Animated Gradient */}
-        <div className="mb-10 text-center relative overflow-hidden rounded-3xl p-8 bg-gradient-to-r from-purple-900/30 via-pink-900/30 to-blue-900/30 border border-purple-500/20 backdrop-blur-sm">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-blue-600/10 animate-pulse" />
-          <h1 className="relative text-5xl md:text-6xl font-black mb-3 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent drop-shadow-lg">
-            📚 Manga Reader
-          </h1>
-          <p className="relative text-gray-300 text-lg font-medium drop-shadow-md">
-            Discover and read thousands of manga from WeebCentral
+    <div className="min-h-screen bg-[#0b0b10] text-white">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <header className="mb-6 border-b border-gray-800 pb-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.4em] text-gray-500">Web Manga Reader</p>
+              <h1 className="text-3xl font-semibold">Library</h1>
+            </div>
+            <span className="text-xs font-medium text-gray-400">Mangahere • Web Source</span>
+          </div>
+          <p className="mt-2 text-sm text-gray-400">
+            Minimal layout inspired by Tachiyomi’s entry screen. Scroll to browse and tap a cover to
+            open the reader.
           </p>
+        </header>
+
+        {/* Extensions Banner */}
+        <div className="mb-6 rounded-2xl bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-500/30 p-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <FaDownload className="text-purple-400 w-6 h-6" />
+              <div>
+                <h3 className="text-sm font-semibold">Need more manga sources?</h3>
+                <p className="text-xs text-gray-400">
+                  Download 100+ Tachiyomi/Aniyomi extensions para sa mobile (APK format)
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/manga-extensions')}
+              className="px-5 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
+            >
+              Get Extensions →
+            </button>
+          </div>
         </div>
 
-        {/* Enhanced Search Bar with Glow Effect */}
-        <form onSubmit={onSearchSubmit} className="mb-10">
-          <div className="relative max-w-3xl mx-auto group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 group-focus-within:opacity-60 transition-all duration-300" />
-            <div className="relative flex items-center bg-gray-800/90 backdrop-blur-md rounded-2xl shadow-2xl border border-purple-500/30">
-              <FaSearch className="absolute left-5 text-purple-400 text-xl group-focus-within:text-pink-400 transition-colors" />
-              <input
-                type="text"
-                placeholder="Search for your favorite manga..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-14 pr-6 py-5 bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded-2xl focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/50 text-white text-lg placeholder-gray-500 transition-all"
-              />
-            </div>
+        {/* Tachiyomi-style search */}
+        <form onSubmit={onSearchSubmit} className="mb-8">
+          <div className="relative max-w-3xl mx-auto">
+            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+            <input
+              type="text"
+              placeholder="Search Mangahere..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full rounded-2xl bg-gray-900 border border-gray-800 px-4 py-3 pl-12 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/60"
+            />
           </div>
         </form>
 
-        {/* Source Selector */}
-        <div className="mb-8">
-          <h3 className="text-center text-sm font-semibold text-gray-400 mb-4 uppercase tracking-wider">
-            Select Source
-          </h3>
-          <div className="flex flex-wrap justify-center gap-3 max-w-xl mx-auto">
-            {MANGA_SOURCES.map(source => (
-              <button
-                key={source.id}
-                onClick={() => handleSourceChange(source.id)}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 ${
-                  selectedSource === source.id
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
-                    : 'bg-gray-800/60 text-gray-300 hover:bg-gray-700/80 hover:text-white backdrop-blur-sm border border-gray-700'
-                }`}
-              >
-                {source.name}
-              </button>
-            ))}
-          </div>
-          {MANGA_SOURCES.find(s => s.id === selectedSource)?.info && (
-            <div className="text-center mt-4">
-              <p className="inline-flex items-center gap-2 text-sm text-gray-400 bg-gray-800/50 px-4 py-2 rounded-lg backdrop-blur-sm">
-                <FaBook className="text-purple-400" />
-                {MANGA_SOURCES.find(s => s.id === selectedSource).info}
-              </p>
-            </div>
-          )}
+        {/* Source Banner */}
+        <div className="mb-8 text-center">
+          <p className="text-xs uppercase tracking-widest text-purple-300 mb-2">Source</p>
+          <p className="text-lg font-semibold text-white">Mangahere (default + only option)</p>
+          <p className="mt-2 text-sm text-gray-400 max-w-2xl mx-auto">{MANGA_SOURCES[0]?.info}</p>
         </div>
 
         {/* Enhanced Genre Filter */}
@@ -742,32 +803,165 @@ const MangaReaderPage = () => {
           </div>
         </div>
 
-        {/* Enhanced View Mode Toggle */}
-        <div className="mb-10">
-          <div className="flex justify-center gap-4 max-w-xl mx-auto">
-            <button
-              onClick={() => setViewMode('popular')}
-              className={`group flex-1 flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 ${
-                viewMode === 'popular'
-                  ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-xl shadow-orange-500/50'
-                  : 'bg-gray-800/60 text-gray-400 hover:bg-gray-700/80 backdrop-blur-sm border border-gray-700'
-              }`}
-            >
-              <FaFire className={`text-2xl ${viewMode === 'popular' ? 'animate-pulse' : ''}`} />
-              <span>Popular</span>
-            </button>
-            <button
-              onClick={() => setViewMode('recent')}
-              className={`group flex-1 flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 ${
-                viewMode === 'recent'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl shadow-blue-500/50'
-                  : 'bg-gray-800/60 text-gray-400 hover:bg-gray-700/80 backdrop-blur-sm border border-gray-700'
-              }`}
-            >
-              <FaBook className={`text-2xl ${viewMode === 'recent' ? 'animate-bounce' : ''}`} />
-              <span>Recent</span>
-            </button>
+        {/* Tachiyomi-style tabs */}
+        <div className="mb-6 flex items-center justify-center">
+          <div className="flex rounded-full bg-gray-900 border border-gray-800 p-1">
+            {[
+              { id: 'popular', label: 'Popular', icon: FaFire },
+              { id: 'recent', label: 'Recent', icon: FaBook },
+            ].map(option => {
+              const Icon = option.icon;
+              const isActive = viewMode === option.id;
+              return (
+                <button
+                  key={option.id}
+                  onClick={() => setViewMode(option.id)}
+                  className={`flex items-center gap-2 px-6 py-2 rounded-full text-sm font-semibold transition-colors ${
+                    isActive ? 'bg-white text-gray-900 shadow-lg' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Icon className="text-base" />
+                  {option.label}
+                </button>
+              );
+            })}
           </div>
+        </div>
+
+        {/* Tachiyomi continue & queue */}
+        <div className="mb-8 grid gap-6 lg:grid-cols-[1.4fr,0.8fr]">
+          <section className="rounded-3xl border border-gray-800 bg-gradient-to-b from-gray-900/60 to-gray-900 p-5 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-gray-500">Continue</p>
+                <h3 className="text-xl font-semibold">Continue Reading</h3>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                {['all', 'reading', 'completed'].map(status => (
+                  <button
+                    key={status}
+                    onClick={() => setStatusFilter(status)}
+                    className={`px-3 py-1 rounded-full transition-colors ${
+                      statusFilter === status
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                    }`}
+                  >
+                    {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
+                  </button>
+                ))}
+                <div className="flex items-center gap-1 text-gray-400">
+                  <span className="text-[10px] uppercase tracking-wider">Sort</span>
+                  <button
+                    onClick={() => setSortOrder('recent')}
+                    className={`px-3 py-1 rounded-full text-xs ${
+                      sortOrder === 'recent'
+                        ? 'bg-white text-gray-900'
+                        : 'bg-gray-800 text-gray-400'
+                    }`}
+                  >
+                    Recent
+                  </button>
+                  <button
+                    onClick={() => setSortOrder('alphabetical')}
+                    className={`px-3 py-1 rounded-full text-xs ${
+                      sortOrder === 'alphabetical'
+                        ? 'bg-white text-gray-900'
+                        : 'bg-gray-800 text-gray-400'
+                    }`}
+                  >
+                    Title
+                  </button>
+                </div>
+              </div>
+            </div>
+            {filteredContinueList.length === 0 ? (
+              <p className="text-sm text-gray-500">Start reading a manga to appear here.</p>
+            ) : (
+              <div className="space-y-3">
+                {filteredContinueList.map(entry => (
+                  <div
+                    key={`${entry.mangaId}-${entry.chapterId || 'latest'}`}
+                    className="flex items-center justify-between rounded-2xl border border-gray-800 bg-gray-900 px-4 py-3"
+                  >
+                    <button
+                      className="text-left"
+                      type="button"
+                      onClick={() => handleContinueNavigation(entry)}
+                    >
+                      <p className="text-sm font-semibold text-white line-clamp-1">
+                        {entry.title || 'Unknown Title'}
+                      </p>
+                      <p className="text-[11px] text-gray-400">
+                        {entry.chapterName || entry.chapter || 'Continue chapter'} •{' '}
+                        {entry.status ? entry.status.replace('_', ' ') : 'Unknown'}
+                      </p>
+                    </button>
+                    <button
+                      className="text-xs font-semibold text-red-400"
+                      type="button"
+                      onClick={() => handleRemoveContinue(entry.mangaId)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+          <section className="rounded-3xl border border-gray-800 bg-gradient-to-b from-[#140015]/80 to-gray-900 p-5 shadow-lg">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-gray-500">Queue</p>
+                <h3 className="text-xl font-semibold flex items-center gap-2">
+                  Download Queue
+                  <FaEye className="text-sm text-gray-400" />
+                </h3>
+              </div>
+              <span className="rounded-full bg-purple-600 px-3 py-1 text-[11px] font-semibold text-white">
+                {downloadQueue.length} queued
+              </span>
+            </div>
+            {downloadQueue.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                Queued chapters show up here for offline grabs.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {downloadQueue.map(entry => (
+                  <div
+                    key={`${entry.chapterId}-${entry.mangaId}`}
+                    className="flex items-center justify-between rounded-2xl border border-gray-800 bg-gray-900 px-4 py-3"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-white line-clamp-1">
+                        {entry.chapterName || entry.chapter || 'Chapter'}
+                      </p>
+                      <p className="text-[11px] text-gray-400">
+                        {entry.title || entry.mangaTitle || 'Unknown Manga'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleContinueNavigation(entry)}
+                        className="text-[11px] text-purple-400"
+                        type="button"
+                      >
+                        Read
+                      </button>
+                      <button
+                        onClick={() => handleRemoveQueue(entry.chapterId)}
+                        className="text-[11px] font-semibold text-red-400"
+                        type="button"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
 
         {/* Enhanced Error Message */}
@@ -778,28 +972,14 @@ const MangaReaderPage = () => {
                 <FaExclamationTriangle className="text-red-400 text-xl mt-1 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-red-100 font-medium mb-3">{error}</p>
-                  {(error.includes('Cloudflare') || error.includes('protected')) &&
-                    selectedSource === 'weebcentral' && (
-                      <div className="mt-3 pt-3 border-t border-red-500/30">
-                        <p className="text-red-200 text-sm mb-3">
-                          ✨ Try these working alternatives instead:
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => setSelectedSource('anilist')}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors"
-                          >
-                            Switch to AniList
-                          </button>
-                          <button
-                            onClick={() => setSelectedSource('kitsu')}
-                            className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg text-sm font-medium transition-colors"
-                          >
-                            Switch to Kitsu
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                  {(error.includes('Cloudflare') || error.includes('protected')) && (
+                    <div className="mt-3 pt-3 border-t border-red-500/30">
+                      <p className="text-red-200 text-sm">
+                        ✨ Mangahere may be blocked in your region. Try again later or refresh the
+                        page.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -840,90 +1020,68 @@ const MangaReaderPage = () => {
               </p>
             </div>
 
-            {/* Enhanced Manga Grid */}
+            {/* Tachiyomi Library Grid */}
             {(viewMode === 'recent' ? recentUpdates : mangaList).length === 0 ? (
               <div className="text-center py-20">
                 <div className="relative inline-block">
-                  <div className="absolute inset-0 blur-2xl opacity-30 bg-purple-600 animate-pulse" />
+                  <div className="absolute inset-0 blur-2xl opacity-30 bg-blue-600 animate-pulse" />
                   <FaBook className="relative w-20 h-20 mx-auto mb-6 text-gray-600" />
                 </div>
-                <p className="text-2xl font-bold text-gray-400">No manga found</p>
-                <p className="text-gray-500 mt-2">Try adjusting your filters or search query</p>
+                <p className="text-2xl font-bold text-gray-400">Nothing yet</p>
+                <p className="text-gray-500 mt-2">Search or switch to Popular to load titles.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {(viewMode === 'recent' ? recentUpdates : mangaList).map(manga => (
                   <div
                     key={manga.id}
-                    className="group cursor-pointer"
+                    className="cursor-pointer transition-transform duration-300 hover:-translate-y-1"
                     onClick={() => {
                       const encodedId = encodeURIComponent(manga.id);
-                      let url = `/manga/${encodedId}?source=${manga.source || 'weebcentral'}`;
-                      if (manga.source === 'weebcentral' && manga.slug) {
+                      const sourceParam = manga.source || currentSourceId;
+                      let url = `/manga/${encodedId}?source=${sourceParam}`;
+                      if (manga.slug) {
                         url += `&slug=${encodeURIComponent(manga.slug)}`;
                       }
                       navigate(url);
                     }}
                   >
-                    <div className="relative overflow-hidden rounded-xl bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 shadow-lg transition-all duration-500 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-purple-500/50 group-hover:border-purple-500/50">
-                      {/* Cover Image */}
-                      <div className="aspect-[2/3] relative overflow-hidden">
+                    <div className="overflow-hidden rounded-2xl border border-gray-800 bg-gray-900 shadow-xl transition-all duration-300 hover:border-white">
+                      <div className="aspect-[2/3] bg-gray-800">
                         <img
                           src={manga.coverImage}
                           alt={manga.title}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          className="w-full h-full object-cover"
                           onError={e => {
                             e.target.src = 'https://via.placeholder.com/256x384?text=No+Image';
                           }}
                         />
-
-                        {/* Gradient Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-60" />
-
-                        {/* Hover Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <div className="absolute bottom-0 left-0 right-0 p-3">
-                            <p className="text-xs text-gray-300 line-clamp-3 mb-2 leading-relaxed">
-                              {manga.description}
-                            </p>
-                            <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                              {manga.rating && (
-                                <span
-                                  className={`px-2 py-1 rounded-full font-semibold ${
-                                    manga.rating === 'safe'
-                                      ? 'bg-green-500/90 text-white'
-                                      : manga.rating === 'suggestive'
-                                        ? 'bg-yellow-500/90 text-white'
-                                        : 'bg-red-500/90 text-white'
-                                  }`}
-                                >
-                                  {manga.rating}
-                                </span>
-                              )}
-                              {manga.status && (
-                                <span className="px-2 py-1 bg-purple-500/90 text-white rounded-full font-semibold">
-                                  {manga.status}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
                       </div>
-
-                      {/* Enhanced Info Card */}
-                      <div className="p-3 bg-gradient-to-t from-gray-900/50 to-transparent">
-                        <h3 className="font-bold text-sm line-clamp-2 mb-2 group-hover:text-purple-400 transition-colors leading-tight">
+                      <div className="px-3 py-3 space-y-1">
+                        <h3 className="text-sm font-semibold text-white line-clamp-2">
                           {manga.title}
                         </h3>
-
-                        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                        <p className="text-[11px] text-gray-400 line-clamp-2">
+                          {manga.description}
+                        </p>
+                        <div className="flex flex-wrap gap-2 text-[10px] text-gray-400">
+                          {manga.rating && (
+                            <span className="rounded-full bg-gray-800 px-2 py-1 font-semibold">
+                              {manga.rating}
+                            </span>
+                          )}
+                          {manga.status && (
+                            <span className="rounded-full bg-gray-800 px-2 py-1 font-semibold uppercase tracking-wide">
+                              {manga.status}
+                            </span>
+                          )}
                           {manga.year && (
-                            <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded-full font-medium">
+                            <span className="rounded-full bg-gray-800 px-2 py-1 font-semibold">
                               {manga.year}
                             </span>
                           )}
                           {manga.lastUpdate && viewMode === 'recent' && (
-                            <span className="px-2 py-0.5 bg-green-500/20 text-green-300 rounded-full font-medium">
+                            <span className="rounded-full bg-gray-800 px-2 py-1 font-semibold">
                               {new Date(manga.lastUpdate).toLocaleDateString('en-US', {
                                 month: 'short',
                                 day: 'numeric',
@@ -931,14 +1089,10 @@ const MangaReaderPage = () => {
                             </span>
                           )}
                         </div>
-
                         {manga.tags && manga.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {manga.tags.slice(0, 2).map((tag, idx) => (
-                              <span
-                                key={idx}
-                                className="text-xs px-2 py-0.5 bg-gray-700/50 text-gray-300 rounded-full font-medium hover:bg-purple-500/30 transition-colors"
-                              >
+                          <div className="flex flex-wrap gap-2 text-[10px] text-gray-400">
+                            {manga.tags.slice(0, 3).map((tag, idx) => (
+                              <span key={idx} className="rounded-full bg-gray-800 px-2 py-1">
                                 {tag}
                               </span>
                             ))}

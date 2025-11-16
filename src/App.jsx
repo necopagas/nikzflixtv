@@ -1,5 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense, useRef } from 'react';
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { Modal } from './components/Modal';
@@ -63,6 +63,28 @@ const MangaChapterReader = lazy(() =>
 );
 const MangaExtensionsPage = lazy(() =>
   import('./pages/MangaExtensionsPage').then(m => ({ default: m.default }))
+);
+const StatsPage = lazy(() => import('./pages/StatsPage').then(m => ({ default: m.default })));
+const PlaylistsPage = lazy(() =>
+  import('./pages/PlaylistsPage').then(m => ({ default: m.default }))
+);
+const PlaylistViewPage = lazy(() =>
+  import('./pages/PlaylistViewPage').then(m => ({ default: m.default }))
+);
+const RecommendationsPage = lazy(() =>
+  import('./pages/RecommendationsPage').then(m => ({ default: m.RecommendationsPage }))
+);
+const AchievementsPage = lazy(() =>
+  import('./pages/AchievementsPage').then(m => ({ default: m.AchievementsPage }))
+);
+const CastSettingsPage = lazy(() =>
+  import('./pages/CastSettingsPage').then(m => ({ default: m.CastSettingsPage }))
+);
+const DownloadsPage = lazy(() =>
+  import('./pages/DownloadsPage').then(m => ({ default: m.default }))
+);
+const WatchPartyJoinPage = lazy(() =>
+  import('./pages/WatchPartyJoinPage').then(m => ({ default: m.default }))
 );
 
 export default function App() {
@@ -248,13 +270,25 @@ export default function App() {
                 <VivamaxPage key="vivamax" onOpenModal={handleOpenModal} isWatched={isWatched} />
               }
             />
-            <Route path="/manga" element={<MangaReaderPage key="manga-reader" />} />
-            <Route path="/manga/:id" element={<MangaDetailPage key="manga-detail" />} />
-            <Route
-              path="/manga/:id/chapter/:chapterId"
-              element={<MangaChapterReader key="manga-chapter" />}
-            />
+            <Route path="/manga" element={<Navigate to="/manga-extensions" replace />} />
             <Route path="/manga-extensions" element={<MangaExtensionsPage key="manga-ext" />} />
+            <Route path="/stats" element={<StatsPage key="stats" />} />
+            <Route path="/playlists" element={<PlaylistsPage key="playlists" />} />
+            <Route
+              path="/playlist/:playlistId"
+              element={<PlaylistViewPage onOpenModal={handleOpenModal} isWatched={isWatched} />}
+            />
+            <Route
+              path="/recommendations"
+              element={<RecommendationsPage onOpenModal={handleOpenModal} isWatched={isWatched} />}
+            />
+            <Route path="/achievements" element={<AchievementsPage key="achievements" />} />
+            <Route path="/cast-settings" element={<CastSettingsPage key="cast-settings" />} />
+            <Route path="/downloads" element={<DownloadsPage key="downloads" />} />
+            <Route
+              path="/watch-party/:partyId"
+              element={<WatchPartyJoinPage key="watch-party" />}
+            />
           </Routes>
         </Suspense>
       </main>

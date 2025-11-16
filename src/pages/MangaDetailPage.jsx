@@ -88,12 +88,62 @@ export const MangaDetailPage = () => {
     }
   };
 
+  const fetchMangahere = async (action, params = {}) => {
+    try {
+      const queryParams = new URLSearchParams({
+        source: 'mangahere',
+        action,
+        ...params,
+      }).toString();
+      const response = await fetch(`/api/manga?${queryParams}`);
+
+      if (!response.ok) throw new Error('Mangahere request failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching from Mangahere:', error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     const fetchMangaDetails = async () => {
       try {
         setIsLoading(true);
 
-        if (source === 'weebcentral') {
+        if (source === 'mangahere') {
+          const seriesData = await fetchMangahere('series', { mangaId });
+
+          if (seriesData?.series) {
+            const s = seriesData.series;
+            setManga({
+              id: mangaId,
+              slug: slug,
+              title: s.title || 'Unknown Title',
+              description: s.description || 'No description available',
+              coverImage: s.coverImage || 'https://via.placeholder.com/512x768?text=No+Cover',
+              status: s.status || 'unknown',
+              rating: 'safe',
+              year: null,
+              author: s.author || 'Unknown',
+              artist: s.artist || 'Unknown',
+              tags: s.genres || [],
+            });
+          }
+
+          const chaptersData = await fetchMangahere('chapters', { mangaId });
+
+          if (chaptersData?.chapters) {
+            const chaptersList = chaptersData.chapters.map((ch, index) => ({
+              id: ch.id,
+              chapter: ch.chapter ? String(ch.chapter) : String(index + 1),
+              title: ch.title || `Chapter ${index + 1}`,
+              pages: 0,
+              publishAt: new Date(),
+            }));
+
+            setChapters(chaptersList);
+          }
+        } else if (source === 'weebcentral') {
           // Fetch from WeebCentral
           const seriesData = await fetchWeebCentral('series', { seriesId: mangaId });
 
@@ -252,6 +302,11 @@ export const MangaDetailPage = () => {
       const slugQuery = slug ? `&slug=${encodeURIComponent(slug)}` : '';
       navigate(
         `/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=weebcentral${slugQuery}`
+      );
+    } else if (source === 'mangahere') {
+      const slugQuery = slug ? `&slug=${encodeURIComponent(slug)}` : '';
+      navigate(
+        `/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=mangahere${slugQuery}`
       );
     } else if (source === 'mangakakalot') {
       navigate(`/manga/${encodedSeriesId}/chapter/${encodedChapterId}?source=mangakakalot`);

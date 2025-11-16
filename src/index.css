@@ -27,9 +27,22 @@ code {
   }
 }
 
+@keyframes shine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 .animate-gradient {
   background-size: 200% 200%;
   animation: gradient 3s ease infinite;
+}
+
+.animate-shine {
+  animation: shine 2s ease-in-out infinite;
 }
 
 /* Smooth Scrollbar */
