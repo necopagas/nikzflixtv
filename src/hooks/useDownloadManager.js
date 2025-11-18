@@ -59,7 +59,7 @@ export const useDownloadManager = () => {
     };
 
     checkSupport();
-  }, []);
+  }, [loadDownloads]);
 
   // Update storage information
   const updateStorageInfo = async () => {
@@ -82,7 +82,7 @@ export const useDownloadManager = () => {
   };
 
   // Load downloads from IndexedDB
-  const loadDownloads = async () => {
+  const loadDownloads = useCallback(async () => {
     try {
       const db = await initDB();
       const transaction = db.transaction(STORE_NAME, 'readonly');
@@ -95,7 +95,7 @@ export const useDownloadManager = () => {
     } catch (error) {
       console.error('Error loading downloads:', error);
     }
-  };
+  }, [initDB]);
 
   // Add download to queue
   const addDownload = async (item, quality = '720p') => {
@@ -125,8 +125,8 @@ export const useDownloadManager = () => {
       await loadDownloads();
       await updateStorageInfo();
 
-      // Start download
-      startDownload(download.id);
+      // Start download immediately with the download object
+      startDownload(download.id, download);
 
       return download;
     } catch (error) {
@@ -136,10 +136,14 @@ export const useDownloadManager = () => {
   };
 
   // Start downloading
-  const startDownload = async downloadId => {
+  const startDownload = async (downloadId, downloadObj = null) => {
     try {
-      const download = downloads.find(d => d.id === downloadId);
-      if (!download) return;
+      // Use provided download object or find from state
+      const download = downloadObj || downloads.find(d => d.id === downloadId);
+      if (!download) {
+        console.warn('Download not found:', downloadId);
+        return;
+      }
 
       // Update status to downloading
       await updateDownloadStatus(downloadId, DOWNLOAD_STATUS.DOWNLOADING);
@@ -154,23 +158,56 @@ export const useDownloadManager = () => {
   };
 
   // Simulate download progress (replace with actual SW communication)
-  const simulateDownload = async downloadId => {
+  const simulateDownload = downloadId => {
     let progress = 0;
     const interval = setInterval(async () => {
-      progress += Math.random() * 15;
+      try {
+        // Check if download still exists and is not cancelled/paused
+        const db = await initDB();
+        const transaction = db.transaction(STORE_NAME, 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.get(downloadId);
 
-      if (progress >= 100) {
-        progress = 100;
+        request.onsuccess = async () => {
+          const currentDownload = request.result;
+
+          // Stop if download was cancelled, deleted, or paused
+          if (
+            !currentDownload ||
+            currentDownload.status === DOWNLOAD_STATUS.CANCELLED ||
+            currentDownload.status === DOWNLOAD_STATUS.PAUSED
+          ) {
+            clearInterval(interval);
+            return;
+          }
+
+          progress += Math.random() * 10 + 5; // Random progress between 5-15%
+
+          if (progress >= 100) {
+            progress = 100;
+            clearInterval(interval);
+            await updateDownload(downloadId, {
+              status: DOWNLOAD_STATUS.COMPLETED,
+              progress: 100,
+              completedAt: new Date().toISOString(),
+            });
+          } else {
+            await updateDownload(downloadId, {
+              progress: Math.min(progress, 100),
+              status: DOWNLOAD_STATUS.DOWNLOADING,
+            });
+          }
+        };
+
+        request.onerror = () => {
+          clearInterval(interval);
+          console.error('Error checking download status');
+        };
+      } catch (error) {
         clearInterval(interval);
-        await updateDownload(downloadId, {
-          status: DOWNLOAD_STATUS.COMPLETED,
-          progress: 100,
-          completedAt: new Date().toISOString(),
-        });
-      } else {
-        await updateDownload(downloadId, { progress: Math.min(progress, 100) });
+        console.error('Error in download simulation:', error);
       }
-    }, 500);
+    }, 800); // Update every 800ms for smoother progress
   };
 
   // Pause download
@@ -185,8 +222,19 @@ export const useDownloadManager = () => {
   // Resume download
   const resumeDownload = async downloadId => {
     try {
-      await updateDownloadStatus(downloadId, DOWNLOAD_STATUS.DOWNLOADING);
-      startDownload(downloadId);
+      // Get the download first
+      const db = await initDB();
+      const transaction = db.transaction(STORE_NAME, 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.get(downloadId);
+
+      request.onsuccess = async () => {
+        const download = request.result;
+        if (download) {
+          await updateDownloadStatus(downloadId, DOWNLOAD_STATUS.DOWNLOADING);
+          startDownload(downloadId, download);
+        }
+      };
     } catch (error) {
       console.error('Error resuming download:', error);
     }

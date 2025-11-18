@@ -28,7 +28,7 @@ export const SearchPage = ({ onOpenModal, isWatched }) => {
     }
 
     fetchSearchResults(query, filters);
-  }, [query]);
+  }, [query, filters]);
 
   const fetchSearchResults = async (searchQuery, searchFilters) => {
     if (!searchQuery) return;

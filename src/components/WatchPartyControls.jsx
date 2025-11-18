@@ -128,7 +128,7 @@ const WatchPartyControls = ({ videoRef, videoUrl, videoMetadata }) => {
         <div className="fixed bottom-24 right-4 z-40 flex flex-col gap-2">
           <button
             onClick={handleCreateParty}
-            className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg shadow-lg font-medium transition-all duration-300 hover:scale-105"
+            className="flex items-center gap-2 px-4 py-3 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg shadow-lg font-medium transition-all duration-300 hover:scale-105"
             title="Start Watch Party"
           >
             <FiUsers className="text-xl" />
@@ -177,7 +177,7 @@ const WatchPartyControls = ({ videoRef, videoUrl, videoMetadata }) => {
                 />
                 <button
                   type="submit"
-                  className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-colors"
+                  className="w-full px-4 py-3 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-colors"
                 >
                   Join Party
                 </button>
@@ -256,7 +256,7 @@ const WatchPartyControls = ({ videoRef, videoUrl, videoMetadata }) => {
             </div>
 
             {/* Content Area */}
-            <div className="h-[320px] overflow-y-auto p-4">
+            <div className="h-80 overflow-y-auto p-4">
               {activeTab === 'participants' ? (
                 <div className="space-y-3">
                   {/* Sync Status */}
@@ -302,7 +302,7 @@ const WatchPartyControls = ({ videoRef, videoUrl, videoMetadata }) => {
                         className="flex items-center justify-between bg-gray-800 rounded-lg p-3 border border-gray-700"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
+                          <div className="w-10 h-10 bg-linear-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
                             {participant.username[0].toUpperCase()}
                           </div>
                           <div>

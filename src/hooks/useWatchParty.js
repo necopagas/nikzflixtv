@@ -137,7 +137,7 @@ export const useWatchParty = videoRef => {
 
       return updatedState.video;
     },
-    [getCurrentUser, loadPartyState, savePartyState]
+    [getCurrentUser, loadPartyState, savePartyState, sendMessage]
   );
 
   // Leave party
@@ -174,7 +174,7 @@ export const useWatchParty = videoRef => {
     setParticipants([]);
     setMessages([]);
     setIsConnected(false);
-  }, [partyId, isHost, getCurrentUser, loadPartyState, savePartyState]);
+  }, [partyId, isHost, getCurrentUser, loadPartyState, savePartyState, sendMessage]);
 
   // Sync video state
   const syncVideoState = useCallback(() => {

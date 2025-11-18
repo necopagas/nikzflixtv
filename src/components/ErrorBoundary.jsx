@@ -1,6 +1,7 @@
 // src/components/ErrorBoundary.jsx
 import React from 'react';
 import { FaExclamationTriangle, FaRedo } from 'react-icons/fa';
+import logger from '../utils/logger';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -13,7 +14,7 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    logger.error('ErrorBoundary caught an error:', error, errorInfo);
     this.setState({ error, errorInfo });
   }
 
@@ -26,18 +27,18 @@ class ErrorBoundary extends React.Component {
     const isDev = import.meta.env.DEV;
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-red-900 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-gray-900 via-black to-red-900 p-4">
           <div className="max-w-2xl w-full bg-gray-800/50 backdrop-blur-xl rounded-2xl p-8 border border-red-500/30 shadow-2xl">
             <div className="flex items-center justify-center mb-6">
               <div className="w-20 h-20 bg-red-600/20 rounded-full flex items-center justify-center">
                 <FaExclamationTriangle className="text-5xl text-red-500" />
               </div>
             </div>
-            
+
             <h1 className="text-3xl font-bold text-white text-center mb-4">
               Oops! Something went wrong
             </h1>
-            
+
             <p className="text-gray-300 text-center mb-6">
               We're sorry for the inconvenience. An unexpected error occurred.
             </p>
@@ -47,7 +48,7 @@ class ErrorBoundary extends React.Component {
                 <summary className="text-red-400 cursor-pointer font-semibold mb-2">
                   Error Details (Dev Mode)
                 </summary>
-                <pre className="text-xs text-gray-400 whitespace-pre-wrap break-words">
+                <pre className="text-xs text-gray-400 whitespace-pre-wrap wrap-break-word">
                   {this.state.error.toString()}
                   {this.state.errorInfo?.componentStack}
                 </pre>
@@ -62,7 +63,7 @@ class ErrorBoundary extends React.Component {
                 <FaRedo />
                 Reload Page
               </button>
-              
+
               <a
                 href="/"
                 className="flex items-center gap-2 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition-all transform hover:scale-105 shadow-lg"

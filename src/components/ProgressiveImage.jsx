@@ -92,10 +92,10 @@ export const Skeleton = ({
 }) => {
   return (
     <div
-      className={`bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 animate-pulse ${className}`}
+      className={`bg-linear-to-r from-gray-800 via-gray-700 to-gray-800 animate-pulse ${className}`}
       style={{ width, height, borderRadius }}
     >
-      <div className="w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer"></div>
+      <div className="w-full h-full bg-linear-to-r from-transparent via-white/10 to-transparent animate-shimmer"></div>
     </div>
   );
 };
@@ -212,7 +212,7 @@ export const OptimizedPoster = ({
       )}
 
       {showTitle && (
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/80 to-transparent p-3 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <h3 className="text-white font-semibold text-sm line-clamp-2">
             {item.title || item.name}
           </h3>

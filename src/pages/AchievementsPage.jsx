@@ -48,11 +48,11 @@ export const AchievementsPage = () => {
       </div>
 
       {/* Level & XP Card */}
-      <div className="bg-gradient-to-r from-purple-900/40 to-blue-900/40 backdrop-blur-sm rounded-2xl p-6 sm:p-8 mb-8 border border-purple-500/30">
+      <div className="bg-linear-to-r from-purple-900/40 to-blue-900/40 backdrop-blur-sm rounded-2xl p-6 sm:p-8 mb-8 border border-purple-500/30">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-2xl font-bold">
+              <div className="w-16 h-16 rounded-full bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center text-2xl font-bold">
                 {level}
               </div>
               <div>
@@ -69,7 +69,7 @@ export const AchievementsPage = () => {
             </div>
             <div className="w-full bg-gray-800 rounded-full h-3 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-500"
+                className="h-full bg-linear-to-r from-purple-500 to-blue-500 transition-all duration-500"
                 style={{ width: `${progressToNextLevel}%` }}
               />
             </div>
@@ -118,7 +118,7 @@ export const AchievementsPage = () => {
             onClick={() => setSelectedCategory(key)}
             className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
               selectedCategory === key
-                ? `bg-gradient-to-r ${info.color} text-white`
+                ? `bg-linear-to-r ${info.color} text-white`
                 : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
             }`}
           >
@@ -141,7 +141,7 @@ export const AchievementsPage = () => {
           </div>
           <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
             <div
-              className={`h-full bg-gradient-to-r ${categoryInfo[selectedCategory]?.color} transition-all duration-500`}
+              className={`h-full bg-linear-to-r ${categoryInfo[selectedCategory]?.color} transition-all duration-500`}
               style={{ width: `${(unlockedCount / filteredAchievements.length) * 100}%` }}
             />
           </div>
@@ -161,14 +161,14 @@ export const AchievementsPage = () => {
               key={achievement.id}
               className={`relative rounded-xl p-5 transition-all duration-300 ${
                 achievement.unlocked
-                  ? 'bg-gradient-to-br from-amber-900/40 to-orange-900/40 border border-amber-500/50'
+                  ? 'bg-linear-to-br from-amber-900/40 to-orange-900/40 border border-amber-500/50'
                   : 'bg-gray-900/50 border border-gray-800'
               }`}
             >
               {/* Unlock Badge */}
               {achievement.unlocked && (
                 <div className="absolute top-3 right-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center">
                     <FiUnlock className="text-white text-sm" />
                   </div>
                 </div>
@@ -207,7 +207,7 @@ export const AchievementsPage = () => {
           {unlockedThemes.map(theme => (
             <div
               key={theme.id}
-              className="bg-gradient-to-br from-green-900/40 to-emerald-900/40 border border-green-500/50 rounded-xl p-5"
+              className="bg-linear-to-br from-green-900/40 to-emerald-900/40 border border-green-500/50 rounded-xl p-5"
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
@@ -257,7 +257,7 @@ export const AchievementsPage = () => {
       </div>
 
       {/* Info Section */}
-      <div className="mt-8 bg-gradient-to-r from-gray-900/50 to-transparent rounded-xl p-6 border border-gray-800">
+      <div className="mt-8 bg-linear-to-r from-gray-900/50 to-transparent rounded-xl p-6 border border-gray-800">
         <h3 className="text-xl font-bold mb-3">📊 How to Earn XP & Unlock Achievements</h3>
         <div className="grid sm:grid-cols-2 gap-4 text-sm text-gray-300">
           <div>

@@ -14,6 +14,7 @@ import { useTheme } from './hooks/useTheme';
 import { useWatchedHistory } from './hooks/useWatchedHistory';
 import { useChristmasTheme } from './hooks/useChristmasTheme';
 import { AdsterraSocialBar } from './components/AdsterraSocialBar';
+import AdBanner from './components/AdBanner';
 import { NetworkStatusBanner } from './components/NetworkStatusBanner';
 import { PageTransitionIndicator } from './components/PageTransitionIndicator';
 import { useToast } from './components/toastContext.js';
@@ -228,7 +229,7 @@ export default function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
-      <main className="flex-grow">
+      <main className="grow">
         <Suspense fallback={<ContentLoader message="Loading NikzFlix..." />}>
           <Routes location={location} key={location.pathname}>
             <Route
@@ -270,8 +271,14 @@ export default function App() {
                 <VivamaxPage key="vivamax" onOpenModal={handleOpenModal} isWatched={isWatched} />
               }
             />
-            <Route path="/manga" element={<Navigate to="/manga-extensions" replace />} />
+            <Route path="/manga" element={<Navigate to="/manga-reader" replace />} />
             <Route path="/manga-extensions" element={<MangaExtensionsPage key="manga-ext" />} />
+            <Route path="/manga-reader" element={<MangaReaderPage key="manga-reader" />} />
+            <Route path="/manga/:id" element={<MangaDetailPage key="manga-detail" />} />
+            <Route
+              path="/manga/:id/:chapterId"
+              element={<MangaChapterReader key="manga-chapter" />}
+            />
             <Route path="/stats" element={<StatsPage key="stats" />} />
             <Route path="/playlists" element={<PlaylistsPage key="playlists" />} />
             <Route
@@ -284,7 +291,10 @@ export default function App() {
             />
             <Route path="/achievements" element={<AchievementsPage key="achievements" />} />
             <Route path="/cast-settings" element={<CastSettingsPage key="cast-settings" />} />
-            <Route path="/downloads" element={<DownloadsPage key="downloads" />} />
+            <Route
+              path="/downloads"
+              element={<DownloadsPage key="downloads" onOpenModal={handleOpenModal} />}
+            />
             <Route
               path="/watch-party/:partyId"
               element={<WatchPartyJoinPage key="watch-party" />}
@@ -337,6 +347,9 @@ export default function App() {
       )}
 
       <BraveNotification />
+
+      {/* Resilient ad banner (loads provider script and shows fallback on timeout) */}
+      {typeof window !== 'undefined' && <AdBanner />}
     </div>
   );
 }

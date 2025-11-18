@@ -37,27 +37,68 @@ const MANGA_GENRES = [
   { id: '81c836c9-914a-4eca-981a-560dad663e73', name: 'Slice of Life' },
 ];
 
-// Manga sources from different providers
-const MANGA_SOURCES = [
-  {
-    name: 'Mangahere',
-    id: 'mangahere',
-    api: 'mangahere',
-    baseUrl: 'https://www.mangahere.cc',
-    lang: 'en',
-    nsfw: false,
-    info: 'Official Mangahere catalog with the full library and chapters - currently the only supported source',
-    working: true,
-    canRead: true,
-    cloudflareProtected: true,
-    fallbackMessage:
-      'Mangahere pages may be protected depending on your location. If you hit barriers, try again in a few minutes.',
-  },
-];
+// Get installed manga sources from Tachiyomi extensions
+const DOWNLOADS_KEY = 'manga_downloads';
+const FAVORITES_KEY = 'manga_favorites';
+
+const getInstalledSources = () => {
+  try {
+    const downloads = JSON.parse(localStorage.getItem(DOWNLOADS_KEY) || '[]');
+    const favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+
+    // Combine downloaded and favorited extensions
+    const allExtensions = [...new Set([...downloads, ...favorites])];
+
+    // Map to source format
+    return allExtensions.map(pkg => {
+      // Extract source info from package name (e.g., "en.mangahere" -> "mangahere", "en")
+      const parts = pkg.split('.');
+      const lang = parts[0] || 'en';
+      const sourceName = parts.slice(1).join('.') || pkg;
+
+      return {
+        name: sourceName.charAt(0).toUpperCase() + sourceName.slice(1),
+        id: sourceName.toLowerCase(),
+        api: sourceName.toLowerCase(),
+        baseUrl: `https://www.${sourceName.toLowerCase()}.cc`,
+        lang: lang,
+        nsfw: false,
+        info: `${sourceName} manga source from Tachiyomi extensions`,
+        working: true,
+        canRead: true,
+        cloudflareProtected: true,
+        pkg: pkg,
+      };
+    });
+  } catch (error) {
+    console.error('Error loading installed sources:', error);
+    return [];
+  }
+};
+
+// Default fallback source
+const DEFAULT_SOURCE = {
+  name: 'Mangahere',
+  id: 'mangahere',
+  api: 'mangahere',
+  baseUrl: 'https://www.mangahere.cc',
+  lang: 'en',
+  nsfw: false,
+  info: 'Default manga source',
+  working: true,
+  canRead: true,
+  cloudflareProtected: true,
+};
 
 const MangaReaderPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // Load installed sources from Tachiyomi extensions
+  const [installedSources, setInstalledSources] = useState(() => {
+    const sources = getInstalledSources();
+    return sources.length > 0 ? sources : [DEFAULT_SOURCE];
+  });
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [mangaList, setMangaList] = useState([]);
@@ -67,12 +108,28 @@ const MangaReaderPage = () => {
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [viewMode, setViewMode] = useState('popular'); // 'popular' or 'recent'
   const [error, setError] = useState(null);
-  const currentSourceId = MANGA_SOURCES[0]?.id || 'mangahere';
-  const currentSourceObj = MANGA_SOURCES[0] || null;
+  const currentSourceId = installedSources[0]?.id || 'mangahere';
+  const currentSourceObj = installedSources[0] || null;
   const [continueList, setContinueList] = useState([]);
   const [downloadQueue, setDownloadQueue] = useState([]);
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState('recent');
+
+  // Refresh installed sources when storage changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const sources = getInstalledSources();
+      setInstalledSources(sources.length > 0 ? sources : [DEFAULT_SOURCE]);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('manga-extension-updated', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('manga-extension-updated', handleStorageChange);
+    };
+  }, []);
 
   useEffect(() => {
     const loadLists = () => {
@@ -200,8 +257,7 @@ const MangaReaderPage = () => {
       throw error;
     }
   };
-
-  // Helper function to fetch from Manganelo
+  // Helper function to fetch from Manganelo (kept simple)
   const fetchManganelo = async (action, params = {}) => {
     try {
       const queryParams = new URLSearchParams({
@@ -210,47 +266,24 @@ const MangaReaderPage = () => {
         ...params,
       }).toString();
       const response = await fetch(`/api/manga?${queryParams}`);
-
       if (!response.ok) throw new Error('Manganelo request failed');
       return await response.json();
     } catch (error) {
       console.error('Error fetching from Manganelo:', error);
-      throw error;
+      return [];
     }
   };
 
-  // Helper function to fetch from MangaPanda
-  const fetchMangaPanda = async (action, params = {}) => {
+  // Generic fetch function for any manga source
+  const fetchFromSource = async (sourceId, action, params = {}) => {
     try {
-      const queryParams = new URLSearchParams({
-        source: 'mangapanda',
-        action,
-        ...params,
-      }).toString();
+      const queryParams = new URLSearchParams({ source: sourceId, action, ...params }).toString();
       const response = await fetch(`/api/manga?${queryParams}`);
-
-      if (!response.ok) throw new Error('MangaPanda request failed');
+      if (!response.ok) throw new Error(`${sourceId} request failed`);
       return await response.json();
     } catch (error) {
-      console.error('Error fetching from MangaPanda:', error);
-      throw error;
-    }
-  };
-
-  const fetchMangahere = async (action, params = {}) => {
-    try {
-      const queryParams = new URLSearchParams({
-        source: 'mangahere',
-        action,
-        ...params,
-      }).toString();
-      const response = await fetch(`/api/manga?${queryParams}`);
-
-      if (!response.ok) throw new Error('Mangahere request failed');
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching from Mangahere:', error);
-      throw error;
+      console.error(`Error fetching from ${sourceId}:`, error);
+      return [];
     }
   };
 
@@ -392,7 +425,7 @@ const MangaReaderPage = () => {
   // Fetch manga from MangaPanda
   const searchMangaPanda = async query => {
     try {
-      const data = await fetchMangaPanda('search', { query });
+      const data = await fetchFromSource('mangapanda', 'search', { query });
 
       if (!data?.results) return [];
 
@@ -415,10 +448,10 @@ const MangaReaderPage = () => {
 
   const searchMangahere = async query => {
     try {
-      const data = await fetchMangahere('search', { query });
+      const data = await fetchFromSource(currentSourceId, 'search', { query });
       return data?.results || [];
     } catch (err) {
-      console.error('Error searching Mangahere:', err);
+      console.error(`Error searching ${currentSourceId}:`, err);
       return [];
     }
   };
@@ -432,144 +465,22 @@ const MangaReaderPage = () => {
       let manga = [];
       const sourceId = currentSourceId;
 
-      if (sourceId === 'mangahere') {
-        const data = await fetchMangahere('popular');
+      // Use the current active source
+      const data = await fetchFromSource(sourceId, 'popular');
 
-        if (data?.results) {
-          manga = data.results.map(item => ({
-            id: item.id,
-            slug: item.slug,
-            title: item.title || 'Unknown Title',
-            description: item.description || 'Click to view details',
-            coverImage: item.coverImage || 'https://via.placeholder.com/256x384?text=No+Cover',
-            status: item.status || 'unknown',
-            rating: 'safe',
-            year: null,
-            tags: item.tags || item.genres || [],
-            source: 'mangahere',
-          }));
-        }
-      } else if (sourceId === 'weebcentral') {
-        // Fetch from WeebCentral
-        const data = await fetchWeebCentral('popular');
-
-        if (data?.results) {
-          manga = data.results.map(item => ({
-            id: item.id,
-            slug: item.slug,
-            title: item.title || 'Unknown Title',
-            description: 'Click to view details',
-            coverImage: item.coverImage || 'https://via.placeholder.com/256x384?text=No+Cover',
-            status: 'unknown',
-            rating: 'safe',
-            year: null,
-            tags: [],
-            source: 'weebcentral',
-          }));
-        }
-      } else if (sourceId === 'anilist') {
-        // Fetch from AniList
-        const data = await fetchAniList('popular', { perPage: 20 });
-
-        if (!data?.data?.Page?.media) {
-          throw new Error('No data received from AniList');
-        }
-
-        manga = data.data.Page.media.map(item => ({
+      if (data?.results) {
+        manga = data.results.map(item => ({
           id: item.id,
-          title: item.title.english || item.title.romaji || 'Unknown Title',
-          description: item.description?.replace(/<[^>]*>/g, '') || 'No description available',
-          coverImage: item.coverImage.large || 'https://via.placeholder.com/256x384?text=No+Cover',
-          status: item.status,
+          slug: item.slug,
+          title: item.title || 'Unknown Title',
+          description: item.description || 'Click to view details',
+          coverImage: item.coverImage || 'https://via.placeholder.com/256x384?text=No+Cover',
+          status: item.status || 'unknown',
           rating: 'safe',
-          year: item.startDate?.year || null,
-          tags: item.genres?.slice(0, 5) || [],
-          score: item.averageScore,
-          chapters: item.chapters,
-          volumes: item.volumes,
-          source: 'anilist',
+          year: null,
+          tags: item.tags || item.genres || [],
+          source: sourceId,
         }));
-      } else if (sourceId === 'kitsu') {
-        // Fetch from Kitsu
-        const data = await fetchKitsu('popular', { page: 1 });
-
-        if (!data?.data) {
-          throw new Error('No data received from Kitsu');
-        }
-
-        manga = data.data.map(item => ({
-          id: item.id,
-          title: item.attributes.canonicalTitle || 'Unknown Title',
-          description:
-            item.attributes.description || item.attributes.synopsis || 'No description available',
-          coverImage:
-            item.attributes.posterImage?.large ||
-            item.attributes.posterImage?.medium ||
-            'https://via.placeholder.com/256x384?text=No+Cover',
-          status: item.attributes.status,
-          rating: item.attributes.ageRating || 'safe',
-          year: item.attributes.startDate
-            ? new Date(item.attributes.startDate).getFullYear()
-            : null,
-          tags: [],
-          score: item.attributes.averageRating
-            ? Math.round(parseFloat(item.attributes.averageRating) / 10)
-            : null,
-          chapters: item.attributes.chapterCount,
-          volumes: item.attributes.volumeCount,
-          source: 'kitsu',
-        }));
-      } else if (sourceId === 'mangakakalot') {
-        // Fetch from Mangakakalot
-        const data = await fetchMangakakalot('popular');
-
-        if (data?.results) {
-          manga = data.results.map(item => ({
-            id: item.id,
-            title: item.title || 'Unknown Title',
-            description: 'Click to view details',
-            coverImage: item.coverImage || 'https://via.placeholder.com/256x384?text=No+Cover',
-            status: 'unknown',
-            rating: 'safe',
-            year: null,
-            tags: [],
-            source: 'mangakakalot',
-          }));
-        }
-      } else if (sourceId === 'manganelo') {
-        // Fetch from Manganelo
-        const data = await fetchManganelo('popular');
-
-        if (data?.results) {
-          manga = data.results.map(item => ({
-            id: item.id,
-            title: item.title || 'Unknown Title',
-            description: 'Click to view details',
-            coverImage: item.coverImage || 'https://via.placeholder.com/256x384?text=No+Cover',
-            status: 'unknown',
-            rating: 'safe',
-            year: null,
-            tags: [],
-            source: 'manganelo',
-          }));
-        }
-      } else if (sourceId === 'mangapanda') {
-        // Fetch from MangaPanda
-        const data = await fetchMangaPanda('popular');
-
-        if (data?.results) {
-          manga = data.results.map(item => ({
-            id: item.id,
-            title: item.title || 'Unknown Title',
-            description: 'Click to view details',
-            coverImage: item.coverImage || 'https://via.placeholder.com/256x384?text=No+Cover',
-            status: 'unknown',
-            rating: 'safe',
-            year: null,
-            tags: [],
-            source: 'mangapanda',
-          }));
-        }
       }
 
       setMangaList(manga);
@@ -735,14 +646,20 @@ const MangaReaderPage = () => {
         </header>
 
         {/* Extensions Banner */}
-        <div className="mb-6 rounded-2xl bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-500/30 p-4">
+        <div className="mb-6 rounded-2xl bg-linear-to-r from-purple-900/30 to-pink-900/30 border border-purple-500/30 p-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <FaDownload className="text-purple-400 w-6 h-6" />
               <div>
-                <h3 className="text-sm font-semibold">Need more manga sources?</h3>
+                <h3 className="text-sm font-semibold">
+                  {installedSources.length === 1 && installedSources[0].id === 'mangahere'
+                    ? 'Need more manga sources?'
+                    : `${installedSources.length} source${installedSources.length > 1 ? 's' : ''} installed`}
+                </h3>
                 <p className="text-xs text-gray-400">
-                  Download 100+ Tachiyomi/Aniyomi extensions para sa mobile (APK format)
+                  {installedSources.length === 1 && installedSources[0].id === 'mangahere'
+                    ? 'Download Tachiyomi/Aniyomi extensions from the extensions page'
+                    : `Using extensions: ${installedSources.map(s => s.name).join(', ')}`}
                 </p>
               </div>
             </div>
@@ -750,7 +667,9 @@ const MangaReaderPage = () => {
               onClick={() => navigate('/manga-extensions')}
               className="px-5 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
             >
-              Get Extensions →
+              {installedSources.length === 1 && installedSources[0].id === 'mangahere'
+                ? 'Get Extensions →'
+                : 'Manage Extensions'}
             </button>
           </div>
         </div>
@@ -771,20 +690,49 @@ const MangaReaderPage = () => {
 
         {/* Source Banner */}
         <div className="mb-8 text-center">
-          <p className="text-xs uppercase tracking-widest text-purple-300 mb-2">Source</p>
-          <p className="text-lg font-semibold text-white">Mangahere (default + only option)</p>
-          <p className="mt-2 text-sm text-gray-400 max-w-2xl mx-auto">{MANGA_SOURCES[0]?.info}</p>
+          <p className="text-xs uppercase tracking-widest text-purple-300 mb-2">Active Source</p>
+          <p className="text-lg font-semibold text-white">
+            {currentSourceObj?.name || 'Mangahere'} ({currentSourceObj?.lang || 'en'})
+          </p>
+          <p className="mt-2 text-sm text-gray-400 max-w-2xl mx-auto">
+            {currentSourceObj?.info || 'Default manga source'}
+          </p>
+          {installedSources.length > 1 && (
+            <div className="mt-4">
+              <p className="text-xs text-purple-400 mb-2">Switch to another installed source:</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {installedSources.slice(1).map(source => (
+                  <button
+                    key={source.id}
+                    onClick={() => {
+                      // Update the active source
+                      const updatedSources = [
+                        source,
+                        ...installedSources.filter(s => s.id !== source.id),
+                      ];
+                      setInstalledSources(updatedSources);
+                      // Refresh manga list
+                      fetchPopularManga();
+                    }}
+                    className="px-3 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-xs transition-colors"
+                  >
+                    {source.name} ({source.lang})
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Enhanced Genre Filter */}
         <div className="mb-10">
           <div className="flex items-center justify-center gap-3 mb-5">
-            <div className="h-px w-12 bg-gradient-to-r from-transparent to-purple-500" />
+            <div className="h-px w-12 bg-linear-to-r from-transparent to-purple-500" />
             <div className="flex items-center gap-2 text-purple-400">
               <FaFilter className="text-xl" />
               <h3 className="text-lg font-bold uppercase tracking-wide">Genres</h3>
             </div>
-            <div className="h-px w-12 bg-gradient-to-l from-transparent to-purple-500" />
+            <div className="h-px w-12 bg-linear-to-l from-transparent to-purple-500" />
           </div>
           <div className="flex flex-wrap justify-center gap-2 max-w-5xl mx-auto">
             {MANGA_GENRES.map(genre => (
@@ -793,7 +741,7 @@ const MangaReaderPage = () => {
                 onClick={() => handleGenreChange(genre.id)}
                 className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
                   selectedGenre === genre.id
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
+                    ? 'bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50'
                     : 'bg-gray-800/60 text-gray-400 hover:bg-gray-700/80 hover:text-white backdrop-blur-sm border border-gray-700'
                 }`}
               >
@@ -830,7 +778,7 @@ const MangaReaderPage = () => {
 
         {/* Tachiyomi continue & queue */}
         <div className="mb-8 grid gap-6 lg:grid-cols-[1.4fr,0.8fr]">
-          <section className="rounded-3xl border border-gray-800 bg-gradient-to-b from-gray-900/60 to-gray-900 p-5 shadow-xl">
+          <section className="rounded-3xl border border-gray-800 bg-linear-to-b from-gray-900/60 to-gray-900 p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.35em] text-gray-500">Continue</p>
@@ -909,7 +857,7 @@ const MangaReaderPage = () => {
               </div>
             )}
           </section>
-          <section className="rounded-3xl border border-gray-800 bg-gradient-to-b from-[#140015]/80 to-gray-900 p-5 shadow-lg">
+          <section className="rounded-3xl border border-gray-800 bg-linear-to-b from-[#140015]/80 to-gray-900 p-5 shadow-lg">
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.35em] text-gray-500">Queue</p>
@@ -967,9 +915,9 @@ const MangaReaderPage = () => {
         {/* Enhanced Error Message */}
         {error && (
           <div className="mb-8 max-w-2xl mx-auto">
-            <div className="p-5 bg-gradient-to-r from-red-900/60 to-red-800/60 border-2 border-red-600/50 rounded-xl backdrop-blur-sm">
+            <div className="p-5 bg-linear-to-r from-red-900/60 to-red-800/60 border-2 border-red-600/50 rounded-xl backdrop-blur-sm">
               <div className="flex items-start gap-3">
-                <FaExclamationTriangle className="text-red-400 text-xl mt-1 flex-shrink-0" />
+                <FaExclamationTriangle className="text-red-400 text-xl mt-1 shrink-0" />
                 <div className="flex-1">
                   <p className="text-red-100 font-medium mb-3">{error}</p>
                   {(error.includes('Cloudflare') || error.includes('protected')) && (
@@ -1047,7 +995,7 @@ const MangaReaderPage = () => {
                     }}
                   >
                     <div className="overflow-hidden rounded-2xl border border-gray-800 bg-gray-900 shadow-xl transition-all duration-300 hover:border-white">
-                      <div className="aspect-[2/3] bg-gray-800">
+                      <div className="aspect-2/3 bg-gray-800">
                         <img
                           src={manga.coverImage}
                           alt={manga.title}

@@ -166,10 +166,10 @@ const StatsPage = () => {
   }, [stats, myList]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white px-4 sm:px-8 md:px-16 pt-28 pb-20">
+    <div className="min-h-screen bg-linear-to-br from-gray-900 via-purple-900 to-gray-900 text-white px-4 sm:px-8 md:px-16 pt-28 pb-20">
       {/* Header */}
       <div className="mb-8 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-linear-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
           Your Stats Dashboard
         </h1>
         <p className="text-gray-400 text-lg">Track your viewing habits and achievements</p>
@@ -183,7 +183,7 @@ const StatsPage = () => {
             onClick={() => setSelectedPeriod(period)}
             className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${
               selectedPeriod === period
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600'
+                ? 'bg-linear-to-r from-purple-600 to-pink-600'
                 : 'bg-gray-800 hover:bg-gray-700'
             }`}
           >
@@ -195,7 +195,7 @@ const StatsPage = () => {
       {/* Main Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {/* Total Watched */}
-        <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl p-6 shadow-xl">
+        <div className="bg-linear-to-br from-purple-600 to-purple-800 rounded-xl p-6 shadow-xl">
           <div className="flex items-center justify-between mb-4">
             <FaFilm className="text-4xl text-white/80" />
             <div className="text-right">
@@ -206,7 +206,7 @@ const StatsPage = () => {
         </div>
 
         {/* Watch Time */}
-        <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl p-6 shadow-xl">
+        <div className="bg-linear-to-br from-blue-600 to-blue-800 rounded-xl p-6 shadow-xl">
           <div className="flex items-center justify-between mb-4">
             <FaClock className="text-4xl text-white/80" />
             <div className="text-right">
@@ -217,7 +217,7 @@ const StatsPage = () => {
         </div>
 
         {/* Current Streak */}
-        <div className="bg-gradient-to-br from-orange-600 to-red-600 rounded-xl p-6 shadow-xl">
+        <div className="bg-linear-to-br from-orange-600 to-red-600 rounded-xl p-6 shadow-xl">
           <div className="flex items-center justify-between mb-4">
             <FaFire className="text-4xl text-white/80" />
             <div className="text-right">
@@ -228,7 +228,7 @@ const StatsPage = () => {
         </div>
 
         {/* My List */}
-        <div className="bg-gradient-to-br from-pink-600 to-pink-800 rounded-xl p-6 shadow-xl">
+        <div className="bg-linear-to-br from-pink-600 to-pink-800 rounded-xl p-6 shadow-xl">
           <div className="flex items-center justify-between mb-4">
             <FaHeart className="text-4xl text-white/80" />
             <div className="text-right">
@@ -293,14 +293,14 @@ const StatsPage = () => {
                   <div
                     className={`h-3 rounded-full ${
                       index === 0
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500'
+                        ? 'bg-linear-to-r from-purple-500 to-pink-500'
                         : index === 1
-                          ? 'bg-gradient-to-r from-blue-500 to-cyan-500'
+                          ? 'bg-linear-to-r from-blue-500 to-cyan-500'
                           : index === 2
-                            ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                            ? 'bg-linear-to-r from-green-500 to-emerald-500'
                             : index === 3
-                              ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
-                              : 'bg-gradient-to-r from-red-500 to-pink-500'
+                              ? 'bg-linear-to-r from-yellow-500 to-orange-500'
+                              : 'bg-linear-to-r from-red-500 to-pink-500'
                     }`}
                     style={{ width: `${(count / stats.topGenres[0][1]) * 100}%` }}
                   ></div>
@@ -328,7 +328,7 @@ const StatsPage = () => {
             {achievements.map((achievement, index) => (
               <div
                 key={index}
-                className="bg-gradient-to-br from-gray-700 to-gray-800 rounded-lg p-4 border border-yellow-500/30 hover:border-yellow-500 transition-all duration-300 transform hover:scale-105"
+                className="bg-linear-to-br from-gray-700 to-gray-800 rounded-lg p-4 border border-yellow-500/30 hover:border-yellow-500 transition-all duration-300 transform hover:scale-105"
               >
                 <div className="flex items-center gap-3">
                   <div className="text-4xl">{achievement.icon}</div>
@@ -350,7 +350,7 @@ const StatsPage = () => {
 
       {/* Motivational Message */}
       <div className="mt-8 text-center">
-        <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/50 rounded-xl p-6">
+        <div className="bg-linear-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/50 rounded-xl p-6">
           <FaCrown className="text-5xl text-yellow-400 mx-auto mb-4" />
           <h3 className="text-2xl font-bold mb-2">Keep Going!</h3>
           <p className="text-gray-300">

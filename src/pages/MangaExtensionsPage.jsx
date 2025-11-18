@@ -297,11 +297,11 @@ const MangaExtensionsPage = () => {
   // Toggle favorite
   const toggleFavorite = useCallback(pkg => {
     setFavorites(prev => {
-      if (prev.includes(pkg)) {
-        return prev.filter(p => p !== pkg);
-      } else {
-        return [...prev, pkg];
-      }
+      const updated = prev.includes(pkg) ? prev.filter(p => p !== pkg) : [...prev, pkg];
+
+      // Notify manga reader about changes
+      window.dispatchEvent(new CustomEvent('manga-extension-updated'));
+      return updated;
     });
   }, []);
 
@@ -313,6 +313,9 @@ const MangaExtensionsPage = () => {
     };
     setDownloads(prev => {
       const updated = [downloadRecord, ...prev.filter(d => d.pkg !== pkg)].slice(0, 50);
+
+      // Notify manga reader about changes
+      window.dispatchEvent(new CustomEvent('manga-extension-updated'));
       return updated;
     });
   }, []);
@@ -388,7 +391,7 @@ const MangaExtensionsPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
         <LoadingSpinner />
       </div>
     );
@@ -396,7 +399,7 @@ const MangaExtensionsPage = () => {
 
   if (error && !mangaData.length) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
         <div className="text-center text-white">
           <FaExclamationCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
           <h2 className="text-2xl font-bold mb-2">Error Loading Manga Extensions</h2>
@@ -407,13 +410,13 @@ const MangaExtensionsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white">
+    <div className="min-h-screen bg-linear-to-br from-gray-900 via-purple-900 to-gray-900 text-white">
       {/* Instructions Modal */}
       {showInstructions && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-purple-500/50 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="bg-linear-to-br from-gray-800 to-gray-900 border border-purple-500/50 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             {/* Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 p-6 flex items-center justify-between rounded-t-2xl">
+            <div className="sticky top-0 bg-linear-to-r from-purple-600 to-pink-600 p-6 flex items-center justify-between rounded-t-2xl">
               <div className="flex items-center gap-3">
                 <FaInfoCircle className="w-8 h-8" />
                 <h2 className="text-2xl font-bold">Welcome to Manga Extensions!</h2>
@@ -442,7 +445,7 @@ const MangaExtensionsPage = () => {
                 {/* Step 1 */}
                 <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
                   <div className="flex items-start gap-4">
-                    <div className="bg-purple-600 rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">
+                    <div className="bg-purple-600 rounded-full w-8 h-8 flex items-center justify-center shrink-0 font-bold">
                       1
                     </div>
                     <div className="flex-1">
@@ -461,7 +464,7 @@ const MangaExtensionsPage = () => {
                 {/* Step 2 */}
                 <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
                   <div className="flex items-start gap-4">
-                    <div className="bg-pink-600 rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">
+                    <div className="bg-pink-600 rounded-full w-8 h-8 flex items-center justify-center shrink-0 font-bold">
                       2
                     </div>
                     <div className="flex-1">
@@ -484,7 +487,7 @@ const MangaExtensionsPage = () => {
                 {/* Step 3 */}
                 <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
                   <div className="flex items-start gap-4">
-                    <div className="bg-blue-600 rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">
+                    <div className="bg-blue-600 rounded-full w-8 h-8 flex items-center justify-center shrink-0 font-bold">
                       3
                     </div>
                     <div className="flex-1">
@@ -505,7 +508,7 @@ const MangaExtensionsPage = () => {
               {/* Important Note */}
               <div className="bg-yellow-600/20 border border-yellow-600/50 rounded-xl p-4">
                 <div className="flex items-start gap-3">
-                  <FaExclamationCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-1" />
+                  <FaExclamationCircle className="w-5 h-5 text-yellow-400 shrink-0 mt-1" />
                   <div>
                     <h4 className="font-semibold text-yellow-300 mb-1">Important:</h4>
                     <p className="text-sm text-gray-300">
@@ -521,7 +524,7 @@ const MangaExtensionsPage = () => {
               {/* Action Button */}
               <button
                 onClick={handleCloseInstructions}
-                className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-[1.02]"
+                className="w-full py-4 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-[1.02]"
               >
                 Sige, Get Started!
               </button>
@@ -538,7 +541,7 @@ const MangaExtensionsPage = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-linear-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             Tachiyomi / Aniyomi Extensions
           </h1>
           <p className="text-gray-400 text-lg mb-2">
@@ -597,7 +600,7 @@ const MangaExtensionsPage = () => {
 
         {/* Statistics Panel */}
         {showStats && (
-          <div className="mb-8 bg-gradient-to-br from-gray-800 to-gray-900 border border-purple-500/50 rounded-xl p-6">
+          <div className="mb-8 bg-linear-to-br from-gray-800 to-gray-900 border border-purple-500/50 rounded-xl p-6">
             <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
               <FaChartBar className="w-6 h-6 text-purple-400" />
               Statistics Dashboard
@@ -733,7 +736,7 @@ const MangaExtensionsPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Language Filter */}
             <div>
-              <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+              <label className="text-sm font-medium mb-2 flex items-center gap-2">
                 <FaGlobe className="w-4 h-4" />
                 Language
               </label>
@@ -752,7 +755,7 @@ const MangaExtensionsPage = () => {
 
             {/* NSFW Filter */}
             <div>
-              <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+              <label className="text-sm font-medium mb-2 flex items-center gap-2">
                 <FaFilter className="w-4 h-4" />
                 Content
               </label>
@@ -769,7 +772,7 @@ const MangaExtensionsPage = () => {
 
             {/* Sort By */}
             <div>
-              <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+              <label className="text-sm font-medium mb-2 flex items-center gap-2">
                 <FaSort className="w-4 h-4" />
                 Sort By
               </label>
@@ -788,7 +791,7 @@ const MangaExtensionsPage = () => {
 
             {/* Sort Order */}
             <div>
-              <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+              <label className="text-sm font-medium mb-2 flex items-center gap-2">
                 {sortOrder === 'asc' ? (
                   <FaSortAmountUp className="w-4 h-4" />
                 ) : (
@@ -841,10 +844,10 @@ const MangaExtensionsPage = () => {
             onClick={() => setSelectedExtension(null)}
           >
             <div
-              className="bg-gradient-to-br from-gray-800 to-gray-900 border border-purple-500/50 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-linear-to-br from-gray-800 to-gray-900 border border-purple-500/50 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
               onClick={e => e.stopPropagation()}
             >
-              <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 p-6 flex items-center justify-between rounded-t-2xl">
+              <div className="sticky top-0 bg-linear-to-r from-purple-600 to-pink-600 p-6 flex items-center justify-between rounded-t-2xl">
                 <h2 className="text-2xl font-bold">
                   {selectedExtension.name.replace('Tachiyomi: ', '')}
                 </h2>
@@ -927,7 +930,7 @@ const MangaExtensionsPage = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => trackDownload(selectedExtension.pkg)}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium transition-all duration-300"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium transition-all duration-300"
                   >
                     <FaDownload className="w-4 h-4" />
                     Download APK
@@ -1060,7 +1063,7 @@ const MangaExtensionsPage = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => trackDownload(manga.pkg)}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg text-center font-medium transition-all duration-300"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg text-center font-medium transition-all duration-300"
                       >
                         <FaDownload className="w-4 h-4" />
                         Download
@@ -1120,7 +1123,7 @@ const MangaExtensionsPage = () => {
                         onClick={() => setCurrentPage(pageNum)}
                         className={`px-4 py-2 rounded-lg transition-all duration-300 ${
                           currentPage === pageNum
-                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 font-bold'
+                            ? 'bg-linear-to-r from-purple-600 to-pink-600 font-bold'
                             : 'bg-gray-700 hover:bg-gray-600'
                         }`}
                       >

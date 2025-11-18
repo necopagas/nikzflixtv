@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   FiSearch,
   FiMic,
@@ -102,6 +102,28 @@ export const AdvancedSearch = ({
   const debounceTimerRef = useRef(null);
   const suggestionsRef = useRef(null);
 
+  // Search handler (stable)
+  const handleSearch = useCallback(
+    searchQuery => {
+      if (!searchQuery.trim()) return;
+
+      // Add to history
+      const newHistory = [searchQuery, ...searchHistory.filter(h => h !== searchQuery)].slice(
+        0,
+        10
+      );
+
+      setSearchHistory(newHistory);
+      localStorage.setItem('searchHistory', JSON.stringify(newHistory));
+
+      if (onSearch) {
+        onSearch(searchQuery, filters);
+      }
+
+      setShowSuggestions(false);
+    },
+    [searchHistory, onSearch, filters]
+  );
   // Voice recognition setup
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -134,7 +156,7 @@ export const AdvancedSearch = ({
         recognitionRef.current.stop();
       }
     };
-  }, []);
+  }, [handleSearch]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -158,7 +180,7 @@ export const AdvancedSearch = ({
     }
 
     return () => clearTimeout(debounceTimerRef.current);
-  }, [query]);
+  }, [query, handleSearch]);
 
   // Filter change effect
   useEffect(() => {
@@ -166,23 +188,6 @@ export const AdvancedSearch = ({
       onFilterChange(filters);
     }
   }, [filters, onFilterChange]);
-
-  // Search handler
-  const handleSearch = searchQuery => {
-    if (!searchQuery.trim()) return;
-
-    // Add to history
-    const newHistory = [searchQuery, ...searchHistory.filter(h => h !== searchQuery)].slice(0, 10);
-
-    setSearchHistory(newHistory);
-    localStorage.setItem('searchHistory', JSON.stringify(newHistory));
-
-    if (onSearch) {
-      onSearch(searchQuery, filters);
-    }
-
-    setShowSuggestions(false);
-  };
 
   // Voice search handler
   const toggleVoiceSearch = () => {
@@ -390,7 +395,7 @@ export const AdvancedSearch = ({
 
           {/* Year Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2 flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-400 mb-2 flex items-center gap-2">
               <FiCalendar /> Release Year
             </label>
             <select
@@ -409,7 +414,7 @@ export const AdvancedSearch = ({
 
           {/* Genre Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2 flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-400 mb-2 flex items-center gap-2">
               <FiList /> Genre
             </label>
             <select
@@ -445,7 +450,7 @@ export const AdvancedSearch = ({
 
           {/* Rating Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2 flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-400 mb-2 flex items-center gap-2">
               <FiStar /> Minimum Rating
             </label>
             <div className="space-y-2">

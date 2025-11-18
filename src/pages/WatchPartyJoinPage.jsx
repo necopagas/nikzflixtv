@@ -62,7 +62,7 @@ const WatchPartyJoinPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-b from-gray-900 via-gray-800 to-black flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500 mx-auto mb-4"></div>
           <p className="text-gray-400">Loading party...</p>
@@ -73,7 +73,7 @@ const WatchPartyJoinPage = () => {
 
   if (error || !partyInfo) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black pt-20 px-4">
+      <div className="min-h-screen bg-linear-to-b from-gray-900 via-gray-800 to-black pt-20 px-4">
         <div className="max-w-2xl mx-auto text-center py-20">
           <FiAlertCircle className="text-6xl text-red-500 mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-white mb-4">Party Not Found</h1>
@@ -92,7 +92,7 @@ const WatchPartyJoinPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black pt-20 px-4">
+    <div className="min-h-screen bg-linear-to-b from-gray-900 via-gray-800 to-black pt-20 px-4">
       <div className="max-w-3xl mx-auto">
         <button
           onClick={() => navigate('/')}
@@ -104,7 +104,7 @@ const WatchPartyJoinPage = () => {
 
         <div className="bg-gray-900 rounded-xl overflow-hidden border border-gray-700 shadow-2xl">
           {/* Banner */}
-          <div className="relative h-64 bg-gradient-to-br from-purple-600 via-pink-600 to-purple-800 flex items-center justify-center">
+          <div className="relative h-64 bg-linear-to-br from-purple-600 via-pink-600 to-purple-800 flex items-center justify-center">
             <div className="text-center">
               <FiUsers className="text-8xl text-white/90 mx-auto mb-4" />
               <h1 className="text-4xl font-bold text-white mb-2">Join Watch Party</h1>
@@ -170,7 +170,7 @@ const WatchPartyJoinPage = () => {
             <button
               onClick={handleJoin}
               disabled={!username.trim()}
-              className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-700 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-bold text-lg transition-all duration-300 hover:scale-105 disabled:hover:scale-100"
+              className="w-full px-6 py-4 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-700 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-bold text-lg transition-all duration-300 hover:scale-105 disabled:hover:scale-100"
             >
               Join Watch Party
             </button>

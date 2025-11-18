@@ -1,44 +1,27 @@
 // src/AdsterraBanner.jsx
 import React, { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { useLocalStorageState } from './hooks/useLocalStorageState';
 
 export default function AdsterraBanner() {
   const adContainerRef = useRef(null);
   const wrapperRef = useRef(null);
-  const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [scriptsLoaded, setScriptsLoaded] = useState(false);
   const [adStatus, setAdStatus] = useState('loading');
   const [readyToShow, setReadyToShow] = useState(false);
   const [isDismissed, setIsDismissed] = useLocalStorageState('nikz_ads_hidden', false);
+  const hasShownBanner = sessionStorage.getItem('nikz_ads_shown') === '1';
 
   useEffect(() => {
-    if (isDismissed) {
+    if (isDismissed || hasShownBanner) {
       setReadyToShow(false);
       return;
     }
 
-    const currentPath = location?.pathname || '/';
-    console.info('[AdsterraBanner] Current path:', currentPath);
-
-    const interactionHandler = () => {
-      setReadyToShow(true);
-      window.removeEventListener('scroll', interactionHandler);
-      window.removeEventListener('click', interactionHandler);
-    };
-
-    const timerId = window.setTimeout(() => setReadyToShow(true), 1800);
-
-    window.addEventListener('scroll', interactionHandler, { passive: true });
-    window.addEventListener('click', interactionHandler);
-
-    return () => {
-      window.clearTimeout(timerId);
-      window.removeEventListener('scroll', interactionHandler);
-      window.removeEventListener('click', interactionHandler);
-    };
-  }, [location?.pathname, isDismissed]);
+    // Show banner only once per session
+    setReadyToShow(true);
+    sessionStorage.setItem('nikz_ads_shown', '1');
+  }, [isDismissed, hasShownBanner]);
 
   const prefersReducedMotion =
     typeof window !== 'undefined'
@@ -97,13 +80,13 @@ export default function AdsterraBanner() {
         window.__nikz_ads_timestamp = new Date().toISOString();
       }
 
+      // Reduce timeout to 2 seconds, then show fallback if not loaded
       setTimeout(() => {
         if (!scriptsLoaded) {
-          console.info('[AdsterraBanner] Timeout reached, marking as loaded');
-          setScriptsLoaded(true);
-          setAdStatus('loaded');
+          console.info('[AdsterraBanner] Timeout reached, showing fallback');
+          setAdStatus('error');
         }
-      }, 5000);
+      }, 2000);
     };
 
     timeoutId = window.setTimeout(injectScripts, prefersReducedMotion ? 250 : 500);
@@ -132,6 +115,7 @@ export default function AdsterraBanner() {
 
   const handleDismiss = () => {
     setIsDismissed(true);
+    setReadyToShow(false);
   };
 
   if (isDismissed || !readyToShow || adStatus === 'loading') return null;
@@ -168,9 +152,11 @@ export default function AdsterraBanner() {
           >
             {adStatus === 'error' && (
               <div className="flex flex-col items-center gap-2 py-4 text-center">
-                <span className="text-xs text-orange-400">⚠️ Ad scripts loaded</span>
+                <span className="text-xs text-orange-400">⚠️ Ad could not be loaded</span>
                 <span className="text-[10px] text-gray-500">
-                  If ads don't appear, check Adsterra dashboard
+                  Ads are currently unavailable. Please try again later.
+                  <br />
+                  If you are the site owner, check your Adsterra dashboard.
                 </span>
               </div>
             )}

@@ -9,14 +9,12 @@ import {
   FiAlertCircle,
 } from 'react-icons/fi';
 import { useDownloadManager, DOWNLOAD_STATUS } from '../hooks/useDownloadManager';
-import { useNavigate } from 'react-router-dom';
 
 /**
  * Downloads Page Component
  * Manage all downloads and view offline content
  */
-const DownloadsPage = () => {
-  const navigate = useNavigate();
+const DownloadsPage = ({ onOpenModal }) => {
   const {
     isSupported,
     downloads,
@@ -79,16 +77,26 @@ const DownloadsPage = () => {
   };
 
   const handleItemClick = download => {
-    if (download.status === DOWNLOAD_STATUS.COMPLETED) {
-      // Navigate to watch page for completed downloads
-      const type = download.mediaType === 'tv' ? 'series' : 'movie';
-      navigate(`/watch/${type}/${download.itemId}`);
+    if (download.status === DOWNLOAD_STATUS.COMPLETED && onOpenModal) {
+      // Create an item object compatible with Modal component
+      const item = {
+        id: download.itemId,
+        title: download.title,
+        name: download.title,
+        poster_path: download.poster,
+        backdrop_path: download.backdrop,
+        overview: download.overview,
+        media_type: download.mediaType,
+      };
+
+      // Open modal with the item, and set play to true to auto-play
+      onOpenModal(item, true);
     }
   };
 
   if (!isSupported) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black pt-20 px-4">
+      <div className="min-h-screen bg-linear-to-b from-gray-900 via-gray-800 to-black pt-20 px-4">
         <div className="max-w-2xl mx-auto text-center py-20">
           <FiAlertCircle className="text-6xl text-red-500 mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-white mb-4">Downloads Not Supported</h1>
@@ -102,7 +110,7 @@ const DownloadsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black pt-20 px-4 pb-20">
+    <div className="min-h-screen bg-linear-to-b from-gray-900 via-gray-800 to-black pt-20 px-4 pb-20">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -114,7 +122,7 @@ const DownloadsPage = () => {
         </div>
 
         {/* Storage Info */}
-        <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl p-6 mb-8 border border-gray-700">
+        <div className="bg-linear-to-r from-gray-800 to-gray-900 rounded-xl p-6 mb-8 border border-gray-700">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <FiHardDrive className="text-3xl text-blue-500" />
@@ -132,7 +140,7 @@ const DownloadsPage = () => {
           </div>
           <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
             <div
-              className="bg-gradient-to-r from-blue-600 to-purple-600 h-full transition-all duration-500"
+              className="bg-linear-to-r from-blue-600 to-purple-600 h-full transition-all duration-500"
               style={{ width: `${storageInfo.percentage}%` }}
             />
           </div>
@@ -233,7 +241,7 @@ const DownloadsPage = () => {
                 <div className="flex gap-4 p-4">
                   {/* Poster */}
                   <div
-                    className="flex-shrink-0 cursor-pointer"
+                    className="shrink-0 cursor-pointer"
                     onClick={() => handleItemClick(download)}
                   >
                     <img
@@ -248,7 +256,7 @@ const DownloadsPage = () => {
                   </div>
 
                   {/* Info */}
-                  <div className="flex-grow">
+                  <div className="grow">
                     <h3
                       className="text-lg font-semibold text-white mb-1 cursor-pointer hover:text-blue-400"
                       onClick={() => handleItemClick(download)}
@@ -287,7 +295,7 @@ const DownloadsPage = () => {
                         </div>
                         <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
                           <div
-                            className="bg-gradient-to-r from-blue-600 to-purple-600 h-full transition-all duration-300"
+                            className="bg-linear-to-r from-blue-600 to-purple-600 h-full transition-all duration-300"
                             style={{ width: `${download.progress}%` }}
                           />
                         </div>

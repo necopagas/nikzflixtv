@@ -321,7 +321,7 @@ export const MangaDetailPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
         <LoadingSpinner size="xl" />
       </div>
     );
@@ -329,7 +329,7 @@ export const MangaDetailPage = () => {
 
   if (!manga) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center text-white">
+      <div className="min-h-screen bg-linear-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center text-white">
         <div className="text-center">
           <p className="text-xl mb-4">Manga not found or failed to load details.</p>
           <button
@@ -344,7 +344,7 @@ export const MangaDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white">
+    <div className="min-h-screen bg-linear-to-br from-gray-900 via-purple-900 to-gray-900 text-white">
       <div className="container mx-auto px-4 py-8">
         {/* Back Button */}
         <button
