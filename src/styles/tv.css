@@ -1,0 +1,33 @@
+/* TV-specific styles: larger hit targets, visible focus, simplified layout */
+:root {
+  --tv-font-size: 20px;
+  --tv-hit-size: 64px;
+}
+
+body.tv-mode {
+  font-size: var(--tv-font-size);
+}
+
+.tv-button {
+  min-width: var(--tv-hit-size);
+  min-height: var(--tv-hit-size);
+  padding: 12px 18px;
+  font-size: 18px;
+  border-radius: 8px;
+}
+
+/* Ensure focused elements are visible for remote navigation */
+*:focus {
+  outline: 3px solid #ffcc00 !important;
+  outline-offset: 3px;
+}
+
+/* Simplify hover-based controls (hide on TV) */
+.group:hover .group-hover\:opacity-100 {
+  opacity: 1 !important;
+}
+
+/* Make the video controls larger and always visible on TV */
+.tv-player-controls {
+  font-size: 18px;
+}

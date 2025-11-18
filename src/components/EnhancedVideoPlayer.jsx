@@ -1,5 +1,8 @@
 // src/components/EnhancedVideoPlayer.jsx
 import React, { useRef, useState, useEffect } from 'react';
+import isSmartTV from '../utils/isSmartTV';
+import useRemoteNavigation from '../hooks/useRemoteNavigation';
+import '../styles/tv.css';
 import { AdvancedPlayerControls } from './AdvancedPlayerControls';
 import {
   IntroSkipper,
@@ -23,6 +26,7 @@ export const EnhancedVideoPlayer = ({
   contentMetadata = null, // For cast feature
 }) => {
   const videoRef = useRef(null);
+  // hlsAttached is intentionally not exposed in UI; keep for future telemetry
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -74,6 +78,70 @@ export const EnhancedVideoPlayer = ({
       }
     }
   }, [src, episodeId, autoplay, speedController, progressTracker]);
+
+  // Apply TV mode class and remote navigation
+  useEffect(() => {
+    if (isSmartTV()) {
+      document.body.classList.add('tv-mode');
+    } else {
+      document.body.classList.remove('tv-mode');
+    }
+  }, []);
+
+  useRemoteNavigation({
+    onEnter: el => {
+      // if focused element is video, toggle play/pause
+      if (el === videoRef.current) {
+        if (videoRef.current.paused) videoRef.current.play();
+        else videoRef.current.pause();
+      }
+    },
+    onBack: () => {
+      // try to exit fullscreen on back
+      if (document.fullscreenElement) document.exitFullscreen();
+    },
+  });
+
+  // HLS fallback: if src looks like m3u8 and native can't play it, use hls.js
+  useEffect(() => {
+    if (!src || !videoRef.current) return;
+    const isM3U8 = /\.m3u8(\?|$)/i.test(String(src));
+    const video = videoRef.current;
+
+    const canPlayHlsNatively =
+      video.canPlayType && video.canPlayType('application/vnd.apple.mpegurl');
+
+    let hlsInstance = null;
+    let cancelled = false;
+
+    async function attachHls() {
+      try {
+        const Hls = (await import('hls.js')).default;
+        if (cancelled) return;
+        if (Hls && Hls.isSupported()) {
+          hlsInstance = new Hls();
+          hlsInstance.loadSource(src);
+          hlsInstance.attachMedia(video);
+          // hls.js attached
+        }
+      } catch (err) {
+        console.warn('HLS load error', err);
+      }
+    }
+
+    if (isM3U8 && !canPlayHlsNatively) {
+      attachHls();
+    }
+
+    return () => {
+      cancelled = true;
+      try {
+        if (hlsInstance) hlsInstance.destroy();
+      } catch (e) {
+        console.warn('Error destroying hls instance', e);
+      }
+    };
+  }, [src]);
 
   // Track progress
   useEffect(() => {
