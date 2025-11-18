@@ -1,0 +1,1 @@
+import{j as e}from"./vendor-react-BqCNLigP.js";const n=({genres:n,selectedGenre:r,onGenreSelect:s})=>e.jsx("div",{className:"genre-filter my-8",children:n.map(n=>e.jsx("button",{className:"genre-button "+(r===n.id?"active":""),onClick:()=>s(n.id),children:n.name},n.id))});export{n as G};
