@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FaPlay, FaPlus, FaCheck, FaShare } from 'react-icons/fa';
 import { Share } from '@capacitor/share';
 import { fetchData } from '../utils/fetchData';
-import { API_ENDPOINTS, EMBED_URLS, SOURCE_ORDER, BACKDROP_PATH } from '../config';
+import { API_ENDPOINTS, EMBED_URLS, SOURCE_ORDER, BACKDROP_PATH, getEmbedUrl } from '../config';
 import { Poster } from './Poster';
 import { AddToPlaylistButton } from './AddToPlaylistButton';
 import DownloadButton from './DownloadButton';
@@ -126,6 +126,23 @@ export const Modal = ({
 
   const getPlayerUrl = () => {
     if (!currentSource) return null;
+    // If the user hasn't changed sources (still using the initial SOURCE_ORDER[0])
+    // prefer the higher-level `getEmbedUrl` selection which may try `moviesapi` first
+    // for movies (this honors the user's requested priority override).
+    const defaultSource = SOURCE_ORDER?.[0];
+    if (currentSource === defaultSource) {
+      const url = getEmbedUrl(
+        isTV ? 'tv' : 'movie',
+        item.id,
+        selectedSeason,
+        selectedEpisode,
+        item.imdb_id,
+        item.mal_id
+      );
+      if (url) return url;
+      // fall through to using explicit source config if getEmbedUrl returned null
+    }
+
     const sourceConfig = EMBED_URLS?.[currentSource];
     if (!sourceConfig) return null;
     if (!isTV && typeof sourceConfig.movie === 'function') return sourceConfig.movie(item.id);
