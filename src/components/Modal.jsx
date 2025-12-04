@@ -127,8 +127,7 @@ export const Modal = ({
   const getPlayerUrl = () => {
     if (!currentSource) return null;
     // If the user hasn't changed sources (still using the initial SOURCE_ORDER[0])
-    // prefer the higher-level `getEmbedUrl` selection which may try `moviesapi` first
-    // for movies (this honors the user's requested priority override).
+    // use getEmbedUrl to get the default source URL
     const defaultSource = SOURCE_ORDER?.[0];
     if (currentSource === defaultSource) {
       const url = getEmbedUrl(

@@ -392,20 +392,6 @@ export const CURATED_COLLECTIONS = [
 
 // --- GET EMBED URL ---
 export const getEmbedUrl = (type, id, season, episode, imdb_id, mal_id) => {
-  // Priority override: for movies, try `moviesapi` first (user-requested preference)
-  if (
-    type === 'movie' &&
-    EMBED_URLS.moviesapi &&
-    typeof EMBED_URLS.moviesapi.movie === 'function'
-  ) {
-    try {
-      const url = EMBED_URLS.moviesapi.movie(id);
-      if (url) return url;
-    } catch {
-      // swallow and continue to normal SOURCE_ORDER fallback
-    }
-  }
-
   for (const source of SOURCE_ORDER) {
     const src = EMBED_URLS[source];
     if (!src) continue;
