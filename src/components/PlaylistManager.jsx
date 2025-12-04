@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import {
   FiPlus,
   FiEdit2,
@@ -15,6 +15,7 @@ import {
   FiMoreVertical,
 } from 'react-icons/fi';
 import { usePlaylists } from '../hooks/usePlaylists';
+import { OptimizedPoster } from './ProgressiveImage';
 
 /**
  * Playlist Manager Component
@@ -176,14 +177,14 @@ const PlaylistCard = ({
     <div className="bg-gray-800 rounded-xl overflow-hidden hover:bg-gray-750 transition-all group">
       {/* Thumbnail */}
       <div
-        className="aspect-video bg-gradient-to-br from-purple-900 to-gray-900 relative cursor-pointer"
+        className="aspect-video bg-linear-to-br from-purple-900 to-gray-900 relative cursor-pointer"
         onClick={onSelect}
       >
         {playlist.thumbnail ? (
-          <img
-            src={`https://image.tmdb.org/t/p/w500${playlist.thumbnail}`}
-            alt={playlist.name}
-            className="w-full h-full object-cover"
+          <OptimizedPoster
+            item={{ poster_path: playlist.thumbnail, title: playlist.name }}
+            isLarge={true}
+            onClick={() => {}}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">

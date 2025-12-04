@@ -1,4 +1,4 @@
-// src/components/AdsterraSmartlink.jsx
+﻿// src/components/AdsterraSmartlink.jsx
 import React, { useEffect, useRef, useState } from 'react';
 
 /**
@@ -88,7 +88,7 @@ export const AdsterraSmartlink = ({ className = '' }) => {
     <div className={`adsterra-smartlink my-8 flex justify-center ${className}`}>
       <div
         ref={containerRef}
-        className="bg-gradient-to-br from-gray-900/30 to-gray-800/30 rounded-2xl p-4 border border-gray-700/20 min-h-[260px] flex items-center justify-center"
+        className="bg-linear-to-br from-gray-900/30 to-gray-800/30 rounded-2xl p-4 border border-gray-700/20 min-h-[260px] flex items-center justify-center"
         id="adsterra-smartlink"
       >
         {status === 'loading' && (

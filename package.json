@@ -19,7 +19,9 @@
     "prepare": "husky",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "analyze": "vite build && open dist/stats.html"
+    "analyze": "vite build",
+    "analyze:open": "node -e \"const p=require('path');const f=p.resolve('dist','stats.html');require('child_process').exec((process.platform==='win32'?('start '+f):('open '+f)));\"",
+    "lighthouse:local": "lighthouse http://localhost:5173 --output html --output-path ./reports/lighthouse-report.html --chrome-flags=\"--headless\""
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

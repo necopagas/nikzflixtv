@@ -1,9 +1,19 @@
-// src/components/AdvancedPlayerControls.jsx
+﻿// src/components/AdvancedPlayerControls.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  FaPlay, FaPause, FaExpand, FaCompress, FaVolumeUp, FaVolumeMute, 
-  FaStepForward, FaStepBackward, FaCog, FaClosedCaptioning, FaTachometerAlt,
-  FaForward, FaBackward
+import {
+  FaPlay,
+  FaPause,
+  FaExpand,
+  FaCompress,
+  FaVolumeUp,
+  FaVolumeMute,
+  FaStepForward,
+  FaStepBackward,
+  FaCog,
+  FaClosedCaptioning,
+  FaTachometerAlt,
+  FaForward,
+  FaBackward,
 } from 'react-icons/fa';
 import { MdPictureInPicture } from 'react-icons/md';
 
@@ -28,7 +38,7 @@ export const AdvancedPlayerControls = ({
   onSpeedChange,
   subtitles = [],
   currentSubtitle,
-  onSubtitleChange
+  onSubtitleChange,
 }) => {
   const [showControls, setShowControls] = useState(true);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
@@ -38,12 +48,12 @@ export const AdvancedPlayerControls = ({
   const controlsTimeoutRef = useRef(null);
 
   // Format time as HH:MM:SS or MM:SS
-  const formatTime = (seconds) => {
+  const formatTime = seconds => {
     if (!seconds || isNaN(seconds)) return '0:00';
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor(seconds % 60);
-    
+
     if (h > 0) {
       return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     }
@@ -82,10 +92,10 @@ export const AdvancedPlayerControls = ({
 
   // Keyboard shortcuts
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = e => {
       if (e.target.tagName === 'INPUT') return;
 
-      switch(e.key.toLowerCase()) {
+      switch (e.key.toLowerCase()) {
         case ' ':
         case 'k':
           e.preventDefault();
@@ -166,8 +176,8 @@ export const AdvancedPlayerControls = ({
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div 
-      className={`absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent transition-opacity duration-300 ${
+    <div
+      className={`absolute inset-0 bg-linear-to-t from-black via-transparent to-transparent transition-opacity duration-300 ${
         showControls || !isPlaying ? 'opacity-100' : 'opacity-0'
       }`}
       onMouseMove={() => setShowControls(true)}
@@ -188,15 +198,18 @@ export const AdvancedPlayerControls = ({
         {/* Progress Bar */}
         <div className="relative group">
           {/* Buffered Bar */}
-          <div className="absolute top-0 left-0 h-1 bg-gray-600 rounded-full" style={{ width: `${buffered}%` }}></div>
-          
+          <div
+            className="absolute top-0 left-0 h-1 bg-gray-600 rounded-full"
+            style={{ width: `${buffered}%` }}
+          ></div>
+
           {/* Progress Bar */}
           <input
             type="range"
             min="0"
             max="100"
             value={progress}
-            onChange={(e) => {
+            onChange={e => {
               onSeek((parseFloat(e.target.value) / 100) * duration);
             }}
             className="w-full h-1 bg-gray-700 rounded-full appearance-none cursor-pointer group-hover:h-2 transition-all
@@ -205,7 +218,7 @@ export const AdvancedPlayerControls = ({
                      [&::-webkit-slider-thumb]:opacity-0 group-hover:[&::-webkit-slider-thumb]:opacity-100
                      [&::-webkit-slider-track]:bg-transparent"
             style={{
-              background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${progress}%, rgba(75, 85, 99, 0.5) ${progress}%, rgba(75, 85, 99, 0.5) 100%)`
+              background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${progress}%, rgba(75, 85, 99, 0.5) ${progress}%, rgba(75, 85, 99, 0.5) 100%)`,
             }}
           />
         </div>
@@ -252,7 +265,7 @@ export const AdvancedPlayerControls = ({
             >
               <FaBackward className="text-lg" />
             </button>
-            
+
             <button
               onClick={() => onSeek(Math.min(duration, currentTime + 10))}
               className="p-2 hover:bg-white/20 rounded-full transition-all"
@@ -262,7 +275,7 @@ export const AdvancedPlayerControls = ({
             </button>
 
             {/* Volume */}
-            <div 
+            <div
               className="flex items-center gap-2"
               onMouseEnter={() => setShowVolumeSlider(true)}
               onMouseLeave={() => setShowVolumeSlider(false)}
@@ -271,21 +284,25 @@ export const AdvancedPlayerControls = ({
                 onClick={() => onVolumeChange(volume > 0 ? 0 : 1)}
                 className="p-2 hover:bg-white/20 rounded-full transition-all"
               >
-                {volume > 0 ? <FaVolumeUp className="text-xl" /> : <FaVolumeMute className="text-xl" />}
+                {volume > 0 ? (
+                  <FaVolumeUp className="text-xl" />
+                ) : (
+                  <FaVolumeMute className="text-xl" />
+                )}
               </button>
-              
+
               {showVolumeSlider && (
                 <input
                   type="range"
                   min="0"
                   max="100"
                   value={volume * 100}
-                  onChange={(e) => onVolumeChange(parseFloat(e.target.value) / 100)}
+                  onChange={e => onVolumeChange(parseFloat(e.target.value) / 100)}
                   className="w-24 h-1 bg-gray-600 rounded-full appearance-none cursor-pointer
                            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3
                            [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:cursor-pointer"
                   style={{
-                    background: `linear-gradient(to right, white 0%, white ${volume * 100}%, rgba(75, 85, 99) ${volume * 100}%, rgba(75, 85, 99) 100%)`
+                    background: `linear-gradient(to right, white 0%, white ${volume * 100}%, rgba(75, 85, 99) ${volume * 100}%, rgba(75, 85, 99) 100%)`,
                   }}
                 />
               )}
@@ -337,9 +354,11 @@ export const AdvancedPlayerControls = ({
                 <button
                   className="p-2 hover:bg-white/20 rounded-full transition-all"
                   title="Subtitles"
-                  onClick={() => setShowSubtitleMenu((prev) => !prev)}
+                  onClick={() => setShowSubtitleMenu(prev => !prev)}
                 >
-                  <FaClosedCaptioning className={`text-xl ${currentSubtitle ? 'text-red-400' : ''}`} />
+                  <FaClosedCaptioning
+                    className={`text-xl ${currentSubtitle ? 'text-red-400' : ''}`}
+                  />
                 </button>
                 {showSubtitleMenu && (
                   <div className="absolute bottom-full right-0 mb-2 bg-black/95 backdrop-blur-xl rounded-lg p-3 min-w-[180px] border border-white/10">
@@ -356,7 +375,7 @@ export const AdvancedPlayerControls = ({
                     >
                       Off
                     </button>
-                    {subtitles.map((subtitle) => (
+                    {subtitles.map(subtitle => (
                       <button
                         key={subtitle?.label || subtitle?.language || subtitle?.id}
                         type="button"
@@ -388,10 +407,7 @@ export const AdvancedPlayerControls = ({
             </button>
 
             {/* Settings */}
-            <button
-              className="p-2 hover:bg-white/20 rounded-full transition-all"
-              title="Settings"
-            >
+            <button className="p-2 hover:bg-white/20 rounded-full transition-all" title="Settings">
               <FaCog className="text-xl" />
             </button>
 

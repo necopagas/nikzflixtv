@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   FiArrowLeft,
@@ -100,12 +100,12 @@ export const PlaylistViewPage = ({ onOpenModal, isWatched }) => {
 
         <div className="flex flex-col md:flex-row gap-6">
           {/* Thumbnail */}
-          <div className="w-full md:w-80 aspect-video bg-gradient-to-br from-purple-900 to-gray-900 rounded-xl overflow-hidden flex-shrink-0">
+          <div className="w-full md:w-80 aspect-video bg-linear-to-br from-purple-900 to-gray-900 rounded-xl overflow-hidden shrink-0">
             {playlist.thumbnail ? (
-              <img
-                src={`https://image.tmdb.org/t/p/w500${playlist.thumbnail}`}
-                alt={playlist.name}
-                className="w-full h-full object-cover"
+              <OptimizedPoster
+                item={{ poster_path: playlist.thumbnail, title: playlist.name }}
+                isLarge={true}
+                onClick={() => {}}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-6xl text-gray-600">

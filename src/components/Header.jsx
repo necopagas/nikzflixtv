@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+﻿// Removed opening code fence
+import ProgressiveImage from './ProgressiveImage';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { SANTA_HAT_USER } from '../assets/santaHatUser';
 import { useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -38,8 +40,8 @@ const MORE_NAV_LINKS = [
 const ALL_NAV_LINKS = [...PRIMARY_NAV_LINKS, ...MORE_NAV_LINKS];
 
 const desktopNavLinkClass = ({ isActive }) =>
-  `px-3 py-2 font-semibold hover:text-[var(--brand-color)] transition-all duration-200 rounded-md hover:bg-[var(--bg-tertiary)] ${
-    isActive ? 'text-[var(--brand-color)] bg-[var(--bg-tertiary)]' : ''
+  `px-3 py-2 font-semibold hover:text-(--brand-color) transition-all duration-200 rounded-md hover:bg-(--bg-tertiary) ${
+    isActive ? 'text-(--brand-color) bg-(--bg-tertiary)' : ''
   }`;
 
 const mobileNavLinkClass = ({ isActive }) =>
@@ -192,13 +194,18 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
           <span className="relative inline-block">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#E50914]">NikzFlix</h1>
             {showHolidayHat && (
-              <img
-                src={hatSrc}
-                alt=""
-                aria-hidden="true"
-                className="absolute -top-4 sm:-top-5 -left-3 sm:-left-4 w-7 sm:w-9 -rotate-12 drop-shadow-md pointer-events-none select-none"
-                onError={() => setHatSrc('/assets/santa-hat.svg')}
-              />
+              <div className="absolute -top-5 sm:-top-6 -left-3 sm:-left-4 w-7 sm:w-9 -rotate-12 drop-shadow-md pointer-events-none select-none z-10">
+                <ProgressiveImage
+                  src={hatSrc}
+                  alt=""
+                  placeholderSrc={'/assets/santa-hat.svg'}
+                  className="w-full h-full"
+                  onError={() => setHatSrc('/assets/santa-hat.svg')}
+                  imgProps={{
+                    'aria-hidden': true,
+                  }}
+                />
+              </div>
             )}
           </span>
         </a>
@@ -218,7 +225,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
             <button
               type="button"
               onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
-              className="px-3 py-2 font-semibold hover:text-[var(--brand-color)] transition-all duration-200 rounded-md hover:bg-[var(--bg-tertiary)] flex items-center gap-2"
+              className="px-3 py-2 font-semibold hover:text-(--brand-color) transition-all duration-200 rounded-md hover:bg-(--bg-tertiary) flex items-center gap-2"
               aria-expanded={isMoreMenuOpen}
               aria-haspopup="true"
             >
@@ -235,9 +242,9 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                   onClick={() => setIsMoreMenuOpen(false)}
                   aria-hidden="true"
                 />
-                <div className="absolute top-full mt-2 right-0 bg-[var(--bg-secondary)] rounded-md shadow-lg py-2 min-w-[200px] z-50 border border-[var(--border-color)]">
+                <div className="absolute top-full mt-2 right-0 bg-(--bg-secondary) rounded-md shadow-lg py-2 min-w-[200px] z-50 border border-(--border-color)">
                   {/* Search in dropdown */}
-                  <div className="px-3 py-2 border-b border-[var(--border-color)]">
+                  <div className="px-3 py-2 border-b border-(--border-color)">
                     <form onSubmit={handleSearch} className="flex items-center">
                       <div className="search-container relative flex items-center w-full">
                         <button
@@ -266,8 +273,8 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                       to={link.to}
                       onClick={() => setIsMoreMenuOpen(false)}
                       className={({ isActive }) =>
-                        `block px-4 py-2 hover:bg-[var(--bg-tertiary)] hover:text-[var(--brand-color)] transition-colors ${
-                          isActive ? 'text-[var(--brand-color)] bg-[var(--bg-tertiary)]' : ''
+                        `block px-4 py-2 hover:bg-(--bg-tertiary) hover:text-(--brand-color) transition-colors ${
+                          isActive ? 'text-(--brand-color) bg-(--bg-tertiary)' : ''
                         }`
                       }
                     >
@@ -339,7 +346,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
               {currentUser ? (
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="w-9 h-9 rounded-full bg-red-600 flex items-center justify-center font-bold text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-color)]"
+                  className="w-9 h-9 rounded-full bg-red-600 flex items-center justify-center font-bold text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-color)"
                   aria-haspopup="menu"
                   aria-expanded={isProfileOpen}
                   aria-label="Open profile menu"
@@ -349,25 +356,25 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
               ) : (
                 <button
                   onClick={() => navigate('/auth')}
-                  className="px-3 py-1 bg-[var(--brand-color)] rounded-md font-semibold text-sm"
+                  className="px-3 py-1 bg-(--brand-color) rounded-md font-semibold text-sm"
                 >
                   Login
                 </button>
               )}
               {currentUser && isProfileOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-[var(--bg-secondary)] rounded-md shadow-lg py-1 z-50 text-sm">
-                  <div className="px-3 py-2 text-xs text-[var(--text-secondary)] border-b border-[var(--border-color)]">
+                <div className="absolute right-0 mt-2 w-40 bg-(--bg-secondary) rounded-md shadow-lg py-1 z-50 text-sm">
+                  <div className="px-3 py-2 text-xs text-(--text-secondary) border-b border-(--border-color)">
                     {currentUser.email}
                   </div>
                   <button
                     onClick={navigateToProfile}
-                    className="w-full text-left px-3 py-2 hover:bg-[var(--bg-tertiary)]"
+                    className="w-full text-left px-3 py-2 hover:bg-(--bg-tertiary)"
                   >
                     My Profile
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-3 py-2 hover:bg-[var(--bg-tertiary)]"
+                    className="w-full text-left px-3 py-2 hover:bg-(--bg-tertiary)"
                   >
                     Logout
                   </button>
@@ -401,7 +408,8 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
       >
         <div className="mobile-menu__header">
           <div className="mobile-menu__brand" id="mobileMenuTitle">
-            <FaPlay className="text-[var(--brand-color)] text-lg" />
+            <FaPlay className="text-(--brand-color) text-lg" />
+            <FaPlay className="text-(--brand-color) text-lg" />
             <span>NikzFlix</span>
           </div>
           <button

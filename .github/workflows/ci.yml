@@ -1,0 +1,46 @@
+﻿name: CI - Build & Lighthouse
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Serve built site
+        run: |
+          npx http-server ./dist -p 8080 --silent &
+          sleep 2
+
+      - name: Install lighthouse and chromium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser
+          npm install -g lighthouse
+
+      - name: Run Lighthouse (Headless)
+        run: |
+          mkdir -p reports
+          lighthouse http://127.0.0.1:8080 --output html --output-path=reports/lighthouse-ci.html --chrome-flags="--no-sandbox --headless --disable-gpu"
+
+      - name: Upload Lighthouse report
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: reports/lighthouse-ci.html

@@ -6,33 +6,29 @@ import { auth } from '../firebase';
 const AuthContext = createContext();
 
 export const useAuth = () => {
-    return useContext(AuthContext);
+  return useContext(AuthContext);
 };
 
 export const AuthProvider = ({ children }) => {
-    const [currentUser, setCurrentUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    const logout = () => {
-        return firebaseSignOut(auth);
-    };
+  const logout = () => {
+    return firebaseSignOut(auth);
+  };
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, user => {
-            setCurrentUser(user);
-            setLoading(false);
-        });
-        return unsubscribe;
-    }, []);
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, user => {
+      setCurrentUser(user);
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
 
-    const value = {
-        currentUser,
-        logout
-    };
+  const value = {
+    currentUser,
+    logout,
+  };
 
-    return (
-        <AuthContext.Provider value={value}>
-            {!loading && children}
-        </AuthContext.Provider>
-    );
+  return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
 };

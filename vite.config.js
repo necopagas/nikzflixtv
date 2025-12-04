@@ -151,6 +151,10 @@ export default defineConfig(({ mode }) => ({
           ) {
             return 'vendor-state';
           }
+          // UI Libraries
+          if (id.includes('node_modules/react-icons')) {
+            return 'vendor-icons';
+          }
           // Utilities
           if (
             id.includes('node_modules/axios') ||
@@ -163,7 +167,7 @@ export default defineConfig(({ mode }) => ({
         },
       },
     },
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 1000,
     minify: 'terser',
     terserOptions: {
       compress: {

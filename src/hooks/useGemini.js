@@ -1,6 +1,10 @@
 // src/hooks/useGemini.js
 // Small client helper to call the server-side /api/gemini proxy.
-export async function callGemini(providerUrl, payload = {}, options = { method: 'POST', useQueryKey: false }) {
+export async function callGemini(
+  providerUrl,
+  payload = {},
+  options = { method: 'POST', useQueryKey: false }
+) {
   const body = {
     providerUrl,
     method: options.method || 'POST',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useCast } from '../hooks/useCast';
 import { FiCast, FiMonitor, FiX } from 'react-icons/fi';
 
@@ -141,7 +141,7 @@ export const CastButton = ({ videoElement, videoUrl, metadata, className = '' })
                       disabled={isLoading}
                       className="w-full px-4 py-3 hover:bg-gray-800 transition-colors text-left flex items-center gap-3"
                     >
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-linear-to-br from-blue-600 to-blue-800 flex items-center justify-center">
                         <FiCast className="text-white" size={16} />
                       </div>
                       <div className="flex-1">
@@ -156,7 +156,7 @@ export const CastButton = ({ videoElement, videoUrl, metadata, className = '' })
                       onClick={handleAirPlay}
                       className="w-full px-4 py-3 hover:bg-gray-800 transition-colors text-left flex items-center gap-3"
                     >
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-linear-to-br from-purple-600 to-purple-800 flex items-center justify-center">
                         <FiMonitor className="text-white" size={16} />
                       </div>
                       <div className="flex-1">

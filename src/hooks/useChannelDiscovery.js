@@ -11,24 +11,27 @@ export const useChannelDiscovery = (defaultOptions = {}) => {
 
   const optionsRef = useMemo(() => ({ ...defaultOptions }), [defaultOptions]);
 
-  const discover = useCallback(async (channelName, overrideOptions = {}) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const streams = await discoverChannelStreams(channelName, {
-        ...optionsRef,
-        ...overrideOptions,
-      });
-      setResults(streams);
-      return streams;
-    } catch (err) {
-      setError(err);
-      setResults([]);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [optionsRef]);
+  const discover = useCallback(
+    async (channelName, overrideOptions = {}) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const streams = await discoverChannelStreams(channelName, {
+          ...optionsRef,
+          ...overrideOptions,
+        });
+        setResults(streams);
+        return streams;
+      } catch (err) {
+        setError(err);
+        setResults([]);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [optionsRef]
+  );
 
   const reset = useCallback(() => {
     setResults([]);

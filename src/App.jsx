@@ -2,9 +2,12 @@ import React, { useState, useEffect, lazy, Suspense, useRef } from 'react';
 import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
-import { Modal } from './components/Modal';
+// Lazy load modals
+const Modal = lazy(() => import('./components/Modal').then(m => ({ default: m.Modal })));
+const SettingsModal = lazy(() =>
+  import('./components/SettingsModal').then(m => ({ default: m.SettingsModal }))
+);
 import { BackToTopButton } from './components/BackToTopButton';
-import { SettingsModal } from './components/SettingsModal';
 import { ContentLoader } from './components/LoadingSpinner';
 import { BraveNotification } from './components/BraveNotification';
 import SplashScreen from './components/SplashScreen';
@@ -318,33 +321,35 @@ export default function App() {
         {isNewYearMode && <NewYearEffects />}
       </Suspense>
 
-      {modalItem && (
-        <Modal
-          item={modalItem}
-          onClose={handleCloseModal}
-          isItemInMyList={isItemInMyList}
-          onToggleMyList={toggleMyList}
-          playOnOpen={playOnOpen}
-          onEpisodePlay={(itemForProgress, season, episode) =>
-            setItemProgress(itemForProgress, season, episode)
-          }
-          addToWatched={addToWatched}
-          isWatched={isWatched}
-          onOpenModal={handleOpenModal}
-          continueWatchingList={continueWatchingList}
-        />
-      )}
+      <Suspense fallback={null}>
+        {modalItem && (
+          <Modal
+            item={modalItem}
+            onClose={handleCloseModal}
+            isItemInMyList={isItemInMyList}
+            onToggleMyList={toggleMyList}
+            playOnOpen={playOnOpen}
+            onEpisodePlay={(itemForProgress, season, episode) =>
+              setItemProgress(itemForProgress, season, episode)
+            }
+            addToWatched={addToWatched}
+            isWatched={isWatched}
+            onOpenModal={handleOpenModal}
+            continueWatchingList={continueWatchingList}
+          />
+        )}
 
-      {isSettingsOpen && (
-        <SettingsModal
-          onClose={() => setIsSettingsOpen(false)}
-          theme={theme}
-          toggleTheme={toggleTheme}
-          onClearContinueWatching={clearContinueWatching}
-          onClearWatchedHistory={clearWatchedHistory}
-          onClearMyList={clearMyList}
-        />
-      )}
+        {isSettingsOpen && (
+          <SettingsModal
+            onClose={() => setIsSettingsOpen(false)}
+            theme={theme}
+            toggleTheme={toggleTheme}
+            onClearContinueWatching={clearContinueWatching}
+            onClearWatchedHistory={clearWatchedHistory}
+            onClearMyList={clearMyList}
+          />
+        )}
+      </Suspense>
 
       <BraveNotification />
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { FiPlus, FiCheck } from 'react-icons/fi';
 import { usePlaylists } from '../hooks/usePlaylists';
 
@@ -105,7 +105,7 @@ export const AddToPlaylistButton = ({ item, className = '' }) => {
                         <div className="font-medium text-white truncate">{playlist.name}</div>
                         <div className="text-xs text-gray-400">{playlist.items.length} items</div>
                       </div>
-                      {inPlaylist && <FiCheck className="text-green-400 flex-shrink-0" />}
+                      {inPlaylist && <FiCheck className="text-green-400 shrink-0" />}
                     </button>
                   );
                 })}

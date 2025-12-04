@@ -1,7 +1,7 @@
 // src/utils/scrapeSeeds.js
 // Curated backup stream definitions that behave like scrape results
 
-const normalize = (value) => {
+const normalize = value => {
   if (!value) return '';
   return String(value)
     .toLowerCase()
@@ -10,7 +10,7 @@ const normalize = (value) => {
     .trim();
 };
 
-const tokenize = (value) => normalize(value).split(' ').filter(Boolean);
+const tokenize = value => normalize(value).split(' ').filter(Boolean);
 
 const CHANNEL_SEEDS = [
   {
@@ -21,13 +21,7 @@ const CHANNEL_SEEDS = [
       {
         name: 'PTV 4',
         category: 'Government',
-        patterns: [
-          'ptv',
-          'ptv 4',
-          'ptv4',
-          'peoples television network',
-          'people television',
-        ],
+        patterns: ['ptv', 'ptv 4', 'ptv4', 'peoples television network', 'people television'],
         streams: [
           {
             url: 'https://qp-pldt-live-grp-02-prod.akamaized.net/out/u/cg_ptv4_sd.mpd',
@@ -46,13 +40,7 @@ const CHANNEL_SEEDS = [
       {
         name: 'TV5',
         category: 'Entertainment',
-        patterns: [
-          'tv5',
-          'tv 5',
-          'kapatid channel',
-          'tv5 philippines',
-          'tv5 kapatid',
-        ],
+        patterns: ['tv5', 'tv 5', 'kapatid channel', 'tv5 philippines', 'tv5 kapatid'],
         streams: [
           {
             url: 'https://qp-pldt-live-grp-03-prod.akamaized.net/out/u/cg_tv5_hd.mpd',
@@ -73,11 +61,7 @@ const CHANNEL_SEEDS = [
       {
         name: 'IBC 13',
         category: 'Government',
-        patterns: [
-          'ibc',
-          'ibc 13',
-          'intercontinental broadcasting corporation',
-        ],
+        patterns: ['ibc', 'ibc 13', 'intercontinental broadcasting corporation'],
         streams: [
           {
             url: 'https://qp-pldt-live-grp-03-prod.akamaized.net/out/u/cg_ibc13_sd.mpd',
@@ -96,11 +80,7 @@ const CHANNEL_SEEDS = [
       {
         name: 'One PH',
         category: 'News',
-        patterns: [
-          'one ph',
-          'oneph',
-          'cignal one ph',
-        ],
+        patterns: ['one ph', 'oneph', 'cignal one ph'],
         streams: [
           {
             url: 'https://qp-pldt-live-grp-02-prod.akamaized.net/out/u/cg_oneph_sd.mpd',
@@ -119,12 +99,7 @@ const CHANNEL_SEEDS = [
       {
         name: 'GMA 7',
         category: 'Entertainment',
-        patterns: [
-          'gma 7',
-          'gma7',
-          'gma network',
-          'kapuso channel',
-        ],
+        patterns: ['gma 7', 'gma7', 'gma network', 'kapuso channel'],
         streams: [
           {
             url: 'https://tmob-p1.cdn.asset.apac.t5c.xyz/PLDT-P1/HLS/asset.m3u8',
@@ -137,11 +112,7 @@ const CHANNEL_SEEDS = [
       {
         name: 'Kapamilya Channel',
         category: 'Entertainment',
-        patterns: [
-          'kapamilya channel',
-          'kapamilya online',
-          'abs cbn kapamilya',
-        ],
+        patterns: ['kapamilya channel', 'kapamilya online', 'abs cbn kapamilya'],
         streams: [
           {
             url: 'https://tmob-p1.cdn.asset.apac.t5c.xyz/ABS-CBN/Kapamilya/playlist.m3u8',
@@ -154,11 +125,7 @@ const CHANNEL_SEEDS = [
       {
         name: 'A2Z Channel 11',
         category: 'Entertainment',
-        patterns: [
-          'a2z',
-          'a2z channel 11',
-          'a2z philippines',
-        ],
+        patterns: ['a2z', 'a2z channel 11', 'a2z philippines'],
         streams: [
           {
             url: 'https://tmob-p1.cdn.asset.apac.t5c.xyz/A2Z/primary/playlist.m3u8',
@@ -171,11 +138,7 @@ const CHANNEL_SEEDS = [
       {
         name: 'Cignal One News',
         category: 'News',
-        patterns: [
-          'one news',
-          'cignal news',
-          'cignal one news',
-        ],
+        patterns: ['one news', 'cignal news', 'cignal one news'],
         streams: [
           {
             url: 'https://qp-pldt-live-grp-01-prod.akamaized.net/out/u/cg_onenews_hd.mpd',
@@ -194,11 +157,7 @@ const CHANNEL_SEEDS = [
       {
         name: 'CNN Philippines',
         category: 'News',
-        patterns: [
-          'cnn philippines',
-          'cnn ph',
-          'cnnph',
-        ],
+        patterns: ['cnn philippines', 'cnn ph', 'cnnph'],
         streams: [
           {
             url: 'https://qp-pldt-live-grp-03-prod.akamaized.net/out/u/cnn_cnnph_prod_hd.mpd',
@@ -217,10 +176,7 @@ const CHANNEL_SEEDS = [
       {
         name: 'Net 25',
         category: 'Entertainment',
-        patterns: [
-          'net25',
-          'net 25',
-        ],
+        patterns: ['net25', 'net 25'],
         streams: [
           {
             url: 'https://qp-pldt-live-grp-02-prod.akamaized.net/out/u/cg_net25_sd.mpd',
@@ -239,10 +195,7 @@ const CHANNEL_SEEDS = [
       {
         name: 'UNTV',
         category: 'News',
-        patterns: [
-          'untv',
-          'untv philippines',
-        ],
+        patterns: ['untv', 'untv philippines'],
         streams: [
           {
             url: 'https://qp-pldt-live-grp-02-prod.akamaized.net/out/u/cg_untv_sd.mpd',
@@ -262,38 +215,43 @@ const CHANNEL_SEEDS = [
   },
 ];
 
-export const getSeededScrapeCandidates = (channelName, { maxResults = 5, localOnly = false, targetRegion = null } = {}) => {
+export const getSeededScrapeCandidates = (
+  channelName,
+  { maxResults = 5, localOnly = false, targetRegion = null } = {}
+) => {
   const normalized = normalize(channelName);
   if (!normalized) return [];
   const queryTokens = tokenize(channelName);
 
   const candidates = [];
 
-  CHANNEL_SEEDS.forEach((pack) => {
+  CHANNEL_SEEDS.forEach(pack => {
     const packRegion = pack.region || null;
     if (localOnly && targetRegion && packRegion && packRegion !== targetRegion) {
       return;
     }
 
-    pack.entries.forEach((entry) => {
+    pack.entries.forEach(entry => {
       const patterns = Array.isArray(entry.patterns) ? entry.patterns : [];
-      const matched = patterns.some((pattern) => {
+      const matched = patterns.some(pattern => {
         const tokens = tokenize(pattern);
         if (!tokens.length) return false;
-        return tokens.every((token) => queryTokens.includes(token));
+        return tokens.every(token => queryTokens.includes(token));
       });
 
       if (!matched) return;
 
-      const streams = (entry.streams || []).map((stream) => ({
-        url: stream.url,
-        quality: stream.quality || null,
-        streamType: stream.streamType || null,
-        userAgent: null,
-        referrer: null,
-        requiresProxy: Boolean(stream.requiresProxy),
-        source: stream.source || pack.label,
-      })).filter((stream) => typeof stream.url === 'string' && stream.url.length > 4);
+      const streams = (entry.streams || [])
+        .map(stream => ({
+          url: stream.url,
+          quality: stream.quality || null,
+          streamType: stream.streamType || null,
+          userAgent: null,
+          referrer: null,
+          requiresProxy: Boolean(stream.requiresProxy),
+          source: stream.source || pack.label,
+        }))
+        .filter(stream => typeof stream.url === 'string' && stream.url.length > 4);
 
       if (!streams.length) return;
 

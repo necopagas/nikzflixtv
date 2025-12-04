@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { useAchievements } from '../hooks/useAchievements';
 import { useNavigate } from 'react-router-dom';
 import { FiStar } from 'react-icons/fi';
@@ -10,12 +10,12 @@ export const LevelBadge = () => {
   return (
     <button
       onClick={() => navigate('/achievements')}
-      className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-900/50 to-blue-900/50 hover:from-purple-800/60 hover:to-blue-800/60 rounded-lg border border-purple-500/30 transition-all duration-200 group"
+      className="flex items-center gap-2 px-3 py-1.5 bg-linear-to-r from-purple-900/50 to-blue-900/50 hover:from-purple-800/60 hover:to-blue-800/60 rounded-lg border border-purple-500/30 transition-all duration-200 group"
       title="View Achievements"
     >
       {/* Level Circle */}
       <div className="relative">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-xs font-bold text-white">
+        <div className="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center text-xs font-bold text-white">
           {level}
         </div>
 

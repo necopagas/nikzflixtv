@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiUsers, FiArrowLeft, FiAlertCircle } from 'react-icons/fi';
+import ProgressiveImage from '../components/ProgressiveImage';
 
 /**
  * Watch Party Join Page
@@ -120,10 +121,11 @@ const WatchPartyJoinPage = () => {
               <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 space-y-3">
                 <div className="flex items-start gap-4">
                   {partyInfo.video?.metadata?.poster && (
-                    <img
+                    <ProgressiveImage
                       src={`https://image.tmdb.org/t/p/w185${partyInfo.video.metadata.poster}`}
-                      alt=""
-                      className="w-24 h-36 object-cover rounded-lg"
+                      alt={partyInfo.video?.metadata?.title || ''}
+                      placeholderSrc={'/placeholder.png'}
+                      imgProps={{ className: 'w-24 h-36 object-cover rounded-lg' }}
                     />
                   )}
                   <div className="flex-1">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaBook, FaClock, FaBookmark, FaPlay } from 'react-icons/fa';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import ProgressiveImage from '../components/ProgressiveImage';
 
 export const MangaDetailPage = () => {
   const { id: rawId } = useParams();
@@ -360,12 +361,16 @@ export const MangaDetailPage = () => {
           {/* Cover Image */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
-              <img
+              {/* Progressive cover image */}
+              <ProgressiveImage
                 src={manga.coverImage || 'https://via.placeholder.com/512x768?text=No+Image'}
+                placeholderSrc={'https://via.placeholder.com/92x138.png?text=...'}
                 alt={manga.title}
-                className="w-full rounded-xl shadow-2xl"
-                onError={e => {
-                  e.target.src = 'https://via.placeholder.com/512x768?text=No+Image';
+                imgProps={{
+                  className: 'w-full rounded-xl shadow-2xl',
+                  onError: e => {
+                    e.target.src = 'https://via.placeholder.com/512x768?text=No+Image';
+                  },
                 }}
               />
 

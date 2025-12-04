@@ -6,7 +6,7 @@ export default {
   component: Poster,
 };
 
-const Template = (args) => <Poster {...args} />;
+const Template = args => <Poster {...args} />;
 
 export const Default = Template.bind({});
 Default.args = {

@@ -17,7 +17,7 @@ class VideoPlayerErrorBoundary extends React.Component {
       return {
         hasError: false,
         error: null,
-        errorId: null
+        errorId: null,
       };
     }
     return null;
@@ -34,8 +34,8 @@ class VideoPlayerErrorBoundary extends React.Component {
       return (
         <div className="videoke-stage-fallback">
           <p>Video player encountered an error. Please try selecting another song.</p>
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={() => this.setState({ hasError: false, error: null, errorId: null })}
             className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >

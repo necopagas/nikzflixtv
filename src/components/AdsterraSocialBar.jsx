@@ -15,6 +15,7 @@ export const AdsterraSocialBar = () => {
 
   useEffect(() => {
     if (isHidden) {
+      console.log('[SocialBar] Hidden by user preference (localStorage: nikz_social_bar_hidden)');
       setShouldRender(false);
       return;
     }

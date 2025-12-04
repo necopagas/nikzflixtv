@@ -138,16 +138,16 @@ export const Row = ({
             Array.from({ length: 10 }).map((_, i) => (
               <div
                 key={`skeleton-${title}-${i}`}
-                className={`flex-shrink-0 ${isLarge ? 'w-64' : 'w-40'} snap-start`}
+                className={`shrink-0 ${isLarge ? 'w-64' : 'w-40'} snap-start`}
               >
                 <div className="skeleton rounded-lg overflow-hidden relative">
                   <div
-                    className={`${isLarge ? 'h-96' : 'h-60'} bg-gradient-to-br from-gray-800 to-gray-900 relative overflow-hidden`}
+                    className={`${isLarge ? 'h-96' : 'h-60'} bg-linear-to-br from-gray-800 to-gray-900 relative overflow-hidden`}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent"></div>
                     {/* Shimmer effect */}
                     <div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-700/30 to-transparent animate-shimmer"
+                      className="absolute inset-0 bg-linear-to-r from-transparent via-gray-700/30 to-transparent animate-shimmer"
                       style={{ animationDuration: '2s' }}
                     ></div>
                   </div>
@@ -173,10 +173,7 @@ export const Row = ({
             </div>
           ) : (
             visibleItems.map(item => (
-              <div
-                key={item.id}
-                className={`flex-shrink-0 ${isLarge ? 'w-64' : 'w-40'} snap-start`}
-              >
+              <div key={item.id} className={`shrink-0 ${isLarge ? 'w-64' : 'w-40'} snap-start`}>
                 <Poster
                   item={item}
                   onOpenModal={onOpenModal}

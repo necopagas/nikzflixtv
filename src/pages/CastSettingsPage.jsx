@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useCast } from '../hooks/useCast';
 import { FiCast, FiMonitor, FiInfo, FiCheck, FiX } from 'react-icons/fi';
 
@@ -36,7 +36,7 @@ export const CastSettingsPage = () => {
       </div>
 
       {/* Device Status */}
-      <div className="bg-gradient-to-r from-gray-900/80 to-gray-900/40 rounded-xl p-6 mb-8 border border-gray-800">
+      <div className="bg-linear-to-r from-gray-900/80 to-gray-900/40 rounded-xl p-6 mb-8 border border-gray-800">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <FiMonitor className="text-blue-400" />
           Device Status
@@ -117,7 +117,7 @@ export const CastSettingsPage = () => {
       </div>
 
       {/* Cast Preferences */}
-      <div className="bg-gradient-to-r from-gray-900/80 to-gray-900/40 rounded-xl p-6 mb-8 border border-gray-800">
+      <div className="bg-linear-to-r from-gray-900/80 to-gray-900/40 rounded-xl p-6 mb-8 border border-gray-800">
         <h2 className="text-xl font-bold mb-4">Cast Preferences</h2>
 
         <div className="space-y-4">
@@ -191,7 +191,7 @@ export const CastSettingsPage = () => {
       </div>
 
       {/* How to Cast */}
-      <div className="bg-gradient-to-r from-gray-900/80 to-gray-900/40 rounded-xl p-6 border border-gray-800">
+      <div className="bg-linear-to-r from-gray-900/80 to-gray-900/40 rounded-xl p-6 border border-gray-800">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <FiInfo className="text-blue-400" />
           How to Cast

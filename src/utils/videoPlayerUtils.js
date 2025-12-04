@@ -20,7 +20,11 @@ export class IntroSkipper {
    */
   isInIntro() {
     const currentTime = this.video.currentTime;
-    return currentTime >= this.skipIntroStart && currentTime <= this.skipIntroEnd && !this.hasSkippedIntro;
+    return (
+      currentTime >= this.skipIntroStart &&
+      currentTime <= this.skipIntroEnd &&
+      !this.hasSkippedIntro
+    );
   }
 
   /**
@@ -90,7 +94,10 @@ export class PlaybackSpeedController {
   }
 
   increaseSpeed() {
-    const newIndex = Math.min(this.currentSpeedIndex + 1, PlaybackSpeedController.speeds.length - 1);
+    const newIndex = Math.min(
+      this.currentSpeedIndex + 1,
+      PlaybackSpeedController.speeds.length - 1
+    );
     this.setSpeed(PlaybackSpeedController.speeds[newIndex]);
   }
 
@@ -139,7 +146,7 @@ export class WatchProgressTracker {
       currentTime,
       totalDuration: this.totalDuration,
       percentage: (currentTime / this.totalDuration) * 100,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     const allProgress = JSON.parse(localStorage.getItem('watchProgress') || '{}');
@@ -226,7 +233,7 @@ export class SubtitleCustomizer {
     color: '#FFFFFF',
     backgroundColor: '#000000',
     opacity: 0.75,
-    position: 'bottom'
+    position: 'bottom',
   };
 
   static saveSettings(settings) {
@@ -240,7 +247,7 @@ export class SubtitleCustomizer {
 
   static applyToVideoElement(trackElement) {
     const settings = SubtitleCustomizer.getSettings();
-    
+
     if (trackElement) {
       const cue = trackElement.cues?.[0];
       if (cue) {

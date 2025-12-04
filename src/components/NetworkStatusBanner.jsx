@@ -20,11 +20,7 @@ export const NetworkStatusBanner = ({ status = null }) => {
   const { icon, message } = STATUS_CONFIG[status];
 
   return (
-    <div
-      className={`network-status-banner visible ${status}`}
-      role="status"
-      aria-live="assertive"
-    >
+    <div className={`network-status-banner visible ${status}`} role="status" aria-live="assertive">
       <div className={`network-status-chip ${status}`}>
         <span className="network-status-icon">{icon}</span>
         <span className="network-status-text">{message}</span>

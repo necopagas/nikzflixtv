@@ -15,10 +15,11 @@ export default function AdBanner({ timeout = 4000 }) {
     if (typeof window === 'undefined') return;
 
     // If banner already shown this session, don't show again
-    if (sessionStorage.getItem('adsterra_banner_shown')) {
+    // Commented out for testing/debugging purposes
+    /* if (sessionStorage.getItem('adsterra_banner_shown')) {
       setStatus('loaded');
       return;
-    }
+    } */
 
     let timer = null;
     let script = null;
@@ -35,8 +36,7 @@ export default function AdBanner({ timeout = 4000 }) {
     };
 
     // Create script and container. Many native ad providers expect the script
-    // to be adjacent to the provider container (script then container), so
-    // we create the script first and then insert the container right after it.
+    // to be adjacent to the provider container (script then container).
     try {
       script = document.createElement('script');
       script.src = AD_SCRIPT_SRC;
@@ -44,20 +44,15 @@ export default function AdBanner({ timeout = 4000 }) {
       script.type = 'text/javascript';
       script.setAttribute('data-cfasync', 'false');
 
-      // If container already exists, try to place script before it. Otherwise
-      // append the script to body and create the container after the script.
-      const existingContainer = document.getElementById(CONTAINER_ID);
-      if (existingContainer && existingContainer.parentNode) {
-        existingContainer.parentNode.insertBefore(script, existingContainer);
+      // Find the container rendered by React
+      const container = document.getElementById(CONTAINER_ID);
+
+      if (container && container.parentNode) {
+        // Insert script BEFORE the container
+        container.parentNode.insertBefore(script, container);
       } else {
+        // Fallback if React hasn't mounted it yet (unlikely)
         document.body.appendChild(script);
-        // Create container after script so the script is immediately before it
-        let containerAfter = document.getElementById(CONTAINER_ID);
-        if (!containerAfter) {
-          containerAfter = document.createElement('div');
-          containerAfter.id = CONTAINER_ID;
-          script.insertAdjacentElement('afterend', containerAfter);
-        }
       }
 
       script.onload = () => {
@@ -88,48 +83,39 @@ export default function AdBanner({ timeout = 4000 }) {
     return () => {
       if (timer) clearTimeout(timer);
       if (script && script.parentNode) script.parentNode.removeChild(script);
-      // keep the container (provider may have injected children); do not aggressively remove
+      // We don't remove the container because React manages it
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Render inline fallback UI while ad loads or if it fails.
-  // We intentionally keep the actual provider script out of React's render tree
-  // because some providers expect a particular DOM placement.
-  if (status === 'loaded') return null;
-
   return (
-    <div className="ad-banner-wrapper p-4 flex items-center justify-center">
+    <div className="ad-banner-wrapper p-4 flex flex-col items-center justify-center min-h-[100px]">
+      {/* The Container for the Ad - Always rendered so script can find it */}
+      <div id={CONTAINER_ID} className="w-full flex justify-center" />
+
       {status === 'loading' && (
-        <div className="ad-loading flex flex-col items-center gap-2">
-          <div className="w-12 h-12 border-4 border-t-(--brand-color) rounded-full animate-spin" />
-          <div className="text-sm text-(--text-secondary)">Loading ad…</div>
+        <div className="ad-loading flex flex-col items-center gap-2 my-2">
+          <div className="w-8 h-8 border-2 border-t-red-500 rounded-full animate-spin" />
+          <div className="text-xs text-gray-400">Loading ad...</div>
         </div>
       )}
 
       {status === 'fallback' && (
-        <div className="ad-fallback w-full max-w-xs bg-(--bg-tertiary) rounded-lg p-4 text-center">
-          <div className="text-sm text-(--text-primary) font-semibold mb-2">Sponsored</div>
-          <div className="text-xs text-(--text-secondary) mb-3">
-            Support NikzFlix — check this out.
-          </div>
+        <div className="ad-fallback w-full max-w-xs bg-gray-800 rounded-lg p-4 text-center mt-2">
+          <div className="text-sm text-white font-semibold mb-2">Sponsored</div>
+          <div className="text-xs text-gray-400 mb-3">Support NikzFlix — check this out.</div>
           <a
-            className="inline-block px-4 py-2 bg-(--brand-color) text-white rounded-md"
+            className="inline-block px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700 transition-colors"
             href="/promo"
-            onClick={() => {
-              try {
-                sessionStorage.setItem('adsterra_banner_shown', '1');
-              } catch (err) {
-                console.warn('Unable to set sessionStorage flag for ad banner', err);
-              }
-            }}
           >
             View Promo
           </a>
         </div>
       )}
 
-      {status === 'error' && <div className="ad-error text-xs text-red-400">Failed to load ad</div>}
+      {status === 'error' && (
+        <div className="ad-error text-xs text-red-400 mt-2">Unable to load ad provider</div>
+      )}
     </div>
   );
 }

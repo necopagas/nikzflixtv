@@ -10,8 +10,14 @@ const streamCache = { data: null, timestamp: 0, promise: null };
 
 const FALLBACK_PLAYLISTS = [
   { url: 'https://raw.githubusercontent.com/SheyEm/PH_IPTV/main/PH.m3u', label: 'SheyEm/PH_IPTV' },
-  { url: 'https://raw.githubusercontent.com/touchmetender/m3u/main/iptv.m3u', label: 'touchmetender/m3u' },
-  { url: 'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/ph.m3u', label: 'iptv-org/streams/ph' },
+  {
+    url: 'https://raw.githubusercontent.com/touchmetender/m3u/main/iptv.m3u',
+    label: 'touchmetender/m3u',
+  },
+  {
+    url: 'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/ph.m3u',
+    label: 'iptv-org/streams/ph',
+  },
 ];
 
 const playlistCache = new Map();
@@ -22,19 +28,19 @@ const fetchWithCache = async (cacheRef, url, ttl = CACHE_TTL_MS) => {
   if (cacheRef.promise) return cacheRef.promise;
 
   cacheRef.promise = fetch(url)
-    .then((response) => {
+    .then(response => {
       if (!response.ok) {
         throw new Error(`Failed to fetch ${url} (${response.status})`);
       }
       return response.json();
     })
-    .then((data) => {
+    .then(data => {
       cacheRef.data = data;
       cacheRef.timestamp = Date.now();
       cacheRef.promise = null;
       return data;
     })
-    .catch((error) => {
+    .catch(error => {
       cacheRef.promise = null;
       throw error;
     });
@@ -102,13 +108,13 @@ const fetchPlaylistEntries = async (playlist, ttl = CACHE_TTL_MS) => {
   }
 
   const promise = fetch(playlist.url)
-    .then((response) => {
+    .then(response => {
       if (!response.ok) {
         throw new Error(`Failed to fetch playlist ${playlist.url} (${response.status})`);
       }
       return response.text();
     })
-    .then((text) => {
+    .then(text => {
       const entries = parseM3UPlaylist(text, playlist);
       playlistCache.set(playlist.url, {
         data: entries,
@@ -117,7 +123,7 @@ const fetchPlaylistEntries = async (playlist, ttl = CACHE_TTL_MS) => {
       });
       return entries;
     })
-    .catch((error) => {
+    .catch(error => {
       playlistCache.delete(playlist.url);
       throw error;
     });
@@ -131,8 +137,7 @@ const fetchPlaylistEntries = async (playlist, ttl = CACHE_TTL_MS) => {
   return promise;
 };
 
-
-const normalizeName = (value) => {
+const normalizeName = value => {
   if (!value) return '';
   return value
     .toLowerCase()
@@ -142,7 +147,7 @@ const normalizeName = (value) => {
     .trim();
 };
 
-const detectRegionToken = (value) => {
+const detectRegionToken = value => {
   if (!value) return null;
   const lower = value.toLowerCase();
   if (/\b(philippines|philippine|pinoy|filipino)\b/.test(lower)) return 'philippines';
@@ -197,18 +202,18 @@ const COUNTRY_REGION_HINTS = {
   MNG: 'mongolia',
 };
 
-const regionFromCountryCode = (code) => {
+const regionFromCountryCode = code => {
   if (!code) return null;
   return COUNTRY_REGION_HINTS[code.toUpperCase()] || null;
 };
 
-const tokenizeName = (value) => {
+const tokenizeName = value => {
   const normalized = normalizeName(value);
   if (!normalized) return [];
   return normalized.split(' ').filter(Boolean);
 };
 
-const detectChannelRegion = (channel) => {
+const detectChannelRegion = channel => {
   if (!channel) return null;
   let region = detectRegionToken(channel.name);
   if (!region && Array.isArray(channel.alt_names)) {
@@ -232,13 +237,13 @@ const computeMatchScore = (candidate, query) => {
   const candidateTokens = new Set(candidate.split(' '));
   const queryTokens = query.split(' ');
   let overlap = 0;
-  queryTokens.forEach((token) => {
+  queryTokens.forEach(token => {
     if (candidateTokens.has(token)) overlap += 10;
   });
   return Math.min(60, overlap);
 };
 
-const parseQuality = (quality) => {
+const parseQuality = quality => {
   if (!quality) return 0;
   if (typeof quality === 'number') return quality;
   const lower = quality.toLowerCase();
@@ -250,7 +255,7 @@ const parseQuality = (quality) => {
   return 0;
 };
 
-const detectStreamType = (url) => {
+const detectStreamType = url => {
   if (!url) return 'unknown';
   const lower = url.toLowerCase();
   if (lower.includes('.m3u8') || lower.includes('format=m3u8')) return 'hls';
@@ -259,7 +264,7 @@ const detectStreamType = (url) => {
   return 'unknown';
 };
 
-const requiresProxy = (url) => {
+const requiresProxy = url => {
   if (!url) return false;
   return url.includes('youtube.com') || url.includes('youtu.be');
 };
@@ -284,7 +289,7 @@ const buildChannelCandidates = (channels, query, options) => {
   if (!normalizedQuery) return [];
 
   return channels
-    .filter((channel) => {
+    .filter(channel => {
       if (!channel?.name) return false;
       if (!includeInternational && channel.country && channel.country !== country) return false;
 
@@ -303,28 +308,27 @@ const buildChannelCandidates = (channels, query, options) => {
 
       const normalizedName = normalizeName(channel.name);
       const altMatch = Array.isArray(channel.alt_names)
-        ? channel.alt_names.some((alt) => normalizeName(alt).includes(normalizedQuery))
+        ? channel.alt_names.some(alt => normalizeName(alt).includes(normalizedQuery))
         : false;
 
-      const score = Math.max(
-        computeMatchScore(normalizedName, normalizedQuery),
-        altMatch ? 50 : 0
-      );
+      const score = Math.max(computeMatchScore(normalizedName, normalizedQuery), altMatch ? 50 : 0);
 
       return score > 0;
     })
-    .map((channel) => {
+    .map(channel => {
       const normalizedName = normalizeName(channel.name);
       const altScore = Array.isArray(channel.alt_names)
-        ? Math.max(...channel.alt_names.map((alt) => computeMatchScore(normalizeName(alt), normalizedQuery)))
+        ? Math.max(
+            ...channel.alt_names.map(alt => computeMatchScore(normalizeName(alt), normalizedQuery))
+          )
         : 0;
 
       const baseScore = Math.max(computeMatchScore(normalizedName, normalizedQuery), altScore);
 
       const candidateTokens = new Set(tokenizeName(channel.name));
       if (Array.isArray(channel.alt_names)) {
-        channel.alt_names.forEach((alt) => {
-          tokenizeName(alt).forEach((token) => candidateTokens.add(token));
+        channel.alt_names.forEach(alt => {
+          tokenizeName(alt).forEach(token => candidateTokens.add(token));
         });
       }
 
@@ -341,7 +345,7 @@ const buildChannelCandidates = (channels, query, options) => {
 
       if (queryTokens.size > 0) {
         let missingTokens = 0;
-        queryTokens.forEach((token) => {
+        queryTokens.forEach(token => {
           if (!candidateTokens.has(token)) missingTokens += 1;
         });
         if (missingTokens === 0) {
@@ -398,7 +402,7 @@ const buildChannelCandidates = (channels, query, options) => {
         origin: 'api',
       };
     })
-    .filter((entry) => entry.score > 0)
+    .filter(entry => entry.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, maxResults);
 };
@@ -411,11 +415,11 @@ const attachStreamsToCandidates = (candidates, streams) => {
     return map;
   }, new Map());
 
-  return candidates.map((candidate) => {
+  return candidates.map(candidate => {
     const streamList = streamByChannel.get(candidate.id) || [];
     const formattedStreams = streamList
-      .filter((stream) => typeof stream.url === 'string')
-      .map((stream) => ({
+      .filter(stream => typeof stream.url === 'string')
+      .map(stream => ({
         url: stream.url,
         quality: stream.quality || null,
         streamType: detectStreamType(stream.url),
@@ -448,7 +452,7 @@ const discoverFromPlaylists = async (channelName, options) => {
   const localRegion = explicitLocalRegion || regionFromCountryCode(country) || queryRegion;
 
   const playlistEntries = await Promise.all(
-    FALLBACK_PLAYLISTS.map(async (playlist) => {
+    FALLBACK_PLAYLISTS.map(async playlist => {
       try {
         return await fetchPlaylistEntries(playlist);
       } catch (error) {
@@ -463,7 +467,7 @@ const discoverFromPlaylists = async (channelName, options) => {
 
   const candidateMap = new Map();
 
-  entries.forEach((entry) => {
+  entries.forEach(entry => {
     if (!entry?.name || !entry?.url) return;
     const normalizedName = normalizeName(entry.name);
     const score = computeMatchScore(normalizedName, normalizedQuery);
@@ -504,7 +508,7 @@ const discoverFromPlaylists = async (channelName, options) => {
     if (queryTokens.size > 0) {
       const entryTokens = new Set(tokenizeName(entry.name));
       let missingTokens = 0;
-      queryTokens.forEach((token) => {
+      queryTokens.forEach(token => {
         if (!entryTokens.has(token)) missingTokens += 1;
       });
       if (missingTokens === 0) {
@@ -556,14 +560,14 @@ const discoverFromPlaylists = async (channelName, options) => {
   });
 
   let playlistCandidates = Array.from(candidateMap.values())
-    .map((candidate) => ({
+    .map(candidate => ({
       ...candidate,
       streams: candidate.streams.sort((a, b) => parseQuality(b.quality) - parseQuality(a.quality)),
     }))
     .sort((a, b) => b.score - a.score);
 
   if (localOnly && localRegion) {
-    playlistCandidates = playlistCandidates.filter((candidate) => {
+    playlistCandidates = playlistCandidates.filter(candidate => {
       if (!candidate) return false;
       if (candidate.region && candidate.region !== localRegion) {
         return false;
@@ -575,11 +579,11 @@ const discoverFromPlaylists = async (channelName, options) => {
   return playlistCandidates.slice(0, maxResults);
 };
 
-const dedupeCandidates = (candidates) => {
+const dedupeCandidates = candidates => {
   const seenUrls = new Set();
   return candidates
-    .map((candidate) => {
-      const uniqueStreams = candidate.streams.filter((stream) => {
+    .map(candidate => {
+      const uniqueStreams = candidate.streams.filter(stream => {
         if (!stream?.url) return false;
         if (seenUrls.has(stream.url)) return false;
         seenUrls.add(stream.url);
@@ -596,7 +600,7 @@ const dedupeCandidates = (candidates) => {
     .filter(Boolean);
 };
 
-const weightOrigin = (origin) => {
+const weightOrigin = origin => {
   if (origin === 'playlist') return 2;
   if (origin === 'api') return 1;
   if (origin === 'seed') return 0;
@@ -655,17 +659,23 @@ export const discoverChannelStreams = async (channelName, options = {}) => {
   });
 
   const withStreams = attachStreamsToCandidates(candidates, streams);
-  const filtered = withStreams.filter((candidate) => candidate.streams.length > 0);
+  const filtered = withStreams.filter(candidate => candidate.streams.length > 0);
 
   const orderedInput = [...playlistMatches, ...filtered].sort(compareCandidates);
   let combined = dedupeCandidates(orderedInput);
 
   if (localOnly) {
-    combined = combined.filter((candidate) => {
+    combined = combined.filter(candidate => {
       if (!candidate) return false;
-      if (candidate.country && candidate.country.toUpperCase() !== normalizedCountry.toUpperCase()) {
+      if (
+        candidate.country &&
+        candidate.country.toUpperCase() !== normalizedCountry.toUpperCase()
+      ) {
         if (targetRegion) {
-          const candidateRegion = candidate.region || regionFromCountryCode(candidate.country) || detectRegionToken(candidate.name);
+          const candidateRegion =
+            candidate.region ||
+            regionFromCountryCode(candidate.country) ||
+            detectRegionToken(candidate.name);
           if (candidateRegion !== targetRegion) {
             return false;
           }
@@ -675,7 +685,10 @@ export const discoverChannelStreams = async (channelName, options = {}) => {
       }
 
       if (targetRegion) {
-        const candidateRegion = candidate.region || regionFromCountryCode(candidate.country) || detectRegionToken(candidate.name);
+        const candidateRegion =
+          candidate.region ||
+          regionFromCountryCode(candidate.country) ||
+          detectRegionToken(candidate.name);
         if (candidateRegion && candidateRegion !== targetRegion) {
           return false;
         }

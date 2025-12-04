@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import './SplashScreen.css';
 import { SANTA_HAT_USER } from '../assets/santaHatUser';
+import ProgressiveImage from './ProgressiveImage';
 
 const SplashScreen = ({ onFinish }) => {
   const [isVisible, setIsVisible] = useState(true);
@@ -34,7 +35,12 @@ const SplashScreen = ({ onFinish }) => {
       <div className="splash-screen__content">
         <div className={`splash-screen__logo ${isAnimating ? 'splash-screen__logo--animate' : ''}`}>
           {/* Santa Hat positioned on top of NIKZ */}
-          <img src={SANTA_HAT_USER} alt="Santa Hat" className="splash-screen__santa-hat" />
+          <ProgressiveImage
+            src={SANTA_HAT_USER || '/assets/santa-hat.svg'}
+            alt="Santa Hat"
+            placeholderSrc={'/assets/santa-hat.svg'}
+            imgProps={{ className: 'splash-screen__santa-hat', 'aria-hidden': true }}
+          />
           <span className="splash-screen__logo-text splash-screen__logo-text--primary">NIKZ</span>
           <span className="splash-screen__logo-text splash-screen__logo-text--secondary">FLIX</span>
         </div>

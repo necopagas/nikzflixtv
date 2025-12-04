@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiPlus, FiGrid, FiList as FiListIcon } from 'react-icons/fi';
 import { usePlaylists } from '../hooks/usePlaylists';
 import PlaylistManager from '../components/PlaylistManager';
+import { OptimizedPoster } from '../components/ProgressiveImage';
 
 /**
  * Playlists Page
@@ -98,12 +99,12 @@ export const PlaylistsPage = () => {
               onClick={() => navigate(`/playlist/${playlist.id}`)}
               className="bg-gray-800 rounded-xl overflow-hidden hover:bg-gray-750 transition-all cursor-pointer group"
             >
-              <div className="aspect-video bg-gradient-to-br from-purple-900 to-gray-900 relative">
+              <div className="aspect-video bg-linear-to-br from-purple-900 to-gray-900 relative">
                 {playlist.thumbnail ? (
-                  <img
-                    src={`https://image.tmdb.org/t/p/w500${playlist.thumbnail}`}
-                    alt={playlist.name}
-                    className="w-full h-full object-cover"
+                  <OptimizedPoster
+                    item={{ poster_path: playlist.thumbnail, title: playlist.name }}
+                    isLarge={true}
+                    onClick={() => {}}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-6xl">📋</div>
@@ -135,7 +136,7 @@ export const PlaylistsPage = () => {
               onClick={() => navigate(`/playlist/${playlist.id}`)}
               className="bg-gray-800 rounded-xl p-6 hover:bg-gray-750 transition-all cursor-pointer flex items-center gap-6"
             >
-              <div className="w-32 h-20 bg-gradient-to-br from-purple-900 to-gray-900 rounded-lg overflow-hidden flex-shrink-0">
+              <div className="w-32 h-20 bg-linear-to-br from-purple-900 to-gray-900 rounded-lg overflow-hidden shrink-0">
                 {playlist.thumbnail ? (
                   <img
                     src={`https://image.tmdb.org/t/p/w200${playlist.thumbnail}`}

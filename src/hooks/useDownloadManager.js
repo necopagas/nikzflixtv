@@ -44,22 +44,21 @@ export const useDownloadManager = () => {
     });
   }, []);
 
-  // Check for download support
-  useEffect(() => {
-    const checkSupport = async () => {
-      const supported =
-        'serviceWorker' in navigator && 'indexedDB' in window && 'storage' in navigator;
+  // Load downloads from IndexedDB
+  const loadDownloads = useCallback(async () => {
+    try {
+      const db = await initDB();
+      const transaction = db.transaction(STORE_NAME, 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.getAll();
 
-      setIsSupported(supported);
-
-      if (supported) {
-        await loadDownloads();
-        await updateStorageInfo();
-      }
-    };
-
-    checkSupport();
-  }, [loadDownloads]);
+      request.onsuccess = () => {
+        setDownloads(request.result || []);
+      };
+    } catch (error) {
+      console.error('Error loading downloads:', error);
+    }
+  }, [initDB]);
 
   // Update storage information
   const updateStorageInfo = async () => {
@@ -81,21 +80,22 @@ export const useDownloadManager = () => {
     }
   };
 
-  // Load downloads from IndexedDB
-  const loadDownloads = useCallback(async () => {
-    try {
-      const db = await initDB();
-      const transaction = db.transaction(STORE_NAME, 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.getAll();
+  // Check for download support
+  useEffect(() => {
+    const checkSupport = async () => {
+      const supported =
+        'serviceWorker' in navigator && 'indexedDB' in window && 'storage' in navigator;
 
-      request.onsuccess = () => {
-        setDownloads(request.result || []);
-      };
-    } catch (error) {
-      console.error('Error loading downloads:', error);
-    }
-  }, [initDB]);
+      setIsSupported(supported);
+
+      if (supported) {
+        await loadDownloads();
+        await updateStorageInfo();
+      }
+    };
+
+    checkSupport();
+  }, [loadDownloads]);
 
   // Add download to queue
   const addDownload = async (item, quality = '720p') => {

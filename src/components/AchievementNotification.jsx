@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { FiX, FiStar } from 'react-icons/fi';
 
 export const AchievementNotification = ({ achievement, onClose }) => {
@@ -28,9 +28,9 @@ export const AchievementNotification = ({ achievement, onClose }) => {
         isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
       }`}
     >
-      <div className="bg-gradient-to-r from-amber-900 to-orange-900 rounded-xl shadow-2xl border-2 border-amber-500 overflow-hidden">
+      <div className="bg-linear-to-r from-amber-900 to-orange-900 rounded-xl shadow-2xl border-2 border-amber-500 overflow-hidden">
         {/* Shine Effect */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shine" />
+        <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent animate-shine" />
 
         <div className="relative p-5">
           {/* Close Button */}
@@ -95,8 +95,8 @@ export const LevelUpNotification = ({ level, onClose }) => {
         isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
       }`}
     >
-      <div className="bg-gradient-to-r from-purple-900 to-blue-900 rounded-xl shadow-2xl border-2 border-purple-500 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shine" />
+      <div className="bg-linear-to-r from-purple-900 to-blue-900 rounded-xl shadow-2xl border-2 border-purple-500 overflow-hidden">
+        <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent animate-shine" />
 
         <div className="relative p-5">
           <button

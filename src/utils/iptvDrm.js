@@ -1,7 +1,7 @@
 // src/utils/iptvDrm.js
 // Reusable helpers for IPTV DRM and request handling
 
-export const normalizeHeaders = (headers) => {
+export const normalizeHeaders = headers => {
   if (!headers) return {};
   return Object.entries(headers).reduce((acc, [key, value]) => {
     if (key && typeof value !== 'undefined' && value !== null) {
@@ -11,20 +11,21 @@ export const normalizeHeaders = (headers) => {
   }, {});
 };
 
-export const base64ToUint8Array = (input) => {
+export const base64ToUint8Array = input => {
   try {
     const sanitized = String(input || '').replace(/\s/g, '');
-    const decoder = (typeof window !== 'undefined' && typeof window.atob === 'function')
-      ? window.atob
-      : (typeof atob === 'function'
-        ? atob
-        : (value) => {
-            const nodeBuffer = typeof globalThis !== 'undefined' ? globalThis.Buffer : undefined;
-            if (nodeBuffer?.from) {
-              return nodeBuffer.from(value, 'base64').toString('binary');
-            }
-            throw new Error('No base64 decoder available');
-          });
+    const decoder =
+      typeof window !== 'undefined' && typeof window.atob === 'function'
+        ? window.atob
+        : typeof atob === 'function'
+          ? atob
+          : value => {
+              const nodeBuffer = typeof globalThis !== 'undefined' ? globalThis.Buffer : undefined;
+              if (nodeBuffer?.from) {
+                return nodeBuffer.from(value, 'base64').toString('binary');
+              }
+              throw new Error('No base64 decoder available');
+            };
     const decoded = decoder(sanitized);
     const buffer = new Uint8Array(decoded.length);
     for (let i = 0; i < decoded.length; i += 1) {
@@ -37,11 +38,11 @@ export const base64ToUint8Array = (input) => {
   }
 };
 
-export const base64ToHex = (input) => {
+export const base64ToHex = input => {
   const bytes = base64ToUint8Array(input);
   if (!bytes) return null;
   return Array.from(bytes)
-    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .map(byte => byte.toString(16).padStart(2, '0'))
     .join('');
 };
 
@@ -50,7 +51,7 @@ export const buildDashRequestModifier = (headerMap, withCredentials = false) => 
   const headers = normalizeHeaders(headerMap);
   return function dashRequestModifier() {
     return {
-      modifyRequestHeader: (xhr) => {
+      modifyRequestHeader: xhr => {
         if (withCredentials) {
           xhr.withCredentials = true;
         }
@@ -63,7 +64,7 @@ export const buildDashRequestModifier = (headerMap, withCredentials = false) => 
         });
         return xhr;
       },
-      modifyRequestURL: (url) => url,
+      modifyRequestURL: url => url,
     };
   };
 };
@@ -166,25 +167,30 @@ export const buildShakaDrmConfiguration = (drmConfig = {}) => {
 };
 
 // Parse a user input string like "KID:KEY" (can be multiple pairs separated by spaces/newlines/commas)
-export const parseClearkeyInput = (raw) => {
+export const parseClearkeyInput = raw => {
   if (!raw) return [];
   return String(raw)
     .split(/[\n,\s]+/)
-    .map((pair) => pair.trim())
+    .map(pair => pair.trim())
     .filter(Boolean)
-    .map((pair) => {
-      const [kid, key] = pair.split(':').map((v) => v?.trim());
+    .map(pair => {
+      const [kid, key] = pair.split(':').map(v => v?.trim());
       return kid && key ? { kid, k: key } : null;
     })
     .filter(Boolean);
 };
 
 // Lightweight type detect for URL choosing hls/dash/progressive
-export const detectStreamType = (url) => {
+export const detectStreamType = url => {
   if (!url) return 'unknown';
   const normalized = url.toLowerCase();
   if (normalized.includes('.m3u8')) return 'hls';
-  if (normalized.includes('.mpd') || normalized.includes('format=mpd') || normalized.includes('manifest.mpd')) return 'dash';
+  if (
+    normalized.includes('.mpd') ||
+    normalized.includes('format=mpd') ||
+    normalized.includes('manifest.mpd')
+  )
+    return 'dash';
   if (/\.(mp4|webm|ogg)$/i.test(normalized)) return 'progressive';
   return 'unknown';
 };
