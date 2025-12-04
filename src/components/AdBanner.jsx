@@ -48,11 +48,10 @@ export default function AdBanner({ timeout = 8000 }) {
       // Find the container rendered by React
       const container = document.getElementById(CONTAINER_ID);
 
-      if (container) {
-        // Clear container just in case
-        container.innerHTML = '';
-        // Append script INSIDE the container
-        container.appendChild(script);
+      if (container && container.parentNode) {
+        // Insert script BEFORE the container (Standard for Adsterra Native Banners)
+        // This prevents the script from being wiped if it tries to modify the container's innerHTML
+        container.parentNode.insertBefore(script, container);
       } else {
         // Fallback if React hasn't mounted it yet (unlikely)
         document.body.appendChild(script);
