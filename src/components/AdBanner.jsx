@@ -105,19 +105,6 @@ export default function AdBanner({ timeout = 8000 }) {
         </div>
       )}
 
-      {status === 'fallback' && (
-        <div className="ad-fallback w-full max-w-xs bg-gray-800 rounded-lg p-4 text-center mt-2">
-          <div className="text-sm text-white font-semibold mb-2">Sponsored</div>
-          <div className="text-xs text-gray-400 mb-3">Support NikzFlix — check this out.</div>
-          <a
-            className="inline-block px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700 transition-colors"
-            href="/promo"
-          >
-            View Promo
-          </a>
-        </div>
-      )}
-
       {status === 'error' && (
         <div className="ad-error text-xs text-red-400 mt-2">Unable to load ad provider</div>
       )}
