@@ -8,7 +8,7 @@ import React, { useEffect, useState } from 'react';
 const AD_SCRIPT_SRC = '//patienthercoldness.com/0b8e16ce5c5d7303bb2755058f2e65b4/invoke.js';
 const CONTAINER_ID = 'container-0b8e16ce5c5d7303bb2755058f2e65b4';
 
-export default function AdBanner({ timeout = 4000 }) {
+export default function AdBanner({ timeout = 8000 }) {
   const [status, setStatus] = useState('loading'); // 'loading' | 'loaded' | 'error' | 'fallback'
 
   useEffect(() => {
@@ -26,6 +26,7 @@ export default function AdBanner({ timeout = 4000 }) {
 
     const showFallback = () => {
       if (status === 'loaded') return;
+      console.warn('[AdBanner] Timeout or error loading ad. Showing fallback.');
       setStatus('fallback');
       try {
         sessionStorage.setItem('adsterra_banner_shown', '1');
@@ -47,15 +48,18 @@ export default function AdBanner({ timeout = 4000 }) {
       // Find the container rendered by React
       const container = document.getElementById(CONTAINER_ID);
 
-      if (container && container.parentNode) {
-        // Insert script BEFORE the container
-        container.parentNode.insertBefore(script, container);
+      if (container) {
+        // Clear container just in case
+        container.innerHTML = '';
+        // Append script INSIDE the container
+        container.appendChild(script);
       } else {
         // Fallback if React hasn't mounted it yet (unlikely)
         document.body.appendChild(script);
       }
 
       script.onload = () => {
+        console.log('[AdBanner] Script loaded successfully');
         setStatus('loaded');
         try {
           sessionStorage.setItem('adsterra_banner_shown', '1');
@@ -65,7 +69,8 @@ export default function AdBanner({ timeout = 4000 }) {
         if (timer) clearTimeout(timer);
       };
 
-      script.onerror = () => {
+      script.onerror = e => {
+        console.error('[AdBanner] Script load error:', e);
         setStatus('error');
         showFallback();
       };
