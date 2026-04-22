@@ -21,10 +21,8 @@ const PRIMARY_NAV_LINKS = [
   { to: '/', label: 'Home' },
   { to: '/anime', label: 'Anime' },
   { to: '/drama', label: 'Drama' },
-  { to: '/manga', label: 'Manga' },
   { to: '/my-list', label: 'My List' },
   { to: '/recommendations', label: 'For You' },
-  { to: '/live-tv', label: 'Live TV' },
   { to: '/videoke', label: 'Videoke' },
 ];
 

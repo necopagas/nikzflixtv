@@ -44,7 +44,6 @@ const ProfilePage = lazy(() =>
   import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage }))
 );
 const MyListPage = lazy(() => import('./pages/MyListPage').then(m => ({ default: m.MyListPage })));
-const IPTVPage = lazy(() => import('./pages/IPTVPage').then(m => ({ default: m.IPTVPage })));
 const ChatRoomPage = lazy(() =>
   import('./pages/ChatRoomPage').then(m => ({ default: m.ChatRoomPage }))
 );
@@ -55,18 +54,6 @@ const VideokePage = lazy(() =>
 );
 const VivamaxPage = lazy(() =>
   import('./pages/VivamaxPage').then(m => ({ default: m.VivamaxPage }))
-);
-const MangaReaderPage = lazy(() =>
-  import('./pages/MangaReaderPage').then(m => ({ default: m.default }))
-);
-const MangaDetailPage = lazy(() =>
-  import('./pages/MangaDetailPage').then(m => ({ default: m.MangaDetailPage }))
-);
-const MangaChapterReader = lazy(() =>
-  import('./pages/MangaChapterReader').then(m => ({ default: m.default }))
-);
-const MangaExtensionsPage = lazy(() =>
-  import('./pages/MangaExtensionsPage').then(m => ({ default: m.default }))
 );
 const StatsPage = lazy(() => import('./pages/StatsPage').then(m => ({ default: m.default })));
 const PlaylistsPage = lazy(() =>
@@ -265,7 +252,6 @@ export default function App() {
                 <MyListPage key="mylist" onOpenModal={handleOpenModal} isWatched={isWatched} />
               }
             />
-            <Route path="/live-tv" element={<IPTVPage key="livetv" />} />
             <Route path="/chat-room" element={<ChatRoomPage key="chat" />} />
             <Route path="/videoke" element={<VideokePage key="videoke" />} />
             <Route
@@ -273,14 +259,6 @@ export default function App() {
               element={
                 <VivamaxPage key="vivamax" onOpenModal={handleOpenModal} isWatched={isWatched} />
               }
-            />
-            <Route path="/manga" element={<Navigate to="/manga-reader" replace />} />
-            <Route path="/manga-extensions" element={<MangaExtensionsPage key="manga-ext" />} />
-            <Route path="/manga-reader" element={<MangaReaderPage key="manga-reader" />} />
-            <Route path="/manga/:id" element={<MangaDetailPage key="manga-detail" />} />
-            <Route
-              path="/manga/:id/:chapterId"
-              element={<MangaChapterReader key="manga-chapter" />}
             />
             <Route path="/stats" element={<StatsPage key="stats" />} />
             <Route path="/playlists" element={<PlaylistsPage key="playlists" />} />
