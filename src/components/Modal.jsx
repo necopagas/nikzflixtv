@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FaPlay, FaPlus, FaCheck, FaShare } from 'react-icons/fa';
 import { Share } from '@capacitor/share';
 import { fetchData } from '../utils/fetchData';
-import { API_ENDPOINTS, EMBED_URLS, SOURCE_ORDER, BACKDROP_PATH, getEmbedUrl } from '../config';
+import { API_ENDPOINTS, EMBED_URLS, PLAYER_SOURCE_ORDER, BACKDROP_PATH } from '../config';
 import { Poster } from './Poster';
 import { AddToPlaylistButton } from './AddToPlaylistButton';
 import DownloadButton from './DownloadButton';
@@ -26,17 +26,19 @@ export const Modal = ({
   const [trailer, setTrailer] = useState(null);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [selectedEpisode, setSelectedEpisode] = useState(1);
-  const [currentSource, setCurrentSource] = useState(SOURCE_ORDER?.[0] || null);
+  const [currentSource, setCurrentSource] = useState(PLAYER_SOURCE_ORDER?.[0] || null);
   const [isLoading, setIsLoading] = useState(true);
   const [showPlayer, setShowPlayer] = useState(false);
+  const [sourceHealth, setSourceHealth] = useState('idle');
 
   const modalRef = useRef(null);
+  const sourceTimeoutRef = useRef(null);
 
   useEffect(() => {
     setIsLoading(true);
     setItem(initialItem);
     setTrailer(null);
-    setCurrentSource(SOURCE_ORDER?.[0] || null);
+    setCurrentSource(PLAYER_SOURCE_ORDER?.[0] || null);
 
     const mediaType = initialItem?.media_type || (initialItem?.title ? 'movie' : 'tv');
 
@@ -75,8 +77,23 @@ export const Modal = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialItem, playOnOpen]);
 
+  useEffect(() => {
+    return () => {
+      if (sourceTimeoutRef.current) {
+        clearTimeout(sourceTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const media_type = initialItem?.media_type || (initialItem?.title ? 'movie' : 'tv');
   const isTV = media_type === 'tv';
+  const availableSources =
+    PLAYER_SOURCE_ORDER?.filter(source => {
+      const sourceConfig = EMBED_URLS?.[source];
+      return isTV
+        ? typeof sourceConfig?.tv === 'function'
+        : typeof sourceConfig?.movie === 'function';
+    }) || [];
 
   const handlePlay = () => {
     setShowPlayer(true);
@@ -115,10 +132,16 @@ export const Modal = ({
     setSelectedEpisode(episodeNumber);
     onEpisodePlay?.(item, selectedSeason, episodeNumber);
     setShowPlayer(true);
-    setCurrentSource(SOURCE_ORDER?.[0] || null);
+    setCurrentSource(PLAYER_SOURCE_ORDER?.[0] || null);
   };
 
   const handleSourceChange = source => setCurrentSource(source);
+  const handleTryNextSource = () => {
+    if (!availableSources.length) return;
+    const currentIndex = availableSources.indexOf(currentSource);
+    const nextIndex = currentIndex >= 0 ? currentIndex + 1 : 0;
+    setCurrentSource(availableSources[nextIndex] || availableSources[0]);
+  };
   const handleRecommendationClick = recItem => {
     onClose?.();
     setTimeout(() => onOpenModal?.(recItem), 300);
@@ -126,22 +149,6 @@ export const Modal = ({
 
   const getPlayerUrl = () => {
     if (!currentSource) return null;
-    // If the user hasn't changed sources (still using the initial SOURCE_ORDER[0])
-    // use getEmbedUrl to get the default source URL
-    const defaultSource = SOURCE_ORDER?.[0];
-    if (currentSource === defaultSource) {
-      const url = getEmbedUrl(
-        isTV ? 'tv' : 'movie',
-        item.id,
-        selectedSeason,
-        selectedEpisode,
-        item.imdb_id,
-        item.mal_id
-      );
-      if (url) return url;
-      // fall through to using explicit source config if getEmbedUrl returned null
-    }
-
     const sourceConfig = EMBED_URLS?.[currentSource];
     if (!sourceConfig) return null;
     if (!isTV && typeof sourceConfig.movie === 'function') return sourceConfig.movie(item.id);
@@ -150,11 +157,35 @@ export const Modal = ({
     return null;
   };
 
+  const playerUrl = getPlayerUrl();
+
+  useEffect(() => {
+    if (sourceTimeoutRef.current) {
+      clearTimeout(sourceTimeoutRef.current);
+    }
+
+    if (!showPlayer || !playerUrl) {
+      setSourceHealth('idle');
+      return;
+    }
+
+    setSourceHealth('loading');
+    sourceTimeoutRef.current = setTimeout(() => {
+      setSourceHealth(prev => (prev === 'loading' ? 'stalled' : prev));
+    }, 8000);
+
+    return () => {
+      if (sourceTimeoutRef.current) {
+        clearTimeout(sourceTimeoutRef.current);
+      }
+    };
+  }, [showPlayer, playerUrl, currentSource]);
+
   const renderSources = () => (
     <div className="mb-4 px-8 pt-4 sm:px-0 sm:pt-0">
       <div className="flex flex-wrap items-center gap-2 mb-2">
         <span className="font-semibold text-(--text-secondary)">Source:</span>
-        {SOURCE_ORDER?.map(source => (
+        {availableSources.map(source => (
           <button
             key={source}
             onClick={() => handleSourceChange(source)}
@@ -179,8 +210,6 @@ export const Modal = ({
       </div>
     );
   }
-
-  const playerUrl = getPlayerUrl();
 
   return (
     <div
@@ -207,12 +236,52 @@ export const Modal = ({
           {showPlayer ? (
             <div className="aspect-video bg-black rounded-lg">
               {renderSources()}
+              {(sourceHealth === 'stalled' || sourceHealth === 'error') && (
+                <div className="mx-8 mb-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100 sm:mx-0">
+                  <p className="mb-2">
+                    This source may be blocked, slow, or unavailable right now.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={handleTryNextSource}
+                      className="rounded bg-(--brand-color) px-3 py-2 font-semibold text-white transition-colors hover:bg-red-700"
+                    >
+                      Try next source
+                    </button>
+                    {playerUrl && (
+                      <a
+                        href={playerUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded bg-(--bg-tertiary) px-3 py-2 font-semibold transition-colors hover:bg-(--bg-tertiary-hover)"
+                      >
+                        Open source in new tab
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
               {playerUrl ? (
                 <iframe
                   src={playerUrl}
                   width="100%"
                   height="100%"
+                  onLoad={() => {
+                    if (sourceTimeoutRef.current) {
+                      clearTimeout(sourceTimeoutRef.current);
+                    }
+                    setSourceHealth('loaded');
+                  }}
+                  onError={() => {
+                    if (sourceTimeoutRef.current) {
+                      clearTimeout(sourceTimeoutRef.current);
+                    }
+                    setSourceHealth('error');
+                  }}
                   allowFullScreen
+                  allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                  referrerPolicy="strict-origin-when-cross-origin"
                   title="Video Player"
                   className="rounded-b-lg border-0"
                 />

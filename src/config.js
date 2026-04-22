@@ -113,8 +113,8 @@ export const EMBED_URLS = {
     tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}`,
   },
   vidsrcme: {
-    movie: id => `https://vidsrc.me/embed/movie?tmdb=${id}`,
-    tv: (id, s, e) => `https://vidsrc.me/embed/tv?tmdb=${id}&season=${s}&episode=${e}`,
+    movie: id => `https://vidsrcme.ru/embed/movie?tmdb=${id}`,
+    tv: (id, s, e) => `https://vidsrcme.ru/embed/tv?tmdb=${id}&season=${s}&episode=${e}`,
   },
   embedsoap: {
     movie: id => `https://www.embedsoap.com/embed/movie/${id}`,
@@ -193,6 +193,27 @@ export const SOURCE_ORDER = [
   'autoembed', // Updated URL
   'moviesapi', // Last resort
   'smashystream', // Final backup
+];
+
+// Playback prefers sources that still answer cleanly in current diagnostics.
+export const PLAYER_SOURCE_ORDER = [
+  'vidsrc',
+  'vidlink',
+  'vidfast',
+  'vidsrcme',
+  'multiembed',
+  'superembed',
+  'embed2',
+  'embedsu',
+  'vidsrcpro',
+  'embedsoap',
+  'vidsrccc',
+  'embedflix',
+  'streamwish',
+  'videasy',
+  'autoembed',
+  'moviesapi',
+  'smashystream',
 ];
 
 // --- IPTV CHANNELS (NAAY SULOD) ---
