@@ -77,6 +77,9 @@ const DownloadsPage = lazy(() =>
 const WatchPartyJoinPage = lazy(() =>
   import('./pages/WatchPartyJoinPage').then(m => ({ default: m.default }))
 );
+const NotFoundPage = lazy(() =>
+  import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage }))
+);
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -280,6 +283,8 @@ export default function App() {
               path="/watch-party/:partyId"
               element={<WatchPartyJoinPage key="watch-party" />}
             />
+            {/* Catch-all 404 route */}
+            <Route path="*" element={<NotFoundPage key="notfound" />} />
           </Routes>
         </Suspense>
       </main>
