@@ -3481,3 +3481,239 @@ body {
 /* ============================================ */
 /* === END WATCH PARTY STYLES === */
 /* ============================================ */
+
+
+/* =====================================================
+   APP.CSS ADDITIONS — paste these at the END of App.css
+   ===================================================== */
+
+/* === CUSTOM SCROLLBAR (webkit) === */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(228, 9, 20, 0.6);
+}
+
+/* === ROW TITLE — Netflix-tier section headers === */
+.row-container h2 {
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color var(--transition-base);
+}
+
+.row-container h2:hover {
+  color: var(--brand-color);
+}
+
+/* "Explore All" chevron on hover */
+.row-container h2::after {
+  content: 'Explore All ›';
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--brand-color);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.row-container:hover h2::after {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* === BANNER ENHANCEMENTS === */
+.banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top, #0a0b0e 0%, transparent 55%),
+    linear-gradient(to right, rgba(10,11,14,0.85) 0%, transparent 60%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* === MODAL IMPROVEMENTS === */
+.modal-content-wrapper {
+  background: var(--bg-secondary);
+  border-radius: 1rem;
+  width: 100%;
+  max-width: 860px;
+  max-height: 90vh;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255,255,255,0.06);
+  animation: modalIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* === POSTER CARD GLOW on hover === */
+.poster-container:hover .poster-image-wrapper {
+  box-shadow: 0 0 0 2px rgba(228, 9, 20, 0.5), 0 12px 40px rgba(0,0,0,0.6);
+}
+
+/* === SKELETON SHIMMER (improved) === */
+.skeleton, [class*="skeleton"] {
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary) 0%,
+    rgba(255,255,255,0.05) 40%,
+    var(--bg-tertiary) 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* === HEADER LOGO — red glow on hover === */
+.header h1 {
+  transition: text-shadow 0.2s ease;
+}
+
+.header a:hover h1 {
+  text-shadow: 0 0 20px rgba(229, 9, 20, 0.5);
+}
+
+/* === GLASSMORPHISM CARD (generic utility) === */
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border-radius: 1rem;
+}
+
+/* === GENRE FILTER PILLS === */
+.genre-button {
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.9rem;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.genre-button.active,
+.genre-button:hover {
+  border-color: var(--brand-color);
+  background: rgba(228, 9, 20, 0.12);
+  color: var(--brand-color);
+}
+
+/* === EPISODE BUTTONS === */
+.episode-button {
+  aspect-ratio: 1;
+  min-width: 36px;
+  background: var(--bg-tertiary);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.episode-button:hover {
+  background: var(--brand-color);
+  color: white;
+  border-color: var(--brand-color);
+  transform: scale(1.08);
+}
+
+.episode-button.active {
+  background: var(--brand-color);
+  color: white;
+  border-color: var(--brand-color);
+  box-shadow: 0 0 12px rgba(228,9,20,0.4);
+}
+
+/* === TOAST NOTIFICATIONS === */
+.toast {
+  border-radius: 0.6rem;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  animation: toastIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(20px) scale(0.96); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+/* === FOOTER === */
+footer {
+  border-top: 1px solid var(--border-color);
+}
+
+/* === SOURCE BUTTONS (Modal player) === */
+.source-btn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: all 0.15s ease;
+}
+
+.source-btn:hover:not(.active) {
+  border-color: rgba(228,9,20,0.4);
+  background: rgba(228,9,20,0.1);
+}
+
+/* === FOCUS VISIBLE global === */
+:focus-visible {
+  outline: 2px solid var(--brand-color);
+  outline-offset: 2px;
+}
+
+/* === SECTION TITLE === */
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.01em;
+}
+
+/* === MOBILE MENU BACKDROP BLUR === */
+.mobile-menu {
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+}
