@@ -2289,9 +2289,6 @@ body::-webkit-scrollbar-thumb:hover {
   .poster,
   .banner-button,
   .episode-button,
-  
-
-  
   .row:hover .poster,
   .row .poster:hover ~ .poster {
     transform: none !important;
@@ -2326,8 +2323,10 @@ body::-webkit-scrollbar-thumb:hover {
 
   
   .banner-button,
-  .episode-button,
-  
+  .episode-button {
+    transform: none !important;
+    box-shadow: none !important;
+  }
 }
 
 @keyframes christmas-glow {
@@ -3244,4 +3243,5 @@ footer {
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
 }
+
 
