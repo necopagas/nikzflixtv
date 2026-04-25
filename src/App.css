@@ -1,6 +1,5 @@
-/* src/App.css - KUMPLETO NGA VERSION NGA NAAY UPGRADES */
 
-/* --- MODERN THEME VARIABLES --- */
+
 :root {
   --bg-primary: #0a0b0e;
   --bg-secondary: #141519;
@@ -15,18 +14,18 @@
   --glass-bg: rgba(255, 255, 255, 0.05);
   --glass-border: rgba(255, 255, 255, 0.1);
 
-  /* Smooth transition timings */
+  
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-smooth: 500ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Shadows */
+  
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
 
-  /* Responsive Breakpoints */
+  
   --breakpoint-xs: 375px;
   --breakpoint-sm: 640px;
   --breakpoint-md: 768px;
@@ -34,7 +33,7 @@
   --breakpoint-xl: 1280px;
   --breakpoint-2xl: 1536px;
 
-  /* Fluid Spacing (scales with viewport) */
+  
   --space-xs: clamp(0.25rem, 0.5vw, 0.5rem);
   --space-sm: clamp(0.5rem, 1vw, 1rem);
   --space-md: clamp(1rem, 2vw, 1.5rem);
@@ -42,7 +41,7 @@
   --space-xl: clamp(2rem, 4vw, 3.5rem);
   --space-2xl: clamp(3rem, 5vw, 5rem);
 
-  /* Fluid Typography */
+  
   --font-xs: clamp(0.75rem, 1.5vw, 0.875rem);
   --font-sm: clamp(0.875rem, 1.8vw, 1rem);
   --font-base: clamp(1rem, 2vw, 1.125rem);
@@ -51,7 +50,7 @@
   --font-2xl: clamp(2rem, 4vw, 3rem);
   --font-3xl: clamp(2.5rem, 5vw, 4rem);
 
-  /* Container widths */
+  
   --container-sm: 640px;
   --container-md: 768px;
   --container-lg: 1024px;
@@ -59,7 +58,7 @@
   --container-2xl: 1536px;
   --container-full: 100%;
 
-  /* Poster responsive sizes */
+  
   --poster-width-mobile: clamp(120px, 30vw, 150px);
   --poster-width-tablet: clamp(150px, 22vw, 200px);
   --poster-width-desktop: clamp(180px, 18vw, 240px);
@@ -77,39 +76,27 @@
   --border-color: rgba(0, 0, 0, 0.1);
 }
 
-/* === PERFORMANCE OPTIMIZATIONS === */
 * {
-  /* Remove universal transitions - too heavy */
+  
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Enable hardware acceleration for transforms */
+/* Hardware acceleration — only on animated elements */
 .poster,
-.banner-button,
-.episode-button,
-.genre-button,
-button,
-.modal {
+.banner-button {
   will-change: transform;
   transform: translateZ(0);
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
 }
 
-.header {
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-}
-
-/* Smooth scrolling */
 html {
   scroll-behavior: smooth;
   overflow-x: hidden;
 }
 
 body {
-  background: linear-gradient(135deg, var(--bg-primary) 0%, #0d0e12 50%, var(--bg-primary) 100%);
+  transition: background 0.5s ease, filter 0.3s ease;
+  background: var(--bg-primary);
   color: var(--text-primary);
   font-family:
     'Inter',
@@ -126,11 +113,10 @@ body {
     sans-serif;
   overflow-x: hidden;
   min-height: 100vh;
-  /* Smooth momentum scrolling for iOS */
+  
   -webkit-overflow-scrolling: touch;
 }
 
-/* Optimize scrolling containers */
 .row-posters,
 .episode-list,
 .genre-list {
@@ -139,7 +125,6 @@ body {
   will-change: scroll-position;
 }
 
-/* === FADE IN ANIMATION === */
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -914,10 +899,6 @@ body {
   }
 }
 
-.animate-fade-in {
-  animation: fade-in 0.6s ease-out forwards;
-}
-
 .animate-slide-in {
   animation: slide-in-right 0.4s ease-out forwards;
 }
@@ -931,48 +912,27 @@ body {
 }
 
 body::-webkit-scrollbar {
-  width: 14px;
+  width: 6px;
 }
 body::-webkit-scrollbar-track {
-  background: var(--bg-primary);
-  border-left: 1px solid var(--border-color);
+  background: transparent;
 }
 body::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, var(--brand-color) 0%, var(--brand-hover) 100%);
-  border-radius: 20px;
-  border: 3px solid var(--bg-primary);
-  box-shadow: 0 0 10px rgba(228, 9, 20, 0.4);
+  background: rgba(228, 9, 20, 0.4);
+  border-radius: 9999px;
 }
 body::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, var(--brand-hover) 0%, #ff3040 100%);
-  box-shadow: 0 0 16px rgba(228, 9, 20, 0.6);
+  background: rgba(228, 9, 20, 0.8);
 }
 
 .row-posters::-webkit-scrollbar {
   display: none;
 }
-.row-posters {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-  /* Optimized scrolling */
-  scroll-behavior: auto; /* Instant scroll on mobile */
-  overscroll-behavior-x: contain;
-  /* Performance */
-  transform: translateZ(0);
-  will-change: scroll-position;
-}
 
-/* Smooth scroll on desktop only */
 @media (min-width: 768px) {
-  .row-posters {
-    scroll-behavior: smooth;
-  }
+  
 }
 
-/* Edge gradient overlays for rows to indicate overflow */
-.row-posters {
-  position: relative;
-}
 .row-posters::before,
 .row-posters::after {
   content: '';
@@ -993,14 +953,14 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 .poster {
-  /* Optimized for smooth performance */
+  
   transition:
     transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 10;
   border-radius: 8px;
   overflow: hidden;
-  /* Hardware acceleration */
+  
   transform: translateZ(0);
   will-change: transform;
 }
@@ -1013,7 +973,6 @@ body::-webkit-scrollbar-thumb:hover {
     0 0 0 2px rgba(228, 9, 20, 0.3);
 }
 
-/* Remove complex hover effects for mobile performance */
 @media (min-width: 768px) {
   .row:hover .poster {
     transform: translateX(-20%) translateZ(0);
@@ -1026,7 +985,6 @@ body::-webkit-scrollbar-thumb:hover {
   }
 }
 
-/* Simpler hover on mobile */
 @media (max-width: 767px) {
   .poster:hover {
     transform: scale(1.05) translateZ(0);
@@ -1035,16 +993,6 @@ body::-webkit-scrollbar-thumb:hover {
   .row .poster:hover ~ .poster {
     transform: none;
   }
-}
-
-.banner::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.3) 50%, transparent 100%),
-    linear-gradient(0deg, var(--bg-primary) 0%, transparent 40%, rgba(0, 0, 0, 0.6) 100%);
-  z-index: 1; /* <-- SAKTO NA NI (z-index: 1) */
 }
 
 .banner-button {
@@ -1076,15 +1024,6 @@ body::-webkit-scrollbar-thumb:hover {
   text-shadow: 2px 2px 10px rgba(0, 0, 0, 1);
 }
 
-.modal-body {
-  max-height: 90vh;
-  overflow-y: auto;
-  background: linear-gradient(135deg, rgba(20, 21, 25, 0.95) 0%, rgba(30, 31, 38, 0.95) 100%);
-  backdrop-filter: blur(20px) saturate(150%);
-  border-radius: 16px;
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-xl);
-}
 .modal-body::-webkit-scrollbar {
   width: 10px;
 }
@@ -1164,7 +1103,6 @@ body::-webkit-scrollbar-thumb:hover {
   border-bottom: 1px solid var(--border-color);
 }
 
-/* Header Compartments - Organized Sections */
 .header-compartment {
   display: flex;
   align-items: center;
@@ -1178,7 +1116,6 @@ body::-webkit-scrollbar-thumb:hover {
   opacity: 0.5;
 }
 
-/* Search Compartment Styling */
 .search-compartment {
   min-width: 200px;
 }
@@ -1207,12 +1144,10 @@ body::-webkit-scrollbar-thumb:hover {
   visibility: visible;
 }
 
-/* Actions Compartment */
 .actions-compartment {
   gap: 12px;
 }
 
-/* User Compartment */
 .user-compartment {
   min-width: fit-content;
 }
@@ -1276,9 +1211,6 @@ body::-webkit-scrollbar-thumb:hover {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.source-btn {
-  background-color: var(--bg-tertiary);
-}
 .source-btn.active {
   background-color: var(--brand-color);
   color: white;
@@ -1329,15 +1261,6 @@ body::-webkit-scrollbar-thumb:hover {
     transform: translate(-50%, -50%) scale(1);
   }
 }
-.modal-content-wrapper {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 100%;
-  max-width: 68rem;
-  animation: fadeInScaleUp 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
 
 .greeting-text {
   font-size: 1.125rem;
@@ -1373,11 +1296,7 @@ body::-webkit-scrollbar-thumb:hover {
   padding-top: 1.5rem;
   border-top: 1px solid var(--border-color);
 }
-.section-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-}
+
 .cast-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
@@ -1419,24 +1338,7 @@ body::-webkit-scrollbar-thumb:hover {
   margin-bottom: 1.5rem;
   justify-content: center;
 }
-.genre-button {
-  background: linear-gradient(135deg, var(--bg-tertiary) 0%, rgba(30, 31, 38, 0.8) 100%);
-  backdrop-filter: blur(10px);
-  color: var(--text-primary);
-  padding: 0.6rem 1.25rem;
-  border: 2px solid var(--border-color);
-  border-radius: 9999px;
-  font-weight: 600;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-.genre-button:hover {
-  background: linear-gradient(135deg, var(--bg-tertiary-hover) 0%, rgba(42, 43, 53, 0.9) 100%);
-  transform: translateY(-3px);
-  border-color: var(--brand-color);
-  box-shadow: 0 6px 20px rgba(228, 9, 20, 0.2);
-}
+
 .genre-button.active {
   background: linear-gradient(135deg, var(--brand-color) 0%, var(--brand-hover) 100%);
   border-color: rgba(255, 255, 255, 0.3);
@@ -1469,15 +1371,6 @@ body::-webkit-scrollbar-thumb:hover {
   box-shadow: 0 6px 20px rgba(228, 9, 20, 0.4);
 }
 
-/* --- FIX PARA SA POSTER --- */
-.poster-wrapper {
-  position: relative;
-  overflow: hidden;
-  border-radius: 0.375rem;
-  display: flex; /* <-- Importante para i-stretch ang content */
-  aspect-ratio: 2 / 3; /* <-- Mag-set sa sakto nga porma sa poster (patindog) */
-}
-
 .watched-progress {
   position: absolute;
   bottom: 0;
@@ -1498,12 +1391,6 @@ body::-webkit-scrollbar-thumb:hover {
   margin-top: 2rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--border-color);
-}
-
-.recommendations-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 1rem;
 }
 
 .back-to-top {
@@ -1544,33 +1431,8 @@ body::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, var(--brand-hover) 0%, #ff3040 100%);
 }
 
-/* --- ENHANCEMENTS & MOBILE FRIENDLINESS --- */
-.header h1 {
-  background: linear-gradient(135deg, #e50914 0%, #ff1a24 50%, #e50914 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: none;
-  filter: drop-shadow(0 2px 8px rgba(228, 9, 20, 0.4));
-}
-
-.modal-content-wrapper {
-  width: 95%;
-  max-width: 64rem;
-  max-height: 95%;
-}
-
-.modal-body {
-  max-height: 90vh;
-}
-
-.recommendations-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
 @media (min-width: 640px) {
-  .recommendations-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+  
 }
 @media (min-width: 1024px) {
   .recommendations-grid {
@@ -1583,7 +1445,6 @@ body::-webkit-scrollbar-thumb:hover {
   border: 1px solid var(--border-color);
 }
 
-/* --- IPTV PAGE STYLES --- */
 .iptv-layout {
   display: grid;
   grid-template-columns: 1fr;
@@ -1631,7 +1492,7 @@ body::-webkit-scrollbar-thumb:hover {
   border-radius: 6px;
   transition: background-color 0.2s;
   font-weight: 500;
-  /* Gidugang para mo-behave parehas sa <li> */
+  
   display: block;
   width: 100%;
   text-align: left;
@@ -1764,34 +1625,12 @@ body::-webkit-scrollbar-thumb:hover {
   color: var(--text-secondary);
 }
 
-/* --- MOBILE MENU STYLES --- */
 .mobile-menu-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(6px);
   z-index: 1005;
-}
-
-.mobile-menu {
-  position: fixed;
-  top: 0;
-  right: 0;
-  height: 100vh;
-  width: min(360px, 85vw);
-  background: linear-gradient(165deg, rgba(16, 17, 24, 0.98) 0%, rgba(8, 9, 13, 0.98) 100%);
-  box-shadow: -18px 0 42px rgba(0, 0, 0, 0.55);
-  z-index: 1010;
-  transform: translateX(100%);
-  opacity: 0;
-  transition:
-    transform 0.35s var(--transition-base),
-    opacity 0.35s var(--transition-fast);
-  display: flex;
-  flex-direction: column;
-  padding: 1.25rem 1.5rem 2.5rem;
-  color: var(--text-primary);
-  overflow: hidden;
 }
 
 .mobile-menu.open {
@@ -1895,7 +1734,6 @@ body::-webkit-scrollbar-thumb:hover {
   padding-right: 0.25rem;
 }
 
-/* Mobile Menu Compartments */
 .mobile-menu__compartment {
   display: flex;
   flex-direction: column;
@@ -2040,10 +1878,7 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 @media (min-width: 640px) {
-  .mobile-menu {
-    width: min(380px, 70vw);
-    padding: 1.75rem 2rem 3rem;
-  }
+  
 
   .mobile-menu__link {
     font-size: 1.1rem;
@@ -2076,7 +1911,6 @@ body::-webkit-scrollbar-thumb:hover {
   }
 }
 
-/* --- CSS PARA SA BLINKING CURSOR SA HACKER MESSAGE --- */
 .blinking-cursor {
   font-weight: bold;
   animation: blink 1s step-end infinite;
@@ -2109,7 +1943,6 @@ body::-webkit-scrollbar-thumb:hover {
   }
 }
 
-/* --- STYLES PARA SA HACKER GREETING --- */
 .hacker-greeting-overlay {
   position: fixed;
   inset: 0;
@@ -2119,7 +1952,7 @@ body::-webkit-scrollbar-thumb:hover {
   justify-content: center;
   z-index: 10000;
   font-family: 'Courier New', Courier, monospace;
-  /* GI-UPDATE ANG FADE-OUT DELAY */
+  
   animation: fade-out-greeting 1s ease 20s forwards;
 }
 
@@ -2161,7 +1994,6 @@ body::-webkit-scrollbar-thumb:hover {
   }
 }
 
-/* --- UPDATED & SCOPED CHAT ROOM STYLES (SAFE TO USE) --- */
 .chat-room-container {
   max-width: 900px;
   margin: 0 auto;
@@ -2198,27 +2030,20 @@ body::-webkit-scrollbar-thumb:hover {
   border-radius: 10px;
 }
 
-/* ===============================================
---- BAG-ONG STYLES (CHAT AVATAR & ROW ANIMATION) ---
-===============================================
-*/
-
-/* --- CHAT ROOM UI UPGRADE --- */
 .chat-room-container .chat-message {
   display: flex;
-  flex-direction: row; /* GI-ILISAN GIKAN SA COLUMN */
+  flex-direction: row; 
   max-width: 75%;
   width: fit-content;
-  align-items: flex-end; /* I-align ang avatar sa ubos */
-  gap: 0.75rem; /* Space tali sa avatar ug message */
+  align-items: flex-end; 
+  gap: 0.75rem; 
 }
 
 .chat-room-container .chat-message.current-user {
   align-self: flex-end;
-  flex-direction: row-reverse; /* I-baliktad para sa current user */
+  flex-direction: row-reverse; 
 }
 
-/* Avatar Style */
 .chat-avatar {
   width: 36px;
   height: 36px;
@@ -2240,14 +2065,13 @@ body::-webkit-scrollbar-thumb:hover {
   border: none;
 }
 
-/* Wrapper para sa Ngalan/Oras ug sa Bubble */
 .message-body {
   display: flex;
   flex-direction: column;
 }
 
 .chat-room-container .chat-message.current-user .message-body {
-  align-items: flex-end; /* I-align ang text sa Patoo */
+  align-items: flex-end; 
 }
 
 .chat-room-container .message-details {
@@ -2278,7 +2102,7 @@ body::-webkit-scrollbar-thumb:hover {
   padding: 0.75rem 1rem;
   border-radius: 18px;
   text-align: left;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Nagdugang og shadow */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); 
 }
 .chat-room-container .message-content p {
   margin: 0;
@@ -2335,7 +2159,6 @@ body::-webkit-scrollbar-thumb:hover {
   background-color: #c50812;
 }
 
-/* --- ROW FADE-IN ANIMATION --- */
 .row-container {
   opacity: 0;
   transform: translateY(30px);
@@ -2349,37 +2172,23 @@ body::-webkit-scrollbar-thumb:hover {
   transform: translateY(0);
 }
 
-/*
-=====================================================
---- STYLES PARA SA SMART TV & KEYBOARD NAVIGATION ---
-=====================================================
-*/
-
-/* --- Poster Focus Style --- */
 .poster-wrapper {
-  /* Magdugang ta og border para sa focus effect. */
+  
   border: 4px solid transparent;
-  /* I-adjust ang transition para maapil ang border */
+  
   transition:
     transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
     z-index 0.4s,
     border-color 0.3s ease;
 }
 
-/* Kini ang "magic". 
-  Kung ang poster-wrapper kay naka-focus (via remote/keyboard),
-  ipakita ang klaro nga border.
-*/
 .poster-wrapper:focus,
 .poster-wrapper:focus-visible {
-  outline: none; /* Tanggalon ang default blue outline */
-  border-color: var(--brand-color); /* Ipakita ang atong brand color */
-  transform: scale(1.1); /* Padak-on gamay para klaro */
+  outline: none; 
+  border-color: var(--brand-color); 
+  transform: scale(1.1); 
   z-index: 50;
 }
-
-/* --- Button Focus Styles (Para sa tibuok app) --- */
-/* I-style nato tanan buttons para klaro ang focus */
 
 .banner-button:focus,
 .genre-button:focus,
@@ -2398,7 +2207,6 @@ body::-webkit-scrollbar-thumb:hover {
     0 0 0 5px var(--brand-color) !important;
 }
 
-/* Special focus style para sa genre buttons */
 .genre-button:focus {
   background-color: var(--bg-tertiary-hover);
   transform: translateY(-2px);
@@ -2407,7 +2215,6 @@ body::-webkit-scrollbar-thumb:hover {
   background-color: var(--brand-color);
 }
 
-/* Special focus style para sa episode buttons */
 .episodes button:focus {
   background: var(--bg-tertiary-hover);
   transform: translateY(-3px);
@@ -2417,48 +2224,39 @@ body::-webkit-scrollbar-thumb:hover {
   background: var(--brand-color);
 }
 
-/* --- Font Scaling para sa Dagko nga Screens (TVs) --- */
-/*
-  Kini mo-scale sa tanan text (nga naggamit og 'rem')
-  para mas dako ug mabasa sa TV.
-*/
-
 @media (min-width: 1920px) {
-  /* Para sa standard 1080p TV */
+  
   html {
-    font-size: 112.5%; /* 18px base imbis 16px */
+    font-size: 112.5%; 
   }
 }
 
 @media (min-width: 3840px) {
-  /* Para sa 4K TVs */
+  
   html {
-    font-size: 150%; /* 24px base */
+    font-size: 150%; 
   }
 }
-/* === MOBILE PERFORMANCE OPTIMIZATIONS === */
+
 @media (max-width: 767px) {
-  /* Reduce animations on mobile */
+  
   .poster,
   .banner-button,
   .episode-button,
-  .genre-button {
-    transition-duration: 0.15s;
-  }
+  
 
-  /* Disable complex transforms on mobile */
+  
   .row:hover .poster,
   .row .poster:hover ~ .poster {
     transform: none !important;
   }
 
-  /* Simpler shadows */
+  
   .poster:hover {
     box-shadow: 0 8px 24px rgba(228, 9, 20, 0.3);
   }
 }
 
-/* Reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -2474,97 +2272,18 @@ body::-webkit-scrollbar-thumb:hover {
   }
 }
 
-/* Touch device optimizations */
 @media (hover: none) and (pointer: coarse) {
-  /* Disable hover effects on touch devices */
+  
   .poster:hover {
     transform: scale(1);
   }
 
-  /* Make clickable areas larger */
+  
   .banner-button,
   .episode-button,
-  .genre-button {
-    min-height: 44px;
-    padding: 12px 20px;
-  }
+  
 }
 
-/* === CHRISTMAS THEME MODE === */
-.christmas-mode {
-  --brand-color: #c41e3a; /* Christmas red */
-  --brand-hover: #ff1a24;
-  background: radial-gradient(ellipse at top, rgba(10, 50, 10, 0.3) 0%, var(--bg-primary) 50%);
-}
-
-.christmas-mode .header {
-  background: linear-gradient(180deg, rgba(196, 30, 58, 0.95) 0%, rgba(20, 21, 25, 0.9) 100%);
-  border-bottom: 2px solid rgba(34, 139, 34, 0.5);
-  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.1);
-}
-
-.christmas-mode .banner {
-  border: 2px solid rgba(34, 139, 34, 0.3);
-  box-shadow:
-    0 0 40px rgba(255, 215, 0, 0.15),
-    0 0 60px rgba(34, 139, 34, 0.1),
-    inset 0 0 80px rgba(196, 30, 58, 0.05);
-}
-
-.christmas-mode .poster {
-  border: 1px solid rgba(255, 215, 0, 0.1);
-}
-
-.christmas-mode .poster:hover {
-  box-shadow:
-    0 0 25px rgba(34, 139, 34, 0.5),
-    0 0 50px rgba(255, 215, 0, 0.3),
-    0 0 75px rgba(196, 30, 58, 0.2);
-  border: 2px solid rgba(255, 215, 0, 0.5);
-  transform: scale(1.12) rotateY(5deg);
-}
-
-.christmas-mode .banner-button {
-  background: linear-gradient(135deg, #c41e3a 0%, #228b22 100%);
-  box-shadow: 0 4px 15px rgba(34, 139, 34, 0.4);
-  border: 2px solid rgba(255, 215, 0, 0.3);
-}
-
-.christmas-mode .banner-button:hover {
-  background: linear-gradient(135deg, #ff1a24 0%, #32cd32 100%);
-  box-shadow:
-    0 6px 25px rgba(255, 215, 0, 0.6),
-    0 0 40px rgba(255, 255, 255, 0.3);
-  transform: scale(1.05) translateY(-2px);
-}
-
-/* Christmas decorative elements */
-.christmas-mode .row-title::before {
-  content: '🎄 ';
-  animation: bounce-light 2s ease-in-out infinite;
-}
-
-.christmas-mode .row-title::after {
-  content: ' ⭐';
-  animation: twinkle 1.5s ease-in-out infinite;
-}
-
-.christmas-mode .banner-title::before {
-  content: '🎅 ';
-}
-
-.christmas-mode .banner-title::after {
-  content: ' 🎁';
-}
-
-@keyframes christmas-glow {
-  0%,
-  100% {
-    text-shadow:
-      0 0 10px rgba(255, 215, 0, 0.8),
-      0 0 20px rgba(34, 139, 34, 0.6),
-      0 0 30px rgba(196, 30, 58, 0.4);
-  }
   33% {
     text-shadow:
       0 0 20px rgba(196, 30, 58, 1),
@@ -2579,12 +2298,6 @@ body::-webkit-scrollbar-thumb:hover {
   }
 }
 
-@keyframes twinkle {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
   50% {
     opacity: 0.5;
     transform: scale(1.2);
@@ -2601,53 +2314,12 @@ body::-webkit-scrollbar-thumb:hover {
   }
 }
 
-.christmas-mode h1,
-.christmas-mode h2,
-.christmas-mode .row-title {
-  animation: christmas-glow 3s ease-in-out infinite;
-}
-
-/* Christmas Lights Animation */
-@keyframes bulb-twinkle {
-  0%,
-  100% {
-    opacity: 1;
-    filter: brightness(1.2);
-  }
   50% {
     opacity: 0.6;
     filter: brightness(0.8);
   }
 }
 
-.christmas-light-bulb {
-  position: relative;
-  transition: all 0.3s ease;
-}
-
-.christmas-light-bulb::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: inherit;
-  filter: blur(4px);
-  opacity: 0.6;
-  z-index: -1;
-}
-
-@keyframes christmas-glow {
-  0%,
-  100% {
-    text-shadow:
-      0 0 10px rgba(255, 215, 0, 0.9),
-      0 0 20px rgba(34, 139, 34, 0.7),
-      0 0 30px rgba(196, 30, 58, 0.5);
-  }
   33% {
     text-shadow:
       0 0 15px rgba(196, 30, 58, 1),
@@ -2662,12 +2334,6 @@ body::-webkit-scrollbar-thumb:hover {
   }
 }
 
-@keyframes twinkle {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1) rotate(0deg);
-  }
   50% {
     opacity: 0.7;
     transform: scale(1.15) rotate(5deg);
@@ -2684,77 +2350,6 @@ body::-webkit-scrollbar-thumb:hover {
   }
 }
 
-.christmas-mode h1,
-.christmas-mode h2,
-.christmas-mode .row-title {
-  animation: christmas-glow 4s ease-in-out infinite;
-}
-
-/* === HALLOWEEN THEME MODE === */
-.halloween-mode {
-  --brand-color: #ff6600;
-  --brand-hover: #ff8800;
-  background: radial-gradient(ellipse at top, rgba(50, 10, 10, 0.4) 0%, var(--bg-primary) 50%);
-}
-
-.halloween-mode .header {
-  background: linear-gradient(180deg, rgba(255, 102, 0, 0.9) 0%, rgba(20, 21, 25, 0.9) 100%);
-  border-bottom: 2px solid rgba(139, 0, 139, 0.4);
-}
-
-.halloween-mode .banner {
-  border: 2px solid rgba(139, 0, 139, 0.3);
-  box-shadow: 0 0 40px rgba(255, 102, 0, 0.2);
-}
-
-.halloween-mode .poster:hover {
-  box-shadow:
-    0 0 25px rgba(255, 102, 0, 0.6),
-    0 0 50px rgba(139, 0, 139, 0.4);
-  border: 2px solid rgba(255, 102, 0, 0.4);
-}
-
-.halloween-mode .row-title::before {
-  content: '🎃 ';
-}
-
-.halloween-mode .row-title::after {
-  content: ' 👻';
-}
-
-/* Festive scrollbar */
-.christmas-mode ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #c41e3a 0%, #228b22 50%, #ffd700 100%);
-  border-radius: 10px;
-  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
-}
-
-.christmas-mode ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #ff1a24 0%, #32cd32 50%, #ffed00 100%);
-}
-
-.christmas-mode ::-webkit-scrollbar-track {
-  background: rgba(10, 50, 10, 0.3);
-}
-
-/* Sparkle effect on cards */
-.christmas-mode .modal-content,
-.christmas-mode .settings-modal {
-  background: linear-gradient(135deg, rgba(20, 21, 25, 0.95) 0%, rgba(30, 31, 38, 0.95) 100%);
-  border: 2px solid rgba(255, 215, 0, 0.2);
-  box-shadow:
-    0 0 30px rgba(34, 139, 34, 0.2),
-    inset 0 0 100px rgba(196, 30, 58, 0.05);
-}
-
-@keyframes spooky-glow {
-  0%,
-  100% {
-    text-shadow:
-      0 0 12px rgba(255, 102, 0, 0.9),
-      0 0 24px rgba(139, 0, 139, 0.7),
-      0 0 36px rgba(255, 102, 0, 0.5);
-  }
   50% {
     text-shadow:
       0 0 18px rgba(139, 0, 139, 1),
@@ -2763,55 +2358,6 @@ body::-webkit-scrollbar-thumb:hover {
   }
 }
 
-.halloween-mode h1,
-.halloween-mode h2,
-.halloween-mode .row-title {
-  animation: spooky-glow 2s ease-in-out infinite;
-}
-
-/* === NEW YEAR THEME MODE === */
-.newyear-mode {
-  --brand-color: #ffd700;
-  --brand-hover: #ffa500;
-  background: radial-gradient(ellipse at top, rgba(30, 30, 60, 0.4) 0%, var(--bg-primary) 50%);
-}
-
-.newyear-mode .header {
-  background: linear-gradient(180deg, rgba(255, 215, 0, 0.9) 0%, rgba(20, 21, 25, 0.9) 100%);
-  border-bottom: 2px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
-}
-
-.newyear-mode .banner {
-  border: 2px solid rgba(255, 215, 0, 0.3);
-  box-shadow:
-    0 0 40px rgba(255, 215, 0, 0.2),
-    0 0 60px rgba(255, 255, 255, 0.1);
-}
-
-.newyear-mode .poster:hover {
-  box-shadow:
-    0 0 25px rgba(255, 215, 0, 0.6),
-    0 0 50px rgba(255, 255, 255, 0.3);
-  border: 2px solid rgba(255, 215, 0, 0.5);
-}
-
-.newyear-mode .row-title::before {
-  content: '🎆 ';
-}
-
-.newyear-mode .row-title::after {
-  content: ' 🎉';
-}
-
-@keyframes celebration-glow {
-  0%,
-  100% {
-    text-shadow:
-      0 0 12px rgba(255, 215, 0, 1),
-      0 0 24px rgba(255, 255, 255, 0.9),
-      0 0 36px rgba(255, 105, 180, 0.6);
-  }
   50% {
     text-shadow:
       0 0 18px rgba(255, 255, 255, 1),
@@ -2820,37 +2366,13 @@ body::-webkit-scrollbar-thumb:hover {
   }
 }
 
-.newyear-mode h1,
-.newyear-mode h2,
-.newyear-mode .row-title {
-  animation: celebration-glow 2s ease-in-out infinite;
-}
-
-/* Smooth theme transitions */
-body {
-  transition:
-    background 0.5s ease,
-    filter 0.3s ease;
-}
-
-.christmas-mode,
-.halloween-mode,
-.newyear-mode {
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ============================================ */
-/* === COMPREHENSIVE RESPONSIVE OPTIMIZATIONS === */
-/* ============================================ */
-
-/* Mobile First - Extra Small Devices (phones, < 640px) */
 @media (max-width: 639px) {
   body {
     font-size: 14px;
     padding: 0;
   }
 
-  /* Header mobile optimization */
+  
   .header {
     padding: var(--space-sm) var(--space-md);
     gap: var(--space-sm);
@@ -2878,7 +2400,7 @@ body {
     white-space: nowrap;
   }
 
-  /* Banner mobile optimization */
+  
   .banner {
     height: 50vh;
     min-height: 400px;
@@ -2921,7 +2443,7 @@ body {
     font-size: var(--font-sm);
   }
 
-  /* Poster grid mobile optimization */
+  
   .row {
     margin-bottom: var(--space-lg);
   }
@@ -2932,10 +2454,7 @@ body {
     margin-bottom: var(--space-sm);
   }
 
-  .row-posters {
-    gap: var(--space-sm);
-    padding: var(--space-xs) var(--space-md);
-  }
+  
 
   .poster {
     width: var(--poster-width-mobile);
@@ -2948,21 +2467,15 @@ body {
   }
 
   .poster-hover-overlay {
-    display: none; /* Hide complex overlays on small screens */
+    display: none; 
   }
 
-  /* Modal mobile optimization */
+  
   .modal {
     padding: var(--space-sm);
   }
 
-  .modal-body {
-    width: 95vw;
-    max-width: 95vw;
-    max-height: 85vh;
-    border-radius: 12px;
-    padding: var(--space-md);
-  }
+  
 
   .modal-close {
     top: var(--space-sm);
@@ -2980,31 +2493,27 @@ body {
     font-size: var(--font-sm);
   }
 
-  /* Episode grid mobile */
+  
   .episode-grid {
     grid-template-columns: 1fr;
     gap: var(--space-sm);
   }
 
-  /* Genre filters mobile */
+  
   .genre-filters {
     gap: var(--space-xs);
     padding: var(--space-sm) var(--space-md);
   }
 
-  .genre-button {
-    font-size: var(--font-xs);
-    padding: var(--space-xs) var(--space-sm);
-  }
+  
 
-  /* Footer mobile */
+  
   .footer {
     padding: var(--space-lg) var(--space-md);
     font-size: var(--font-xs);
   }
 }
 
-/* Small Devices (tablets, 640px - 767px) */
 @media (min-width: 640px) and (max-width: 767px) {
   .header {
     padding: var(--space-md) var(--space-lg);
@@ -3035,26 +2544,20 @@ body {
     min-width: 150px;
   }
 
-  .row-posters {
-    gap: var(--space-md);
-  }
+  
 
   .poster {
     width: var(--poster-width-tablet);
     min-width: 150px;
   }
 
-  .modal-body {
-    width: 90vw;
-    max-width: 600px;
-  }
+  
 
   .episode-grid {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
 }
 
-/* Medium Devices (tablets, 768px - 1023px) */
 @media (min-width: 768px) and (max-width: 1023px) {
   .header {
     padding: var(--space-md) var(--space-xl);
@@ -3080,10 +2583,7 @@ body {
     max-width: 90%;
   }
 
-  .row-posters {
-    gap: var(--space-md);
-    padding: var(--space-sm) var(--space-xl);
-  }
+  
 
   .poster {
     width: var(--poster-width-tablet);
@@ -3094,10 +2594,7 @@ body {
     transform: scale(1.08) translateZ(0);
   }
 
-  .modal-body {
-    width: 85vw;
-    max-width: 700px;
-  }
+  
 
   .episode-grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -3105,7 +2602,6 @@ body {
   }
 }
 
-/* Large Devices (desktops, 1024px - 1279px) */
 @media (min-width: 1024px) and (max-width: 1279px) {
   .container {
     max-width: var(--container-lg);
@@ -3131,20 +2627,14 @@ body {
     max-width: 85%;
   }
 
-  .row-posters {
-    gap: var(--space-lg);
-    padding: var(--space-md) var(--space-xl);
-  }
+  
 
   .poster {
     width: var(--poster-width-desktop);
     min-width: 180px;
   }
 
-  .modal-body {
-    width: 80vw;
-    max-width: 900px;
-  }
+  
 
   .episode-grid {
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -3152,7 +2642,6 @@ body {
   }
 }
 
-/* Extra Large Devices (large desktops, >= 1280px) */
 @media (min-width: 1280px) {
   .container {
     max-width: var(--container-xl);
@@ -3179,19 +2668,27 @@ body {
   }
 
   .row-posters {
-    gap: var(--space-lg);
-    padding: var(--space-md) var(--space-2xl);
-  }
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: visible;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.row-posters::-webkit-scrollbar {
+  display: none;
+}
 
   .poster {
     width: var(--poster-width-desktop);
     min-width: 200px;
   }
 
-  .modal-body {
-    width: 75vw;
-    max-width: 1100px;
-  }
+  
 
   .episode-grid {
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -3199,7 +2696,6 @@ body {
   }
 }
 
-/* 2XL Devices (very large screens, >= 1536px) */
 @media (min-width: 1536px) {
   .container {
     max-width: var(--container-2xl);
@@ -3219,7 +2715,6 @@ body {
   }
 }
 
-/* Landscape Mobile Optimization */
 @media (max-width: 900px) and (orientation: landscape) {
   .banner {
     height: 90vh;
@@ -3245,9 +2740,8 @@ body {
   }
 }
 
-/* Touch Device Optimizations */
 @media (hover: none) and (pointer: coarse) {
-  /* Increase touch targets */
+  
   button,
   .poster,
   .genre-button,
@@ -3256,12 +2750,12 @@ body {
     min-width: 44px;
   }
 
-  /* Remove hover effects on touch */
+  
   .poster:hover {
     transform: none;
   }
 
-  /* Add tap highlight */
+  
   .poster:active {
     transform: scale(0.95);
     opacity: 0.8;
@@ -3271,13 +2765,12 @@ body {
     transform: scale(0.95);
   }
 
-  /* Disable complex animations on touch */
+  
   .poster-hover-overlay {
     display: none;
   }
 }
 
-/* High DPI / Retina Display Optimization */
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
   .poster img,
   .banner img {
@@ -3286,7 +2779,6 @@ body {
   }
 }
 
-/* Print Styles */
 @media print {
   .header,
   .banner-buttons,
@@ -3307,7 +2799,6 @@ body {
   }
 }
 
-/* Reduced Motion Preference */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -3319,7 +2810,6 @@ body {
   }
 }
 
-/* Dark Mode Support (system preference) */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     --bg-primary: #0a0b0e;
@@ -3329,7 +2819,6 @@ body {
   }
 }
 
-/* Light Mode Support (system preference) */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
     --bg-primary: #ffffff;
@@ -3338,14 +2827,6 @@ body {
     --text-secondary: #65676b;
   }
 }
-
-/* ============================================ */
-/* === END RESPONSIVE OPTIMIZATIONS === */
-/* ============================================ */
-
-/* ============================================ */
-/* === CAST BUTTON STYLES === */
-/* ============================================ */
 
 .cast-button {
   display: flex;
@@ -3383,14 +2864,6 @@ body {
   cursor: not-allowed;
 }
 
-/* ============================================ */
-/* === END CAST BUTTON STYLES === */
-/* ============================================ */
-
-/* ============================================ */
-/* === DOWNLOAD BUTTON STYLES === */
-/* ============================================ */
-
 .download-button {
   position: relative;
   overflow: hidden;
@@ -3409,7 +2882,6 @@ body {
   transform: scale(0.98);
 }
 
-/* Pulse animation for queued status */
 @keyframes download-pulse {
   0%,
   100% {
@@ -3419,14 +2891,6 @@ body {
     opacity: 0.7;
   }
 }
-
-/* ============================================ */
-/* === END DOWNLOAD BUTTON STYLES === */
-/* ============================================ */
-
-/* ============================================ */
-/* === WATCH PARTY STYLES === */
-/* ============================================ */
 
 .watch-party-widget {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -3462,7 +2926,6 @@ body {
   }
 }
 
-/* Notification animation */
 .animate-fade-in {
   animation: fade-in-notification 0.3s ease-out;
 }
@@ -3478,16 +2941,6 @@ body {
   }
 }
 
-/* ============================================ */
-/* === END WATCH PARTY STYLES === */
-/* ============================================ */
-
-
-/* =====================================================
-   APP.CSS ADDITIONS — paste these at the END of App.css
-   ===================================================== */
-
-/* === CUSTOM SCROLLBAR (webkit) === */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -3503,7 +2956,6 @@ body {
   background: rgba(228, 9, 20, 0.6);
 }
 
-/* === ROW TITLE — Netflix-tier section headers === */
 .row-container h2 {
   font-size: clamp(1.1rem, 2.5vw, 1.5rem);
   font-weight: 700;
@@ -3520,7 +2972,6 @@ body {
   color: var(--brand-color);
 }
 
-/* "Explore All" chevron on hover */
 .row-container h2::after {
   content: 'Explore All ›';
   font-size: 0.75rem;
@@ -3538,31 +2989,6 @@ body {
   transform: translateX(0);
 }
 
-/* === BANNER ENHANCEMENTS === */
-.banner::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(to top, #0a0b0e 0%, transparent 55%),
-    linear-gradient(to right, rgba(10,11,14,0.85) 0%, transparent 60%);
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* === MODAL IMPROVEMENTS === */
-.modal-content-wrapper {
-  background: var(--bg-secondary);
-  border-radius: 1rem;
-  width: 100%;
-  max-width: 860px;
-  max-height: 90vh;
-  overflow: hidden;
-  position: relative;
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255,255,255,0.06);
-  animation: modalIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
 @keyframes modalIn {
   from {
     opacity: 0;
@@ -3574,12 +3000,10 @@ body {
   }
 }
 
-/* === POSTER CARD GLOW on hover === */
 .poster-container:hover .poster-image-wrapper {
   box-shadow: 0 0 0 2px rgba(228, 9, 20, 0.5), 0 12px 40px rgba(0,0,0,0.6);
 }
 
-/* === SKELETON SHIMMER (improved) === */
 .skeleton, [class*="skeleton"] {
   background: linear-gradient(
     90deg,
@@ -3592,12 +3016,9 @@ body {
   border-radius: 0.5rem;
 }
 
-@keyframes shimmer {
-  0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
-/* === HEADER LOGO — red glow on hover === */
 .header h1 {
   transition: text-shadow 0.2s ease;
 }
@@ -3606,7 +3027,6 @@ body {
   text-shadow: 0 0 20px rgba(229, 9, 20, 0.5);
 }
 
-/* === GLASSMORPHISM CARD (generic utility) === */
 .glass-card {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -3615,7 +3035,6 @@ body {
   border-radius: 1rem;
 }
 
-/* === GENRE FILTER PILLS === */
 .genre-button {
   border-radius: 9999px;
   font-weight: 600;
@@ -3632,7 +3051,6 @@ body {
   color: var(--brand-color);
 }
 
-/* === EPISODE BUTTONS === */
 .episode-button {
   aspect-ratio: 1;
   min-width: 36px;
@@ -3663,7 +3081,6 @@ body {
   box-shadow: 0 0 12px rgba(228,9,20,0.4);
 }
 
-/* === TOAST NOTIFICATIONS === */
 .toast {
   border-radius: 0.6rem;
   backdrop-filter: blur(16px);
@@ -3678,12 +3095,10 @@ body {
   to   { opacity: 1; transform: translateX(0) scale(1); }
 }
 
-/* === FOOTER === */
 footer {
   border-top: 1px solid var(--border-color);
 }
 
-/* === SOURCE BUTTONS (Modal player) === */
 .source-btn {
   font-size: 0.75rem;
   font-weight: 600;
@@ -3697,13 +3112,11 @@ footer {
   background: rgba(228,9,20,0.1);
 }
 
-/* === FOCUS VISIBLE global === */
 :focus-visible {
   outline: 2px solid var(--brand-color);
   outline-offset: 2px;
 }
 
-/* === SECTION TITLE === */
 .section-title {
   font-size: 1.1rem;
   font-weight: 700;
@@ -3712,8 +3125,30 @@ footer {
   letter-spacing: -0.01em;
 }
 
-/* === MOBILE MENU BACKDROP BLUR === */
 .mobile-menu {
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
+}
+
+.modal-content-wrapper {
+  position: relative;
+  width: 95%;
+  max-width: 860px;
+  max-height: 90vh;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  border-radius: 1rem;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255,255,255,0.06);
+  animation: modalIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top, #0a0b0e 0%, rgba(10,11,14,0.3) 50%, transparent 75%),
+    linear-gradient(to right, rgba(10,11,14,0.9) 0%, rgba(10,11,14,0.4) 45%, transparent 70%);
+  z-index: 1;
+  pointer-events: none;
 }
