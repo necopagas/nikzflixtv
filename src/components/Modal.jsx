@@ -2,23 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FaTimes, FaPlay } from 'react-icons/fa';
 
 export default function Modal({ item, onClose }) {
-  const [activeSource, setActiveSource] = useState('streamwish');
+  // Gi-default nato sa vidsrcme kay kini ang pinakastable ug naay CSP protection pass
+  const [activeSource, setActiveSource] = useState('vidsrcme');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const playerWrapperRef = useRef(null);
 
   const sources = [
-    { id: 'streamwish', name: 'streamwish' },
-    { id: 'vidfast', name: 'vidfast' },
+    { id: 'vidsrcme', name: 'vidsrcme (Stable)' },
     { id: 'vidlink', name: 'vidlink' },
+    { id: 'streamwish', name: 'streamwish' },
     { id: 'autoembed', name: 'autoembed' },
-    { id: 'moviesapi', name: 'moviesapi' },
-    { id: 'vidsrcme', name: 'vidsrcme' },
     { id: 'vidsrcxyz', name: 'vidsrcxyz' },
     { id: 'vidsrcnl', name: 'vidsrcnl' },
     { id: 'vidbinge', name: 'vidbinge' },
-    { id: 'frembed', name: 'frembed' },
-    { id: '111movies', name: '111movies' },
-    { id: 'lookmovie', name: 'lookmovie' },
   ];
 
   useEffect(() => {
@@ -33,7 +29,6 @@ export default function Modal({ item, onClose }) {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Kon walay item nga gipili, i-hide ang modal
   if (!item) return null;
 
   const tmdbId = item.id;
@@ -41,10 +36,9 @@ export default function Modal({ item, onClose }) {
 
   const getEmbedUrl = sourceId => {
     const protocols = {
-      streamwish: `https://streamwish.to/e/${tmdbId}`,
-      '111movies': `https://111movies.com/embed/${mediaType}/${tmdbId}`,
-      vidlink: `https://vidlink.pro/embed/${mediaType}/${tmdbId}`,
       vidsrcme: `https://vidsrc.me/embed/${mediaType}?tmdb=${tmdbId}`,
+      vidlink: `https://vidlink.pro/embed/${mediaType}/${tmdbId}`,
+      streamwish: `https://streamwish.to/e/${tmdbId}`,
       vidsrcxyz: `https://vidsrc.xyz/embed/${mediaType}?tmdb=${tmdbId}`,
       autoembed: `https://player.autoembed.cc/embed/${mediaType}/${tmdbId}`,
     };
@@ -83,7 +77,7 @@ export default function Modal({ item, onClose }) {
                     onClick={() => setActiveSource(src.id)}
                     className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
                       activeSource === src.id
-                        ? 'bg-red-600 text-white shadow-md'
+                        ? 'bg-red-600 text-white shadow-md scale-105'
                         : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
                     }`}
                   >
@@ -92,7 +86,8 @@ export default function Modal({ item, onClose }) {
                 ))}
               </div>
               <p className="text-[11px] text-amber-500 italic">
-                💡 Tip: Try a different source if the video doesn't load.
+                💡 Tip: Change the source player server if the movie keeps loading or gets blocked
+                by browser protection.
               </p>
             </div>
           )}
