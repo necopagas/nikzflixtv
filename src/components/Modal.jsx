@@ -1,126 +1,343 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { FaTimes, FaPlay } from 'react-icons/fa';
+import React, { useState, useEffect, lazy, Suspense, useRef } from 'react';
+import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { Header } from './components/Header';
+import { Footer } from './components/Footer';
+// Lazy load modals
+const Modal = lazy(() => import('./components/Modal').then(m => ({ default: m.Modal })));
+const SettingsModal = lazy(() =>
+  import('./components/SettingsModal').then(m => ({ default: m.SettingsModal }))
+);
+import { BackToTopButton } from './components/BackToTopButton';
+import { ContentLoader } from './components/LoadingSpinner';
+import { BraveNotification } from './components/BraveNotification';
+import SplashScreen from './components/SplashScreen';
+import { useMyList } from './hooks/useMyList';
+import { useContinueWatching } from './hooks/useContinueWatching';
+import { useTheme } from './hooks/useTheme';
+import { useWatchedHistory } from './hooks/useWatchedHistory';
+import { useChristmasTheme } from './hooks/useChristmasTheme';
+import { NetworkStatusBanner } from './components/NetworkStatusBanner';
+import { PageTransitionIndicator } from './components/PageTransitionIndicator';
+import { useToast } from './components/toastContext.js';
 
-export default function Modal({ item, onClose }) {
-  // Gi-default nato sa vidsrcme kay kini ang pinakastable ug naay CSP protection pass
-  const [activeSource, setActiveSource] = useState('vidsrcme');
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const playerWrapperRef = useRef(null);
+// Lazy load seasonal effects for better performance
+const SnowEffect = lazy(() =>
+  import('./components/SnowEffect').then(m => ({ default: m.SnowEffect }))
+);
+const ChristmasLights = lazy(() =>
+  import('./components/ChristmasLights').then(m => ({ default: m.ChristmasLights }))
+);
+const HalloweenEffects = lazy(() =>
+  import('./components/HalloweenEffects').then(m => ({ default: m.HalloweenEffects }))
+);
+const NewYearEffects = lazy(() =>
+  import('./components/NewYearEffects').then(m => ({ default: m.NewYearEffects }))
+);
 
-  const sources = [
-    { id: 'vidsrcme', name: 'vidsrcme (Stable)' },
-    { id: 'vidlink', name: 'vidlink' },
-    { id: 'streamwish', name: 'streamwish' },
-    { id: 'autoembed', name: 'autoembed' },
-    { id: 'vidsrcxyz', name: 'vidsrcxyz' },
-    { id: 'vidsrcnl', name: 'vidsrcnl' },
-    { id: 'vidbinge', name: 'vidbinge' },
-  ];
+// Lazy load pages to keep the initial bundle fast
+const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
+const SearchPage = lazy(() => import('./pages/SearchPage').then(m => ({ default: m.SearchPage })));
+const AuthPage = lazy(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
+const ProfilePage = lazy(() =>
+  import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage }))
+);
+const MyListPage = lazy(() => import('./pages/MyListPage').then(m => ({ default: m.MyListPage })));
+const ChatRoomPage = lazy(() =>
+  import('./pages/ChatRoomPage').then(m => ({ default: m.ChatRoomPage }))
+);
+const AnimePage = lazy(() => import('./pages/AnimePage').then(m => ({ default: m.AnimePage })));
+const DramaPage = lazy(() => import('./pages/DramaPage').then(m => ({ default: m.DramaPage })));
+const VideokePage = lazy(() =>
+  import('./pages/VideokePage').then(m => ({ default: m.VideokePage }))
+);
+const VivamaxPage = lazy(() =>
+  import('./pages/VivamaxPage').then(m => ({ default: m.VivamaxPage }))
+);
+const StatsPage = lazy(() => import('./pages/StatsPage').then(m => ({ default: m.default })));
+const PlaylistsPage = lazy(() =>
+  import('./pages/PlaylistsPage').then(m => ({ default: m.default }))
+);
+const PlaylistViewPage = lazy(() =>
+  import('./pages/PlaylistViewPage').then(m => ({ default: m.default }))
+);
+const RecommendationsPage = lazy(() =>
+  import('./pages/RecommendationsPage').then(m => ({ default: m.RecommendationsPage }))
+);
+const AchievementsPage = lazy(() =>
+  import('./pages/AchievementsPage').then(m => ({ default: m.AchievementsPage }))
+);
+const CastSettingsPage = lazy(() =>
+  import('./pages/CastSettingsPage').then(m => ({ default: m.CastSettingsPage }))
+);
+const DownloadsPage = lazy(() =>
+  import('./pages/DownloadsPage').then(m => ({ default: m.default }))
+);
+const WatchPartyJoinPage = lazy(() =>
+  import('./pages/WatchPartyJoinPage').then(m => ({ default: m.default }))
+);
+const NotFoundPage = lazy(() =>
+  import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage }))
+);
+
+export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
+  const [modalItem, setModalItem] = useState(null);
+  const [playOnOpen, setPlayOnOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [networkStatus, setNetworkStatus] = useState(() => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return 'offline';
+    }
+    return null;
+  });
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const onlineTimeoutRef = useRef();
+
+  const { isItemInMyList, toggleMyList, clearMyList } = useMyList();
+  const { continueWatchingList, setItemProgress, clearContinueWatching } = useContinueWatching();
+  const { theme, toggleTheme } = useTheme();
+  const { isWatched, addToWatched, clearWatchedHistory } = useWatchedHistory();
+  const { isChristmasMode, isHalloweenMode, isNewYearMode } = useChristmasTheme();
 
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      if (document.fullscreenElement && playerWrapperRef.current) {
-        setIsFullscreen(document.fullscreenElement === playerWrapperRef.current);
-      } else {
-        setIsFullscreen(false);
+    window.scrollTo({ top: 0, left: 0 });
+  }, [location.pathname]);
+
+  useEffect(() => {
+    setIsTransitioning(true);
+    const timer = setTimeout(() => setIsTransitioning(false), 500);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return () => {};
+    }
+    const handleOffline = () => {
+      if (onlineTimeoutRef.current) {
+        clearTimeout(onlineTimeoutRef.current);
+      }
+      setNetworkStatus('offline');
+      showToast('You appear to be offline. Playback may pause until you reconnect.', 'error', 4000);
+    };
+
+    const handleOnline = () => {
+      setNetworkStatus('online');
+      showToast('Connection restored. You are back online.', 'success', 3000);
+      onlineTimeoutRef.current = setTimeout(() => {
+        setNetworkStatus(null);
+      }, 3200);
+    };
+
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+      if (onlineTimeoutRef.current) {
+        clearTimeout(onlineTimeoutRef.current);
       }
     };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
+  }, [showToast]);
 
-  if (!item) return null;
+  useEffect(() => {
+    const handler = event => {
+      const target = event.target;
+      const tag = target && target.tagName ? target.tagName.toLowerCase() : '';
+      if (tag === 'input' || tag === 'textarea' || target?.isContentEditable) {
+        return;
+      }
 
-  const tmdbId = item.id;
-  const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
+      if (event.key === '/' && !event.metaKey && !event.ctrlKey) {
+        event.preventDefault();
+        navigate('/search');
+        showToast('Jumped to search. Tip: press Shift + L for My List.', 'info', 3500);
+      }
 
-  const getEmbedUrl = sourceId => {
-    const protocols = {
-      vidsrcme: `https://vidsrc.me/embed/${mediaType}?tmdb=${tmdbId}`,
-      vidlink: `https://vidlink.pro/embed/${mediaType}/${tmdbId}`,
-      streamwish: `https://streamwish.to/e/${tmdbId}`,
-      vidsrcxyz: `https://vidsrc.xyz/embed/${mediaType}?tmdb=${tmdbId}`,
-      autoembed: `https://player.autoembed.cc/embed/${mediaType}/${tmdbId}`,
+      if ((event.key === 'L' || event.key === 'l') && event.shiftKey) {
+        event.preventDefault();
+        navigate('/my-list');
+        showToast('Opened My List via keyboard shortcut.', 'info', 3000);
+      }
+
+      if ((event.key === 'S' || event.key === 's') && event.shiftKey) {
+        event.preventDefault();
+        setIsSettingsOpen(true);
+        showToast('Settings opened. Press Esc to close.', 'info', 3000);
+      }
     };
-    return protocols[sourceId] || `https://vidsrc.me/embed/${mediaType}?tmdb=${tmdbId}`;
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [navigate, showToast]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const storageKey = 'nikzflixtv_shortcuts_v1';
+    const hasSeen = sessionStorage.getItem(storageKey);
+    if (!hasSeen) {
+      showToast(
+        'Pro tip: Press / for search, Shift + L for My List, Shift + S for settings.',
+        'info',
+        5200
+      );
+      sessionStorage.setItem(storageKey, '1');
+    }
+  }, [showToast]);
+
+  const handleOpenModal = (item, play = false) => {
+    setModalItem(item);
+    setPlayOnOpen(play);
   };
 
-  const toggleFullscreen = () => {
-    if (!playerWrapperRef.current) return;
-    if (!document.fullscreenElement) {
-      playerWrapperRef.current.requestFullscreen().catch(() => {});
-    } else {
-      document.exitFullscreen();
-    }
+  const handleCloseModal = () => {
+    setModalItem(null);
+    setPlayOnOpen(false);
   };
+
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+  };
+
+  // Show splash screen first
+  if (showSplash) {
+    return <SplashScreen onFinish={handleSplashFinish} />;
+  }
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-[#141414] rounded-2xl border border-zinc-800 overflow-hidden shadow-2xl">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-50 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full transition"
-        >
-          <FaTimes className="text-lg" />
-        </button>
+    <div className="app-shell relative flex min-h-screen flex-col overflow-x-hidden overflow-y-auto bg-[#0b0b0b] text-white">
+      <PageTransitionIndicator isActive={isTransitioning} />
+      <NetworkStatusBanner status={networkStatus} />
+      <Header
+        theme={theme}
+        toggleTheme={toggleTheme}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+      />
 
-        <div className="p-6 flex flex-col gap-4">
-          {!isFullscreen && (
-            <div className="w-full bg-zinc-900/40 p-4 rounded-xl border border-zinc-800/60">
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <span className="text-zinc-400 text-xs font-bold uppercase tracking-wider mr-2">
-                  Source:
-                </span>
-                {sources.map(src => (
-                  <button
-                    key={src.id}
-                    onClick={() => setActiveSource(src.id)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-                      activeSource === src.id
-                        ? 'bg-red-600 text-white shadow-md scale-105'
-                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
-                    }`}
-                  >
-                    {src.name}
-                  </button>
-                ))}
-              </div>
-              <p className="text-[11px] text-amber-500 italic">
-                💡 Tip: Change the source player server if the movie keeps loading or gets blocked
-                by browser protection.
-              </p>
-            </div>
-          )}
+      <div className="flex flex-1 flex-col pt-20 md:pt-24">
+        <main className="main-scroll-area flex-1 min-h-0 overflow-visible pb-20 sm:pb-24">
+          <Suspense fallback={<ContentLoader message="Loading NikzFlix..." />}>
+            <Routes location={location} key={location.pathname}>
+              <Route
+                path="/"
+                element={
+                  <HomePage key="home" onOpenModal={handleOpenModal} isWatched={isWatched} />
+                }
+              />
+              <Route
+                path="/search"
+                element={
+                  <SearchPage key="search" onOpenModal={handleOpenModal} isWatched={isWatched} />
+                }
+              />
+              <Route path="/auth" element={<AuthPage key="auth" />} />
+              <Route path="/profile" element={<ProfilePage key="profile" />} />
+              <Route
+                path="/anime"
+                element={
+                  <AnimePage key="anime" onOpenModal={handleOpenModal} isWatched={isWatched} />
+                }
+              />
+              <Route
+                path="/drama"
+                element={
+                  <DramaPage key="drama" onOpenModal={handleOpenModal} isWatched={isWatched} />
+                }
+              />
+              <Route
+                path="/my-list"
+                element={
+                  <MyListPage key="mylist" onOpenModal={handleOpenModal} isWatched={isWatched} />
+                }
+              />
+              <Route path="/chat-room" element={<ChatRoomPage key="chat" />} />
+              <Route path="/videoke" element={<VideokePage key="videoke" />} />
+              <Route
+                path="/vivamax"
+                element={
+                  <VivamaxPage key="vivamax" onOpenModal={handleOpenModal} isWatched={isWatched} />
+                }
+              />
+              <Route path="/stats" element={<StatsPage key="stats" />} />
+              <Route path="/playlists" element={<PlaylistsPage key="playlists" />} />
+              <Route
+                path="/playlist/:playlistId"
+                element={<PlaylistViewPage onOpenModal={handleOpenModal} isWatched={isWatched} />}
+              />
+              <Route
+                path="/recommendations"
+                element={
+                  <RecommendationsPage onOpenModal={handleOpenModal} isWatched={isWatched} />
+                }
+              />
+              <Route path="/achievements" element={<AchievementsPage key="achievements" />} />
+              <Route path="/cast-settings" element={<CastSettingsPage key="cast-settings" />} />
+              <Route
+                path="/downloads"
+                element={<DownloadsPage key="downloads" onOpenModal={handleOpenModal} />}
+              />
+              <Route
+                path="/watch-party/:partyId"
+                element={<WatchPartyJoinPage key="watch-party" />}
+              />
+              {/* Catch-all 404 route */}
+              <Route path="*" element={<NotFoundPage key="notfound" />} />
+            </Routes>
+          </Suspense>
+        </main>
 
-          <div
-            ref={playerWrapperRef}
-            className="relative w-full aspect-video bg-black rounded-xl overflow-hidden group border border-zinc-900"
-          >
-            <iframe
-              src={getEmbedUrl(activeSource)}
-              title="NikzFlix Video Stream"
-              className="w-full h-full border-0 absolute inset-0"
-              allowFullScreen
-              sandbox="allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-same-origin allow-scripts"
-              scrolling="no"
-            />
-
-            <button
-              onClick={toggleFullscreen}
-              className="absolute bottom-4 right-4 z-40 px-3 py-1.5 bg-black/60 hover:bg-red-600 text-white font-bold text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300"
-            >
-              {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen View'}
-            </button>
-          </div>
-
-          {!isFullscreen && (
-            <div className="mt-2">
-              <h2 className="text-xl font-extrabold text-white mb-1">{item.title || item.name}</h2>
-              <p className="text-zinc-400 text-xs leading-relaxed line-clamp-2">{item.overview}</p>
-            </div>
-          )}
-        </div>
+        <Footer />
       </div>
+      <BackToTopButton />
+
+      <Suspense fallback={null}>
+        {isChristmasMode && (
+          <>
+            <ChristmasLights />
+            <SnowEffect />
+          </>
+        )}
+        {isHalloweenMode && <HalloweenEffects />}
+        {isNewYearMode && <NewYearEffects />}
+      </Suspense>
+
+      <Suspense fallback={null}>
+        {modalItem && (
+          <Modal
+            item={modalItem}
+            onClose={handleCloseModal}
+            isItemInMyList={isItemInMyList}
+            onToggleMyList={toggleMyList}
+            playOnOpen={playOnOpen}
+            onEpisodePlay={(itemForProgress, season, episode) =>
+              setItemProgress(itemForProgress, season, episode)
+            }
+            addToWatched={addToWatched}
+            isWatched={isWatched}
+            onOpenModal={handleOpenModal}
+            continueWatchingList={continueWatchingList}
+          />
+        )}
+
+        {isSettingsOpen && (
+          <SettingsModal
+            onClose={() => setIsSettingsOpen(false)}
+            theme={theme}
+            toggleTheme={toggleTheme}
+            onClearContinueWatching={clearContinueWatching}
+            onClearWatchedHistory={clearWatchedHistory}
+            onClearMyList={clearMyList}
+          />
+        )}
+      </Suspense>
+
+      <BraveNotification />
     </div>
   );
 }
