@@ -176,147 +176,124 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
   };
 
   return (
-    <header
-      className={`header fixed top-0 left-0 w-full px-4 sm:px-8 py-4 flex items-center justify-between z-50 transition-colors duration-300 ${isScrolled ? 'scrolled' : ''}`}
-    >
-      <div className="flex items-center space-x-4 md:space-x-8">
-        <a
-          href="/"
-          onClick={e => {
-            e.preventDefault();
-            navigate('/');
-          }}
-          className="flex items-center space-x-2 cursor-pointer"
-        >
-          <FaPlay className="text-red-600 text-2xl sm:text-3xl" />
-          <span className="relative inline-block">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#E50914]">NikzFlix</h1>
-            {showHolidayHat && (
-              <div className="absolute -top-5 sm:-top-6 -left-3 sm:-left-4 w-7 sm:w-9 -rotate-12 drop-shadow-md pointer-events-none select-none z-10">
-                <ProgressiveImage
-                  src={hatSrc}
-                  alt=""
-                  placeholderSrc={'/assets/santa-hat.svg'}
-                  className="w-full h-full"
-                  onError={() => setHatSrc('/assets/santa-hat.svg')}
-                  imgProps={{
-                    'aria-hidden': true,
-                  }}
-                />
-              </div>
-            )}
-          </span>
-        </a>
-      </div>
-
-      {/* Centered nav for wider screens */}
-      <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 top-4 z-50">
-        <nav className="flex items-center gap-8" aria-label="Primary navigation">
-          {PRIMARY_NAV_LINKS.map(link => (
-            <NavLink key={link.to} to={link.to} className={desktopNavLinkClass}>
-              {link.label}
-            </NavLink>
-          ))}
-
-          {/* More Menu Dropdown */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
-              className="px-3 py-2 font-semibold hover:text-(--brand-color) transition-all duration-200 rounded-md hover:bg-(--bg-tertiary) flex items-center gap-2"
-              aria-expanded={isMoreMenuOpen}
-              aria-haspopup="true"
-            >
-              More
-              <FaChevronDown
-                className={`text-xs transition-transform duration-200 ${isMoreMenuOpen ? 'rotate-180' : ''}`}
-              />
-            </button>
-
-            {isMoreMenuOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setIsMoreMenuOpen(false)}
-                  aria-hidden="true"
-                />
-                <div className="absolute top-full mt-2 right-0 bg-(--bg-secondary) rounded-md shadow-lg py-2 min-w-[200px] z-50 border border-(--border-color)">
-                  {/* Search in dropdown */}
-                  <div className="px-3 py-2 border-b border-(--border-color)">
-                    <form onSubmit={handleSearch} className="flex items-center">
-                      <div className="search-container relative flex items-center w-full">
-                        <button
-                          type="submit"
-                          className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 z-10"
-                          aria-label="Search"
-                        >
-                          <FaSearch className="text-sm" />
-                        </button>
-                        <input
-                          type="text"
-                          value={searchQuery}
-                          onChange={e => setSearchQuery(e.target.value)}
-                          className="search-input border-2 border-transparent p-2 pl-8 rounded-md w-full focus:outline-none text-sm"
-                          placeholder="Search..."
-                          aria-label="Search titles"
-                        />
-                      </div>
-                    </form>
-                  </div>
-
-                  {/* Navigation links */}
-                  {MORE_NAV_LINKS.map(link => (
-                    <NavLink
-                      key={link.to}
-                      to={link.to}
-                      onClick={() => setIsMoreMenuOpen(false)}
-                      className={({ isActive }) =>
-                        `block px-4 py-2 hover:bg-(--bg-tertiary) hover:text-(--brand-color) transition-colors ${
-                          isActive ? 'text-(--brand-color) bg-(--bg-tertiary)' : ''
-                        }`
-                      }
-                    >
-                      {link.label}
-                    </NavLink>
-                  ))}
+    <>
+      <header
+        className={`header fixed top-0 left-0 w-full px-4 sm:px-8 py-4 flex items-center justify-between z-70 transition-colors duration-300 ${isScrolled ? 'scrolled' : ''}`}
+      >
+        <div className="flex items-center space-x-4 md:space-x-8">
+          <a
+            href="/"
+            onClick={e => {
+              e.preventDefault();
+              navigate('/');
+            }}
+            className="flex items-center space-x-2 cursor-pointer"
+          >
+            <FaPlay className="text-red-600 text-2xl sm:text-3xl" />
+            <span className="relative inline-block">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#E50914]">NikzFlix</h1>
+              {showHolidayHat && (
+                <div className="absolute -top-5 sm:-top-6 -left-3 sm:-left-4 w-7 sm:w-9 -rotate-12 drop-shadow-md pointer-events-none select-none z-10">
+                  <ProgressiveImage
+                    src={hatSrc}
+                    alt=""
+                    placeholderSrc={'/assets/santa-hat.svg'}
+                    className="w-full h-full"
+                    onError={() => setHatSrc('/assets/santa-hat.svg')}
+                    imgProps={{
+                      'aria-hidden': true,
+                    }}
+                  />
                 </div>
-              </>
-            )}
-          </div>
-        </nav>
-      </div>
-
-      <div className="flex items-center gap-2 sm:gap-4">
-        {/* Mobile icons - shown before hamburger menu */}
-        <div className="flex md:hidden items-center gap-2">
-          <button
-            type="button"
-            onClick={handleOpenSettings}
-            className="theme-toggle text-xl"
-            title="Settings"
-            aria-label="Open settings"
-          >
-            <FaCog />
-          </button>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="theme-toggle text-xl"
-            title="Toggle Theme"
-            aria-label="Toggle theme"
-          >
-            {theme === 'light' ? <FaMoon /> : <FaSun />}
-          </button>
+              )}
+            </span>
+          </a>
         </div>
 
-        {/* Desktop Right Section - Organized into compartments */}
-        <div className="hidden md:flex items-center gap-6">
-          {/* Actions Compartment */}
-          <div className="header-compartment actions-compartment flex items-center gap-3">
+        {/* Centered nav for wider screens */}
+        <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 top-4 z-50">
+          <nav className="flex items-center gap-8" aria-label="Primary navigation">
+            {PRIMARY_NAV_LINKS.map(link => (
+              <NavLink key={link.to} to={link.to} className={desktopNavLinkClass}>
+                {link.label}
+              </NavLink>
+            ))}
+
+            {/* More Menu Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+                className="px-3 py-2 font-semibold hover:text-(--brand-color) transition-all duration-200 rounded-md hover:bg-(--bg-tertiary) flex items-center gap-2"
+                aria-expanded={isMoreMenuOpen}
+                aria-haspopup="true"
+              >
+                More
+                <FaChevronDown
+                  className={`text-xs transition-transform duration-200 ${isMoreMenuOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {isMoreMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsMoreMenuOpen(false)}
+                    aria-hidden="true"
+                  />
+                  <div className="absolute top-full mt-2 right-0 bg-(--bg-secondary) rounded-md shadow-lg py-2 min-w-[200px] z-50 border border-(--border-color)">
+                    {/* Search in dropdown */}
+                    <div className="px-3 py-2 border-b border-(--border-color)">
+                      <form onSubmit={handleSearch} className="flex items-center">
+                        <div className="search-container relative flex items-center w-full">
+                          <button
+                            type="submit"
+                            className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 z-10"
+                            aria-label="Search"
+                          >
+                            <FaSearch className="text-sm" />
+                          </button>
+                          <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className="search-input border-2 border-transparent p-2 pl-8 rounded-md w-full focus:outline-none text-sm"
+                            placeholder="Search..."
+                            aria-label="Search titles"
+                          />
+                        </div>
+                      </form>
+                    </div>
+
+                    {/* Navigation links */}
+                    {MORE_NAV_LINKS.map(link => (
+                      <NavLink
+                        key={link.to}
+                        to={link.to}
+                        onClick={() => setIsMoreMenuOpen(false)}
+                        className={({ isActive }) =>
+                          `block px-4 py-2 hover:bg-(--bg-tertiary) hover:text-(--brand-color) transition-colors ${
+                            isActive ? 'text-(--brand-color) bg-(--bg-tertiary)' : ''
+                          }`
+                        }
+                      >
+                        {link.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-2 sm:gap-4">
+          {/* Mobile icons - shown before hamburger menu */}
+          <div className="flex md:hidden items-center gap-2">
             <button
               type="button"
               onClick={handleOpenSettings}
-              className="theme-toggle"
+              className="theme-toggle text-xl"
               title="Settings"
               aria-label="Open settings"
             >
@@ -325,80 +302,110 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
             <button
               type="button"
               onClick={toggleTheme}
-              className="theme-toggle"
+              className="theme-toggle text-xl"
               title="Toggle Theme"
               aria-label="Toggle theme"
             >
               {theme === 'light' ? <FaMoon /> : <FaSun />}
             </button>
-            <LevelBadge />
-            <div className="clock text-xl font-semibold whitespace-nowrap">{clock}</div>
           </div>
 
-          {/* Divider */}
-          <div className="header-divider"></div>
+          {/* Desktop Right Section - Organized into compartments */}
+          <div className="hidden md:flex items-center gap-6">
+            {/* Actions Compartment */}
+            <div className="header-compartment actions-compartment flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleOpenSettings}
+                className="theme-toggle"
+                title="Settings"
+                aria-label="Open settings"
+              >
+                <FaCog />
+              </button>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="theme-toggle"
+                title="Toggle Theme"
+                aria-label="Toggle theme"
+              >
+                {theme === 'light' ? <FaMoon /> : <FaSun />}
+              </button>
+              <LevelBadge />
+              <div className="clock text-xl font-semibold whitespace-nowrap">{clock}</div>
+            </div>
 
-          {/* User Compartment */}
-          <div className="header-compartment user-compartment">
-            <div className="relative">
-              {currentUser ? (
-                <button
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="w-9 h-9 rounded-full bg-red-600 flex items-center justify-center font-bold text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-color)"
-                  aria-haspopup="menu"
-                  aria-expanded={isProfileOpen}
-                  aria-label="Open profile menu"
-                >
-                  {currentUser.email.charAt(0).toUpperCase()}
-                </button>
-              ) : (
-                <button
-                  onClick={() => navigate('/auth')}
-                  className="px-3 py-1 bg-(--brand-color) rounded-md font-semibold text-sm"
-                >
-                  Login
-                </button>
-              )}
-              {currentUser && isProfileOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-(--bg-secondary) rounded-md shadow-lg py-1 z-50 text-sm">
-                  <div className="px-3 py-2 text-xs text-(--text-secondary) border-b border-(--border-color)">
-                    {currentUser.email}
+            {/* Divider */}
+            <div className="header-divider"></div>
+
+            {/* User Compartment */}
+            <div className="header-compartment user-compartment">
+              <div className="relative">
+                {currentUser ? (
+                  <button
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="w-9 h-9 rounded-full bg-red-600 flex items-center justify-center font-bold text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-color)"
+                    aria-haspopup="menu"
+                    aria-expanded={isProfileOpen}
+                    aria-label="Open profile menu"
+                  >
+                    {currentUser.email.charAt(0).toUpperCase()}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => navigate('/auth')}
+                    className="px-3 py-1 bg-(--brand-color) rounded-md font-semibold text-sm"
+                  >
+                    Login
+                  </button>
+                )}
+                {currentUser && isProfileOpen && (
+                  <div className="absolute right-0 mt-2 w-40 bg-(--bg-secondary) rounded-md shadow-lg py-1 z-50 text-sm">
+                    <div className="px-3 py-2 text-xs text-(--text-secondary) border-b border-(--border-color)">
+                      {currentUser.email}
+                    </div>
+                    <button
+                      onClick={navigateToProfile}
+                      className="w-full text-left px-3 py-2 hover:bg-(--bg-tertiary)"
+                    >
+                      My Profile
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-3 py-2 hover:bg-(--bg-tertiary)"
+                    >
+                      Logout
+                    </button>
                   </div>
-                  <button
-                    onClick={navigateToProfile}
-                    className="w-full text-left px-3 py-2 hover:bg-(--bg-tertiary)"
-                  >
-                    My Profile
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-3 py-2 hover:bg-(--bg-tertiary)"
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        <button
-          type="button"
-          onClick={toggleMobileMenu}
-          className="md:hidden text-2xl"
-          aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={isMobileMenuOpen}
-          aria-controls="mobileMenu"
-        >
-          {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={toggleMobileMenu}
+            className="md:hidden text-2xl"
+            aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobileMenu"
+          >
+            {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+          </button>
+        </div>
+      </header>
+
       {isMobileMenuOpen && (
-        <div className="mobile-menu-backdrop" onClick={closeMobileMenu} aria-hidden="true" />
+        <div
+          className="mobile-menu-backdrop md:hidden"
+          onClick={closeMobileMenu}
+          aria-hidden="true"
+        />
       )}
 
-      <div
-        className={`mobile-menu ${isMobileMenuOpen ? 'open' : ''}`}
+      <aside
+        className={`mobile-menu md:hidden ${isMobileMenuOpen ? 'open' : ''} z-80`}
         id="mobileMenu"
         role="dialog"
         aria-modal="true"
@@ -502,7 +509,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
             )}
           </div>
         </div>
-      </div>
-    </header>
+      </aside>
+    </>
   );
 };

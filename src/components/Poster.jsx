@@ -104,7 +104,6 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
 
   const genreNames = getGenreNamesByIds(item.genre_ids);
   const displayTitle = item.title || item.name || 'Untitled';
-  const widthClass = isLarge ? 'w-64' : 'w-40';
 
   // Highlight matched query substrings in titles (use helper)
   const renderHighlighted = text => {
@@ -132,7 +131,7 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
     // --- CONTAINER: Adjusted hover effects, removed explicit cursor ---
     <div
       // --- GIBALHIN NATO ANG widthClass SA SULOD NGA WRAPPER ---
-      className={`poster-container relative group focus:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-offset-(--bg-primary) focus-visible:ring-(--brand-color) rounded-lg`} // Removed width, added rounding here
+      className={`poster-container relative w-full group focus:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-offset-(--bg-primary) focus-visible:ring-(--brand-color) rounded-lg`}
       onClick={() => onOpenModal(item)}
       tabIndex="0"
       onKeyDown={handleKeyDown}
@@ -154,11 +153,11 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
       {/* --- WRAPPER PARA SA IMAGE UG TITLE (KANI NA ANG NAAY SIZE UG HOVER EFFECT) --- */}
       <div
         // --- GIBUTANG ANG WIDTH UG HOVER EFFECT DIRI ---
-        className={`relative ${widthClass} flex flex-col rounded-lg overflow-hidden bg-(--bg-secondary) shadow-md transition-all duration-300 ease-in-out group-hover:shadow-xl group-hover:scale-110 group-hover:z-10`}
+        className={`relative w-full flex flex-col rounded-xl overflow-hidden bg-(--bg-secondary) shadow-sm transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl group-hover:z-10`}
       >
         {/* --- IMAGE WRAPPER --- */}
         <div
-          className={`poster-image-wrapper relative w-full aspect-2/3 overflow-hidden bg-gray-800 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'} transition-transform transition-opacity duration-500`}
+          className={`poster-image-wrapper relative w-full aspect-2/3 overflow-hidden bg-gray-800 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'} duration-500`}
         >
           {/* Progressive image (low-res placeholder -> high-res) */}
           <ProgressiveImage
@@ -167,7 +166,7 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
             alt={displayTitle}
             className="w-full h-full"
             imgProps={{
-              className: `absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-out ${imgLoaded ? 'opacity-100' : 'opacity-0'}`,
+              className: `absolute inset-0 w-full h-full object-cover transition-all duration-300 ease-in-out ${imgLoaded ? 'opacity-100' : 'opacity-0'} group-hover:brightness-110`,
               fetchPriority: isLarge ? 'high' : 'low',
               onLoad: () => setImgLoaded(true),
               onError: e => {

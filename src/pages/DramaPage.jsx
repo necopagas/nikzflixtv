@@ -5,7 +5,7 @@ import { fetchData } from '../utils/fetchData';
 import { API_ENDPOINTS } from '../config';
 import { Poster } from '../components/Poster';
 import { Row } from '../components/Row';
-import { AdsterraSmartlink } from '../components/AdsterraSmartlink';
+import { SupportCard } from '../components/SupportCard';
 
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -116,8 +116,7 @@ export const DramaPage = ({ onOpenModal, isWatched }) => {
             isLarge
           />
 
-          {/* Smartlink Ad */}
-          <AdsterraSmartlink />
+          <SupportCard className="my-8" />
 
           <Row
             // --- GI-ILISAN ANG TITLE DIRI ---

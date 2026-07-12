@@ -5,13 +5,6 @@ import { API_ENDPOINTS, BACKDROP_PATH } from '../config';
 const ReactPlayer = React.lazy(() => import('react-player'));
 import { FaPlay, FaInfoCircle, FaVolumeUp, FaVolumeMute, FaStar } from 'react-icons/fa';
 
-// Helper: get age rating badge color
-const getRatingColor = rating => {
-  if (rating >= 8) return 'bg-green-500';
-  if (rating >= 6.5) return 'bg-yellow-500';
-  return 'bg-red-500';
-};
-
 // Helper: match percentage from TMDB vote_average (out of 10)
 const getMatchPct = rating => Math.round(Math.min(rating * 10, 99));
 
@@ -95,11 +88,11 @@ export const Banner = ({ onOpenModal }) => {
 
   return (
     <div
-      className="banner relative w-full h-[90vh] bg-cover bg-center text-white transition-all duration-1000"
+      className="banner relative w-full min-h-[90vh] overflow-hidden bg-cover bg-center text-white transition-all duration-1000"
       style={{ backgroundImage: `url(${BACKDROP_PATH}${item.backdrop_path})` }}
     >
       {/* Trailer Video Layer */}
-      <div className="absolute top-0 left-0 w-full h-full z-0 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         {trailerKey && (
           <Suspense fallback={null}>
             <ReactPlayer
@@ -144,112 +137,119 @@ export const Banner = ({ onOpenModal }) => {
       <div className="absolute inset-0 z-1 bg-gradient-to-r from-[#0a0b0e]/80 via-transparent to-transparent" />
 
       {/* Content */}
-      <div className="absolute inset-0 z-10 p-4 sm:p-8 md:p-16 flex flex-col justify-end pb-24 md:pb-32">
-        <div className="flex justify-between items-end w-full">
-          <div className="max-w-2xl">
+      <div className="relative z-10 flex min-h-[90vh] items-end">
+        <div className="w-full px-4 py-8 pb-24 sm:px-8 sm:py-10 md:px-16 md:py-16 md:pb-32">
+          <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-2xl">
+              {/* Match % badge — Netflix style */}
+              {matchPct && (
+                <div className="mb-3 flex flex-wrap items-center gap-3">
+                  <span className="text-lg font-bold text-green-400 md:text-xl">
+                    {matchPct}% Match
+                  </span>
+                  {year && <span className="text-sm text-white/70">{year}</span>}
+                  {certification && (
+                    <span className="rounded border border-white/50 px-1.5 py-0.5 text-xs text-white/80">
+                      {certification}
+                    </span>
+                  )}
+                  {isTV && details?.number_of_seasons && (
+                    <span className="text-sm text-white/70">
+                      {details.number_of_seasons} Season{details.number_of_seasons > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+              )}
 
-            {/* Match % badge — Netflix style */}
-            {matchPct && (
-              <div className="flex items-center gap-3 mb-3">
-                <span className="text-green-400 font-bold text-lg md:text-xl">{matchPct}% Match</span>
-                {year && <span className="text-white/70 text-sm">{year}</span>}
-                {certification && (
-                  <span className="border border-white/50 text-white/80 text-xs px-1.5 py-0.5 rounded">
-                    {certification}
+              {/* Title */}
+              <h1 className="banner-title mb-3 text-3xl font-extrabold leading-tight drop-shadow-2xl md:text-6xl">
+                {item.title || item.name}
+              </h1>
+
+              {/* Genre tags */}
+              {genres.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {genres.map(g => (
+                    <span
+                      key={g.id}
+                      className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/90 backdrop-blur-sm"
+                    >
+                      {g.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Star rating */}
+              {item.vote_average > 0 && (
+                <div className="mb-4 flex items-center gap-1.5">
+                  <FaStar className="text-sm text-yellow-400" />
+                  <span className="text-sm font-semibold text-white">
+                    {item.vote_average.toFixed(1)}
                   </span>
-                )}
-                {isTV && details?.number_of_seasons && (
-                  <span className="text-white/70 text-sm">
-                    {details.number_of_seasons} Season{details.number_of_seasons > 1 ? 's' : ''}
-                  </span>
-                )}
+                  <span className="text-xs text-white/50">/ 10</span>
+                  {item.vote_count && (
+                    <span className="text-xs text-white/40">
+                      ({item.vote_count.toLocaleString()} votes)
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Description */}
+              <p className="banner-desc mb-8 max-w-xl text-sm leading-relaxed text-white/85 md:text-base">
+                {truncatedDesc}
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  onClick={() => onOpenModal(item, true)}
+                  className="banner-button flex w-full items-center justify-center gap-2 rounded-md bg-white px-8 py-3 text-base font-bold text-black shadow-lg transition-all duration-200 hover:scale-105 hover:bg-white/90 sm:w-auto md:text-lg"
+                >
+                  <FaPlay /> Play
+                </button>
+                <button
+                  onClick={() => onOpenModal(item)}
+                  className="banner-button flex w-full items-center justify-center gap-2 rounded-md border border-white/20 bg-gray-500/60 px-8 py-3 text-base font-bold text-white backdrop-blur-sm transition-all duration-200 hover:scale-105 hover:bg-gray-500/80 sm:w-auto md:text-lg"
+                >
+                  <FaInfoCircle /> More Info
+                </button>
               </div>
-            )}
-
-            {/* Title */}
-            <h1 className="banner-title text-3xl md:text-6xl font-extrabold mb-3 drop-shadow-2xl leading-tight">
-              {item.title || item.name}
-            </h1>
-
-            {/* Genre tags */}
-            {genres.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3">
-                {genres.map(g => (
-                  <span
-                    key={g.id}
-                    className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white/90"
-                  >
-                    {g.name}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* Star rating */}
-            {item.vote_average > 0 && (
-              <div className="flex items-center gap-1.5 mb-4">
-                <FaStar className="text-yellow-400 text-sm" />
-                <span className="text-white font-semibold text-sm">
-                  {item.vote_average.toFixed(1)}
-                </span>
-                <span className="text-white/50 text-xs">/ 10</span>
-                {item.vote_count && (
-                  <span className="text-white/40 text-xs">
-                    ({item.vote_count.toLocaleString()} votes)
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Description */}
-            <p className="banner-desc text-sm md:text-base mb-8 max-w-xl text-white/85 leading-relaxed">
-              {truncatedDesc}
-            </p>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() => onOpenModal(item, true)}
-                className="banner-button bg-white text-black px-8 py-3 rounded-md font-bold shadow-lg hover:bg-white/90 hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 text-base md:text-lg"
-              >
-                <FaPlay /> Play
-              </button>
-              <button
-                onClick={() => onOpenModal(item)}
-                className="banner-button bg-gray-500/60 backdrop-blur-sm text-white px-8 py-3 rounded-md font-bold hover:bg-gray-500/80 hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 text-base md:text-lg border border-white/20"
-              >
-                <FaInfoCircle /> More Info
-              </button>
             </div>
-          </div>
 
-          {/* Right side: Mute + Dot indicators */}
-          <div className="flex flex-col items-end gap-6 mb-4">
-            {showVideo && (
-              <button
-                onClick={() => setIsMuted(!isMuted)}
-                className="hidden md:flex items-center justify-center w-11 h-11 rounded-full border border-white/40 bg-black/40 backdrop-blur-sm text-white hover:bg-white/20 transition-all duration-200"
-                aria-label={isMuted ? 'Unmute' : 'Mute'}
-              >
-                {isMuted ? <FaVolumeMute className="text-lg" /> : <FaVolumeUp className="text-lg" />}
-              </button>
-            )}
+            {/* Right side: Mute + Dot indicators */}
+            <div className="flex flex-col items-start gap-6 md:items-end md:mb-4">
+              {showVideo && (
+                <button
+                  onClick={() => setIsMuted(!isMuted)}
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-black/40 text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/20 md:flex"
+                  aria-label={isMuted ? 'Unmute' : 'Mute'}
+                >
+                  {isMuted ? (
+                    <FaVolumeMute className="text-lg" />
+                  ) : (
+                    <FaVolumeUp className="text-lg" />
+                  )}
+                </button>
+              )}
 
-            {/* Dot navigation */}
-            {items.length > 1 && (
-              <div className="hidden md:flex flex-col gap-1.5">
-                {items.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentItemIndex(i)}
-                    className={`w-1 rounded-full transition-all duration-300 ${
-                      i === dotIndex ? 'h-6 bg-white' : 'h-2 bg-white/40 hover:bg-white/70'
-                    }`}
-                    aria-label={`Go to slide ${i + 1}`}
-                  />
-                ))}
-              </div>
-            )}
+              {/* Dot navigation */}
+              {items.length > 1 && (
+                <div className="flex flex-col gap-1.5 md:flex">
+                  {items.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentItemIndex(i)}
+                      className={`w-1 rounded-full transition-all duration-300 ${
+                        i === dotIndex ? 'h-6 bg-white' : 'h-2 bg-white/40 hover:bg-white/70'
+                      }`}
+                      aria-label={`Go to slide ${i + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -6,7 +6,7 @@ import { useRecommendations } from '../hooks/useRecommendations';
 import { Banner } from '../components/Banner';
 import { GenreFilter } from '../components/GenreFilter';
 import { Row } from '../components/Row';
-import AdsterraBanner from '../AdsterraBanner';
+import { SupportCard } from '../components/SupportCard';
 // --- GIDUGANG ANG CURATED_COLLECTIONS IMPORT ---
 import { API_ENDPOINTS, MOVIE_GENRES, CURATED_COLLECTIONS } from '../config';
 import { fetchData } from '../utils/fetchData';
@@ -237,7 +237,7 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
   // Sidebar removed per request
 
   return (
-    <>
+    <div className="flex flex-col">
       <Banner onOpenModal={onOpenModal} />
       <div className="bg-[#0b0b0b] text-white min-h-screen">
         <div className="px-4 sm:px-8 md:px-16 pb-20">
@@ -453,12 +453,11 @@ export const HomePage = ({ onOpenModal, isWatched }) => {
                 onOpenModal={onOpenModal}
                 isWatched={isWatched}
               />
-              {/* Native Banner at bottom */}
-              <AdsterraBanner />
+              <SupportCard className="mt-8" />
             </main>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };

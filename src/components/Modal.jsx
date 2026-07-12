@@ -26,19 +26,24 @@ export const Modal = ({
   const [trailer, setTrailer] = useState(null);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [selectedEpisode, setSelectedEpisode] = useState(1);
-  const [currentSource, setCurrentSource] = useState(PLAYER_SOURCE_ORDER?.[0] || null);
+  const [currentSource, setCurrentSource] = useState('111movies');
+  const [isModalLoading, setIsModalLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [showPlayer, setShowPlayer] = useState(false);
   const [sourceHealth, setSourceHealth] = useState('idle');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const modalRef = useRef(null);
   const sourceTimeoutRef = useRef(null);
+  const playerWrapperRef = useRef(null);
 
   useEffect(() => {
+    setIsModalLoading(true);
     setIsLoading(true);
     setItem(initialItem);
     setTrailer(null);
-    setCurrentSource(PLAYER_SOURCE_ORDER?.[0] || null);
+    setCurrentSource('111movies');
 
     const mediaType = initialItem?.media_type || (initialItem?.title ? 'movie' : 'tv');
 
@@ -67,23 +72,55 @@ export const Modal = ({
           }
         }
 
-        if (playOnOpen) setShowPlayer(true);
-        else setShowPlayer(false);
+        if (playOnOpen) {
+          setShowPlayer(true);
+          setIsPlaying(true);
+        } else {
+          setShowPlayer(false);
+          setIsPlaying(false);
+        }
       })
       .catch(err => console.error('Failed to fetch modal data:', err))
-      .finally(() => setIsLoading(false));
+      .finally(() => setIsModalLoading(false));
 
     setTimeout(() => modalRef.current?.focus(), 100);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialItem, playOnOpen]);
 
   useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
     return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
       if (sourceTimeoutRef.current) {
         clearTimeout(sourceTimeoutRef.current);
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!showPlayer) return undefined;
+
+    const handleGlobalKeyDown = event => {
+      if (event.key === ' ' || event.key === 'Spacebar') {
+        event.preventDefault();
+        setIsPlaying(prev => !prev);
+        return;
+      }
+
+      if (event.key?.toLowerCase() === 'f') {
+        event.preventDefault();
+        toggleFullscreen();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [showPlayer, isFullscreen]);
 
   const media_type = initialItem?.media_type || (initialItem?.title ? 'movie' : 'tv');
   const isTV = media_type === 'tv';
@@ -97,6 +134,8 @@ export const Modal = ({
 
   const handlePlay = () => {
     setShowPlayer(true);
+    setIsLoading(true);
+    setIsPlaying(true);
     if (isTV) onEpisodePlay?.(item, selectedSeason, selectedEpisode);
     else onEpisodePlay?.(item, 1, 1);
     addToWatched?.(item?.id);
@@ -123,6 +162,18 @@ export const Modal = ({
     }
   };
 
+  const toggleFullscreen = () => {
+    const element = playerWrapperRef.current;
+    if (!element) return;
+
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.();
+      return;
+    }
+
+    element.requestFullscreen?.();
+  };
+
   const handleSeasonChange = seasonNumber => {
     setSelectedSeason(seasonNumber);
     setSelectedEpisode(1);
@@ -132,10 +183,14 @@ export const Modal = ({
     setSelectedEpisode(episodeNumber);
     onEpisodePlay?.(item, selectedSeason, episodeNumber);
     setShowPlayer(true);
-    setCurrentSource(PLAYER_SOURCE_ORDER?.[0] || null);
+    setIsLoading(true);
+    setCurrentSource('111movies');
   };
 
-  const handleSourceChange = source => setCurrentSource(source);
+  const handleSourceChange = source => {
+    setCurrentSource(source);
+    setIsLoading(true);
+  };
   const handleTryNextSource = () => {
     if (!availableSources.length) return;
     const currentIndex = availableSources.indexOf(currentSource);
@@ -181,29 +236,33 @@ export const Modal = ({
     };
   }, [showPlayer, playerUrl, currentSource]);
 
-  const renderSources = () => (
-    <div className="mb-4 px-8 pt-4 sm:px-0 sm:pt-0">
-      <div className="flex flex-wrap items-center gap-2 mb-2">
-        <span className="font-semibold text-(--text-secondary)">Source:</span>
-        {availableSources.map(source => (
-          <button
-            key={source}
-            onClick={() => handleSourceChange(source)}
-            tabIndex={0}
-            onKeyDown={e => handleKeyDown(e, () => handleSourceChange(source))}
-            className={`source-btn px-3 py-1 rounded-full text-sm transition-colors ${currentSource === source ? 'active bg-(--brand-color) text-white font-bold' : 'bg-(--bg-tertiary) hover:bg-(--bg-tertiary-hover)'}`}
-          >
-            {source.replace('_', '.')}
-          </button>
-        ))}
-      </div>
-      <p className="text-xs text-(--text-secondary) opacity-75 italic">
-        💡 Tip: Try a different source if the video doesn't load.
-      </p>
-    </div>
-  );
+  const renderSources = () => {
+    if (isFullscreen) return null;
 
-  if (isLoading || !details) {
+    return (
+      <div className="mb-4 px-8 pt-4 sm:px-0 sm:pt-0">
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          <span className="font-semibold text-(--text-secondary)">Source:</span>
+          {availableSources.map(source => (
+            <button
+              key={source}
+              onClick={() => handleSourceChange(source)}
+              tabIndex={0}
+              onKeyDown={e => handleKeyDown(e, () => handleSourceChange(source))}
+              className={`source-btn px-3 py-1 rounded-full text-sm transition-colors ${currentSource === source ? 'active bg-(--brand-color) text-white font-bold' : 'bg-(--bg-tertiary) hover:bg-(--bg-tertiary-hover)'}`}
+            >
+              {source.replace('_', '.')}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-(--text-secondary) opacity-75 italic">
+          💡 Tip: Try a different source if the video doesn't load.
+        </p>
+      </div>
+    );
+  };
+
+  if (isModalLoading || !details) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-75 z-100 flex items-center justify-center">
         <div className="player-loading" />
@@ -213,7 +272,7 @@ export const Modal = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-100 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-130 flex items-center justify-center p-3 sm:p-4"
       onClick={e => e.target === e.currentTarget && onClose?.()}
     >
       <div
@@ -232,9 +291,13 @@ export const Modal = ({
           &times;
         </button>
 
-        <div className="modal-body p-0 sm:p-8 relative overflow-y-auto">
+        <div className="modal-body p-0 sm:p-8 relative overflow-y-auto overscroll-contain">
           {showPlayer ? (
-            <div className="aspect-video bg-black rounded-lg">
+            <div
+              ref={playerWrapperRef}
+              data-playing={isPlaying}
+              className="aspect-video bg-black rounded-lg relative overflow-hidden"
+            >
               {renderSources()}
               {(sourceHealth === 'stalled' || sourceHealth === 'error') && (
                 <div className="mx-8 mb-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100 sm:mx-0">
@@ -262,8 +325,22 @@ export const Modal = ({
                   </div>
                 </div>
               )}
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                className="absolute right-4 top-4 z-20 rounded-full bg-black/60 px-3 py-2 text-sm font-semibold text-white transition hover:bg-black/80"
+                aria-label="Toggle fullscreen"
+              >
+                {document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen'}
+              </button>
+              {isLoading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white/20 border-t-(--brand-color) animate-spin" />
+                </div>
+              )}
               {playerUrl ? (
                 <iframe
+                  data-playing={isPlaying}
                   src={playerUrl}
                   width="100%"
                   height="100%"
@@ -272,18 +349,21 @@ export const Modal = ({
                       clearTimeout(sourceTimeoutRef.current);
                     }
                     setSourceHealth('loaded');
+                    setIsLoading(false);
                   }}
                   onError={() => {
                     if (sourceTimeoutRef.current) {
                       clearTimeout(sourceTimeoutRef.current);
                     }
                     setSourceHealth('error');
+                    setIsLoading(false);
                   }}
                   allowFullScreen
-                  allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                  allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-fullscreen"
                   referrerPolicy="strict-origin-when-cross-origin"
                   title="Video Player"
-                  className="rounded-b-lg border-0"
+                  className="relative z-0 h-full w-full rounded-b-lg border-0"
                 />
               ) : (
                 <div className="w-full h-[calc(100%-50px)] flex items-center justify-center text-center text-(--text-secondary) rounded-b-lg">

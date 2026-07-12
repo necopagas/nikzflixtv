@@ -16,8 +16,6 @@ import { useContinueWatching } from './hooks/useContinueWatching';
 import { useTheme } from './hooks/useTheme';
 import { useWatchedHistory } from './hooks/useWatchedHistory';
 import { useChristmasTheme } from './hooks/useChristmasTheme';
-import { AdsterraSocialBar } from './components/AdsterraSocialBar';
-import AdBanner from './components/AdBanner';
 import { NetworkStatusBanner } from './components/NetworkStatusBanner';
 import { PageTransitionIndicator } from './components/PageTransitionIndicator';
 import { useToast } from './components/toastContext.js';
@@ -213,7 +211,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="app-shell relative flex min-h-screen flex-col overflow-x-hidden overflow-y-auto bg-[#0b0b0b] text-white">
       <PageTransitionIndicator isActive={isTransitioning} />
       <NetworkStatusBanner status={networkStatus} />
       <Header
@@ -222,76 +220,81 @@ export default function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
-      <main className="grow">
-        <Suspense fallback={<ContentLoader message="Loading NikzFlix..." />}>
-          <Routes location={location} key={location.pathname}>
-            <Route
-              path="/"
-              element={<HomePage key="home" onOpenModal={handleOpenModal} isWatched={isWatched} />}
-            />
-            <Route
-              path="/search"
-              element={
-                <SearchPage key="search" onOpenModal={handleOpenModal} isWatched={isWatched} />
-              }
-            />
-            <Route path="/auth" element={<AuthPage key="auth" />} />
-            <Route path="/profile" element={<ProfilePage key="profile" />} />
-            <Route
-              path="/anime"
-              element={
-                <AnimePage key="anime" onOpenModal={handleOpenModal} isWatched={isWatched} />
-              }
-            />
-            <Route
-              path="/drama"
-              element={
-                <DramaPage key="drama" onOpenModal={handleOpenModal} isWatched={isWatched} />
-              }
-            />
-            <Route
-              path="/my-list"
-              element={
-                <MyListPage key="mylist" onOpenModal={handleOpenModal} isWatched={isWatched} />
-              }
-            />
-            <Route path="/chat-room" element={<ChatRoomPage key="chat" />} />
-            <Route path="/videoke" element={<VideokePage key="videoke" />} />
-            <Route
-              path="/vivamax"
-              element={
-                <VivamaxPage key="vivamax" onOpenModal={handleOpenModal} isWatched={isWatched} />
-              }
-            />
-            <Route path="/stats" element={<StatsPage key="stats" />} />
-            <Route path="/playlists" element={<PlaylistsPage key="playlists" />} />
-            <Route
-              path="/playlist/:playlistId"
-              element={<PlaylistViewPage onOpenModal={handleOpenModal} isWatched={isWatched} />}
-            />
-            <Route
-              path="/recommendations"
-              element={<RecommendationsPage onOpenModal={handleOpenModal} isWatched={isWatched} />}
-            />
-            <Route path="/achievements" element={<AchievementsPage key="achievements" />} />
-            <Route path="/cast-settings" element={<CastSettingsPage key="cast-settings" />} />
-            <Route
-              path="/downloads"
-              element={<DownloadsPage key="downloads" onOpenModal={handleOpenModal} />}
-            />
-            <Route
-              path="/watch-party/:partyId"
-              element={<WatchPartyJoinPage key="watch-party" />}
-            />
-            {/* Catch-all 404 route */}
-            <Route path="*" element={<NotFoundPage key="notfound" />} />
-          </Routes>
-        </Suspense>
-      </main>
+      <div className="flex flex-1 flex-col pt-20 md:pt-24">
+        <main className="main-scroll-area flex-1 min-h-0 overflow-visible pb-20 sm:pb-24">
+          <Suspense fallback={<ContentLoader message="Loading NikzFlix..." />}>
+            <Routes location={location} key={location.pathname}>
+              <Route
+                path="/"
+                element={
+                  <HomePage key="home" onOpenModal={handleOpenModal} isWatched={isWatched} />
+                }
+              />
+              <Route
+                path="/search"
+                element={
+                  <SearchPage key="search" onOpenModal={handleOpenModal} isWatched={isWatched} />
+                }
+              />
+              <Route path="/auth" element={<AuthPage key="auth" />} />
+              <Route path="/profile" element={<ProfilePage key="profile" />} />
+              <Route
+                path="/anime"
+                element={
+                  <AnimePage key="anime" onOpenModal={handleOpenModal} isWatched={isWatched} />
+                }
+              />
+              <Route
+                path="/drama"
+                element={
+                  <DramaPage key="drama" onOpenModal={handleOpenModal} isWatched={isWatched} />
+                }
+              />
+              <Route
+                path="/my-list"
+                element={
+                  <MyListPage key="mylist" onOpenModal={handleOpenModal} isWatched={isWatched} />
+                }
+              />
+              <Route path="/chat-room" element={<ChatRoomPage key="chat" />} />
+              <Route path="/videoke" element={<VideokePage key="videoke" />} />
+              <Route
+                path="/vivamax"
+                element={
+                  <VivamaxPage key="vivamax" onOpenModal={handleOpenModal} isWatched={isWatched} />
+                }
+              />
+              <Route path="/stats" element={<StatsPage key="stats" />} />
+              <Route path="/playlists" element={<PlaylistsPage key="playlists" />} />
+              <Route
+                path="/playlist/:playlistId"
+                element={<PlaylistViewPage onOpenModal={handleOpenModal} isWatched={isWatched} />}
+              />
+              <Route
+                path="/recommendations"
+                element={
+                  <RecommendationsPage onOpenModal={handleOpenModal} isWatched={isWatched} />
+                }
+              />
+              <Route path="/achievements" element={<AchievementsPage key="achievements" />} />
+              <Route path="/cast-settings" element={<CastSettingsPage key="cast-settings" />} />
+              <Route
+                path="/downloads"
+                element={<DownloadsPage key="downloads" onOpenModal={handleOpenModal} />}
+              />
+              <Route
+                path="/watch-party/:partyId"
+                element={<WatchPartyJoinPage key="watch-party" />}
+              />
+              {/* Catch-all 404 route */}
+              <Route path="*" element={<NotFoundPage key="notfound" />} />
+            </Routes>
+          </Suspense>
+        </main>
 
-      <Footer />
+        <Footer />
+      </div>
       <BackToTopButton />
-      <AdsterraSocialBar />
 
       <Suspense fallback={null}>
         {isChristmasMode && (
@@ -335,9 +338,6 @@ export default function App() {
       </Suspense>
 
       <BraveNotification />
-
-      {/* Resilient ad banner (loads provider script and shows fallback on timeout) */}
-      {typeof window !== 'undefined' && <AdBanner />}
     </div>
   );
 }

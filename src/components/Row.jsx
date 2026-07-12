@@ -17,7 +17,7 @@ export const Row = ({
   isLoading: propIsLoading = false,
   query = '',
 }) => {
-  const scrollContainerRef = useRef(null);
+  const scrollContainerRefs = useRef([]);
   const [rowRef, isVisible] = useIntersectionObserver({ threshold: 0.1, triggerOnce: true });
 
   const { items: apiItems, loading: apiLoading, error: apiError } = useApi(endpoint, param);
@@ -34,25 +34,24 @@ export const Row = ({
   }, [items, query]);
 
   const scroll = scrollOffset => {
-    if (scrollContainerRef.current) {
-      // Use transform for smoother animation on mobile
-      const isMobile = window.innerWidth < 768;
-      if (isMobile) {
-        scrollContainerRef.current.scrollBy({
-          left: scrollOffset,
-          behavior: 'auto', // Instant on mobile for better performance
-        });
-      } else {
-        scrollContainerRef.current.scrollBy({
-          left: scrollOffset,
-          behavior: 'smooth',
-        });
-      }
-    }
+    const container = scrollContainerRefs.current[0];
+    if (!container) return;
+
+    const nextLeft = container.scrollLeft + scrollOffset;
+    const isMobile = window.innerWidth < 768;
+    container.scrollTo({
+      left: nextLeft,
+      behavior: isMobile ? 'auto' : 'smooth',
+    });
+  };
+
+  const handleScrollStep = direction => {
+    scroll(direction === 'left' ? -500 : 500);
   };
 
   const handleKeyDown = e => {
-    if (!scrollContainerRef.current) return;
+    const container = scrollContainerRefs.current[0];
+    if (!container) return;
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
       scroll(-300);
@@ -66,7 +65,7 @@ export const Row = ({
   const [canScrollRight, setCanScrollRight] = useState(false);
 
   useEffect(() => {
-    const el = scrollContainerRef.current;
+    const el = scrollContainerRefs.current[0];
     if (!el) return;
     const update = () => {
       setCanScrollLeft(el.scrollLeft > 10);
@@ -113,12 +112,7 @@ export const Row = ({
 
       <div className="relative group">
         <button
-          onClick={() => {
-            const el = scrollContainerRef.current;
-            if (!el) return;
-            const step = Math.round(el.clientWidth * 0.8);
-            scroll(-step);
-          }}
+          onClick={() => handleScrollStep('left')}
           aria-label={`Scroll ${title} left`}
           className={`absolute left-0 top-1/2 -translate-y-1/2 z-20 w-12 h-24 flex items-center justify-center bg-black/50 hover:bg-black/75 transition-colors duration-200 opacity-0 group-hover:opacity-100 disabled:opacity-30 disabled:pointer-events-none`}
           disabled={!canScrollLeft}
@@ -127,7 +121,9 @@ export const Row = ({
         </button>
 
         <div
-          ref={scrollContainerRef}
+          ref={node => {
+            scrollContainerRefs.current[0] = node;
+          }}
           className={`row-posters flex snap-x snap-mandatory touch-pan-x overflow-x-scroll overflow-y-visible space-x-4 pl-6 pr-6 py-4 -mx-6 ${isLarge ? 'h-[400px]' : 'h-[300px]'}`}
           tabIndex={0}
           aria-label={`${title} carousel`}
@@ -138,7 +134,7 @@ export const Row = ({
             Array.from({ length: 10 }).map((_, i) => (
               <div
                 key={`skeleton-${title}-${i}`}
-                className={`shrink-0 ${isLarge ? 'w-64' : 'w-40'} snap-start`}
+                className={`shrink-0 ${isLarge ? 'w-[8.5rem] sm:w-[10rem] md:w-[11rem]' : 'w-[7.25rem] sm:w-[8.5rem] md:w-[9.5rem]'} snap-start`}
               >
                 <div className="skeleton rounded-lg overflow-hidden relative">
                   <div
@@ -173,7 +169,10 @@ export const Row = ({
             </div>
           ) : (
             visibleItems.map(item => (
-              <div key={item.id} className={`shrink-0 ${isLarge ? 'w-64' : 'w-40'} snap-start`}>
+              <div
+                key={item.id}
+                className={`shrink-0 ${isLarge ? 'w-[8.5rem] sm:w-[10rem] md:w-[11rem]' : 'w-[7.25rem] sm:w-[8.5rem] md:w-[9.5rem]'} snap-start`}
+              >
                 <Poster
                   item={item}
                   onOpenModal={onOpenModal}
@@ -189,12 +188,7 @@ export const Row = ({
         </div>
 
         <button
-          onClick={() => {
-            const el = scrollContainerRef.current;
-            if (!el) return;
-            const step = Math.round(el.clientWidth * 0.8);
-            scroll(step);
-          }}
+          onClick={() => handleScrollStep('right')}
           aria-label={`Scroll ${title} right`}
           className={`absolute right-0 top-1/2 -translate-y-1/2 z-20 w-12 h-24 flex items-center justify-center bg-black/50 hover:bg-black/75 transition-colors duration-200 opacity-0 group-hover:opacity-100 disabled:opacity-30 disabled:pointer-events-none`}
           disabled={!canScrollRight}

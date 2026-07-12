@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Row } from '../components/Row';
-import { AdsterraSmartlink } from '../components/AdsterraSmartlink';
+import { SupportCard } from '../components/SupportCard';
 import { GenreFilter } from '../components/GenreFilter';
 import { ANIME_GENRES } from '../config';
 
@@ -61,8 +61,7 @@ export const AnimePage = ({ onOpenModal, isWatched }) => {
             isLarge
           />
 
-          {/* Smartlink Ad */}
-          <AdsterraSmartlink />
+          <SupportCard className="my-8" />
 
           <Row
             title="Top Rated Anime"
