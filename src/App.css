@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global Layout Stabilization Styles */
 html,
 body {
   max-width: 100vw;
@@ -11,10 +10,8 @@ body {
   padding: 0;
   background-color: #0a0b0e;
   color: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* Base custom framework scaffolding */
 #root {
   min-height: 100vh;
   display: flex;
@@ -22,10 +19,10 @@ body {
   position: relative;
 }
 
-/* Custom Scrollbar Styling - Netflix Premium Dark Theme Style */
+/* Scrollbar Customization */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -34,44 +31,13 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: #27272a;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #3f3f46;
 }
 
-/* Layer Isolation Elements to stop responsive viewport bugs */
 iframe {
   background-color: #000000;
-  color-scheme: dark;
-}
-
-/* Safe hardware-accelerated animations for state switching controls */
-.animate-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
-}
-
-.animate-slide-up {
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(12px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
 }
