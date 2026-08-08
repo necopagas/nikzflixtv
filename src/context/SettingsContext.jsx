@@ -12,6 +12,7 @@ export const useSettings = () => {
 export const SettingsProvider = ({ children }) => {
   const STORAGE_KEY = 'nikz_settings_v1';
   const [previewsEnabled, setPreviewsEnabled] = useState(true);
+  const [dataSaver, setDataSaver] = useState(false);
 
   useEffect(() => {
     try {
@@ -19,6 +20,7 @@ export const SettingsProvider = ({ children }) => {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (typeof parsed.previewsEnabled === 'boolean') setPreviewsEnabled(parsed.previewsEnabled);
+        if (typeof parsed.dataSaver === 'boolean') setDataSaver(parsed.dataSaver);
       }
     } catch {
       // ignore
@@ -27,18 +29,22 @@ export const SettingsProvider = ({ children }) => {
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ previewsEnabled }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ previewsEnabled, dataSaver }));
     } catch {
       // ignore write errors
     }
-  }, [previewsEnabled]);
+  }, [previewsEnabled, dataSaver]);
 
   const togglePreviews = () => setPreviewsEnabled(v => !v);
+  const toggleDataSaver = () => setDataSaver(v => !v);
 
   const value = {
     previewsEnabled,
     setPreviewsEnabled,
     togglePreviews,
+    dataSaver,
+    setDataSaver,
+    toggleDataSaver,
   };
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

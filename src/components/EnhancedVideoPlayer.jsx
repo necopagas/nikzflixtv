@@ -2,6 +2,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import isSmartTV from '../utils/isSmartTV';
 import useRemoteNavigation from '../hooks/useRemoteNavigation';
+import { useProfile } from '../context/ProfileContext.jsx';
+import { profileStorageKey } from '../utils/profileStorage.js';
 import '../styles/tv.css';
 import { AdvancedPlayerControls } from './AdvancedPlayerControls';
 import {
@@ -26,6 +28,7 @@ export const EnhancedVideoPlayer = ({
   contentMetadata = null, // For cast feature
 }) => {
   const videoRef = useRef(null);
+  const { activeProfile } = useProfile();
   // hlsAttached is intentionally not exposed in UI; keep for future telemetry
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -39,16 +42,25 @@ export const EnhancedVideoPlayer = ({
   const [currentQuality, setCurrentQuality] = useState(() => {
     return localStorage.getItem('preferredQuality') || 'auto';
   });
+  const progressStorageKey = profileStorageKey('watchProgress', activeProfile?.id || 'default');
 
   // Initialize utilities
   const [introSkipper] = useState(() => new IntroSkipper());
-  const [speedController] = useState(() => new PlaybackSpeedController());
-  const [progressTracker] = useState(() => new WatchProgressTracker());
+  const [speedController] = useState(() => new PlaybackSpeedController({ playbackRate: 1 }));
+  const progressTrackerRef = useRef(null);
+
+  useEffect(() => {
+    progressTrackerRef.current = new WatchProgressTracker(
+      episodeId,
+      duration || 1,
+      progressStorageKey
+    );
+  }, [episodeId, duration, progressStorageKey]);
 
   // Load saved settings
   useEffect(() => {
     if (videoRef.current) {
-      const savedSpeed = speedController.getSpeed();
+      const savedSpeed = PlaybackSpeedController.getSavedSpeed();
       videoRef.current.playbackRate = savedSpeed;
       setPlaybackSpeed(savedSpeed);
 
@@ -71,13 +83,13 @@ export const EnhancedVideoPlayer = ({
 
       // Load saved progress
       if (episodeId) {
-        const savedProgress = progressTracker.getProgress(episodeId);
+        const savedProgress = WatchProgressTracker.getProgress(episodeId, progressStorageKey);
         if (savedProgress && savedProgress.percentage < 90) {
-          videoRef.current.currentTime = savedProgress.time;
+          videoRef.current.currentTime = savedProgress.currentTime;
         }
       }
     }
-  }, [src, episodeId, autoplay, speedController, progressTracker]);
+  }, [src, episodeId, autoplay, progressStorageKey]);
 
   // Apply TV mode class and remote navigation
   useEffect(() => {
@@ -147,16 +159,12 @@ export const EnhancedVideoPlayer = ({
   useEffect(() => {
     const interval = setInterval(() => {
       if (videoRef.current && episodeId && !videoRef.current.paused) {
-        progressTracker.saveProgress(
-          episodeId,
-          videoRef.current.currentTime,
-          videoRef.current.duration
-        );
+        progressTrackerRef.current?.saveProgress(videoRef.current.currentTime);
       }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [episodeId, progressTracker]);
+  }, [episodeId]);
 
   // Handle intro/outro skipping
   useEffect(() => {
@@ -169,12 +177,11 @@ export const EnhancedVideoPlayer = ({
     }
 
     const checkIntro = () => {
-      const time = videoRef.current.currentTime;
-      const shouldShowSkip = introSkipper.shouldShowSkipButton(time);
+      const shouldShowSkip = introSkipper.isInIntro();
       setShowSkipIntro(shouldShowSkip);
 
-      if (autoSkipIntro && shouldShowSkip && !introSkipper.hasSkipped) {
-        introSkipper.skip(videoRef.current);
+      if (autoSkipIntro && shouldShowSkip && !introSkipper.hasSkippedIntro) {
+        introSkipper.skipIntro();
       }
     };
 
@@ -190,7 +197,9 @@ export const EnhancedVideoPlayer = ({
 
     const checkOutro = () => {
       const time = videoRef.current.currentTime;
-      const shouldSkipOutro = introSkipper.shouldSkipOutro(time, videoRef.current.duration);
+      const shouldSkipOutro = videoRef.current.duration
+        ? time >= videoRef.current.duration - 20
+        : false;
 
       if (autoSkipOutro && shouldSkipOutro && onNext) {
         onNext();
@@ -322,7 +331,7 @@ export const EnhancedVideoPlayer = ({
 
   const handleEnded = () => {
     if (episodeId) {
-      progressTracker.saveProgress(episodeId, 0, 0); // Reset progress
+      WatchProgressTracker.clearProgress(episodeId, progressStorageKey);
     }
     if (onEnded) {
       onEnded();

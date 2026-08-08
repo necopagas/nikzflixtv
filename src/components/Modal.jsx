@@ -1,12 +1,14 @@
 // src/components/Modal.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { FaPlay, FaPlus, FaCheck, FaShare } from 'react-icons/fa';
+import { FaPlay, FaPlus, FaCheck, FaShare, FaUsers } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import { Share } from '@capacitor/share';
 import { fetchData } from '../utils/fetchData';
 import { API_ENDPOINTS, EMBED_URLS, PLAYER_SOURCE_ORDER, BACKDROP_PATH } from '../config';
 import { Poster } from './Poster';
 import { AddToPlaylistButton } from './AddToPlaylistButton';
 import DownloadButton from './DownloadButton';
+import { createRoomFromMedia } from '../utils/watchPartyRooms';
 
 export const Modal = ({
   item: initialItem,
@@ -37,6 +39,7 @@ export const Modal = ({
   const modalRef = useRef(null);
   const sourceTimeoutRef = useRef(null);
   const playerWrapperRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setIsModalLoading(true);
@@ -160,6 +163,20 @@ export const Modal = ({
     } catch (err) {
       console.error('Error sharing', err);
     }
+  };
+
+  const handleWatchTogether = () => {
+    const room = createRoomFromMedia({
+      item,
+      details,
+      source: currentSource,
+      playerUrl,
+      season: selectedSeason,
+      episode: selectedEpisode,
+    });
+
+    onClose?.();
+    navigate(`/party/${room.roomCode}`);
   };
 
   const toggleFullscreen = () => {
@@ -432,7 +449,23 @@ export const Modal = ({
                   </button>
 
                   <AddToPlaylistButton item={item} />
-                  <DownloadButton item={item} quality="720p" size="medium" showLabel={true} />
+                  <DownloadButton
+                    item={item}
+                    quality="720p"
+                    size="medium"
+                    showLabel={true}
+                    label="Save Offline"
+                  />
+
+                  <button
+                    onClick={handleWatchTogether}
+                    tabIndex={0}
+                    onKeyDown={e => handleKeyDown(e, handleWatchTogether)}
+                    className="px-6 py-2 bg-linear-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 rounded font-semibold transition-colors flex items-center gap-2"
+                    title="Watch Together"
+                  >
+                    <FaUsers className="text-xs" /> Watch Together
+                  </button>
 
                   <button
                     onClick={handleShare}

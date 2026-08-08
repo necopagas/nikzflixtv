@@ -6,7 +6,7 @@ import { useDownloadManager, DOWNLOAD_STATUS } from '../hooks/useDownloadManager
  * Download Button Component
  * Shows download status and controls for content
  */
-const DownloadButton = ({ item, size = 'medium', showLabel = false }) => {
+const DownloadButton = ({ item, size = 'medium', showLabel = false, label = '' }) => {
   const {
     isSupported,
     downloads,
@@ -132,6 +132,7 @@ const DownloadButton = ({ item, size = 'medium', showLabel = false }) => {
 
   const config = getButtonConfig();
   const Icon = config.icon;
+  const buttonLabel = label || config.label;
 
   // Size classes
   const sizeClasses = {
@@ -143,12 +144,15 @@ const DownloadButton = ({ item, size = 'medium', showLabel = false }) => {
   return (
     <div className="relative inline-block">
       <button
-        onClick={handleDownload}
+        onClick={e => {
+          e.stopPropagation();
+          handleDownload();
+        }}
         className={`download-button flex items-center gap-2 ${config.className} text-white rounded-lg font-medium transition-all duration-300 hover:scale-105 ${sizeClasses[size]}`}
-        title={config.label}
+        title={buttonLabel}
       >
         <Icon className={status === DOWNLOAD_STATUS.DOWNLOADING ? 'animate-spin' : ''} />
-        {showLabel && <span>{config.label}</span>}
+        {showLabel && <span>{buttonLabel}</span>}
         {status === DOWNLOAD_STATUS.DOWNLOADING && (
           <div
             className="absolute bottom-0 left-0 h-1 bg-white/30 rounded-b-lg transition-all duration-300"

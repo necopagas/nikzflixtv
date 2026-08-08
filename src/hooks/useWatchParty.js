@@ -1,14 +1,35 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  appendChatMessage,
+  createRoomCode,
+  getRoomStorageKey,
+  loadRoom,
+  roomInviteLink,
+  saveRoom,
+  updateRoom,
+} from '../utils/watchPartyRooms';
 
 /**
  * Watch Party Hook
- * Manages synchronized viewing sessions with friends using peer-to-peer connections
- * Uses localStorage for simple peer synchronization without backend
+ * Shared room-state wrapper used by the floating player controls.
+ * The source of truth is the room record in localStorage.
  */
 
-const STORAGE_KEY = 'nikzflix_watch_party';
-const SYNC_INTERVAL = 500; // Sync every 500ms
+const SYNC_INTERVAL = 500;
 const MAX_PARTICIPANTS = 10;
+
+const buildMediaPayload = metadata => ({
+  itemId: metadata?.itemId || metadata?.id || null,
+  mediaType: metadata?.mediaType || (metadata?.season || metadata?.episode ? 'tv' : 'movie'),
+  title: metadata?.title || metadata?.name || 'Watch Party',
+  poster: metadata?.poster || metadata?.poster_path || '',
+  backdrop: metadata?.backdrop || metadata?.backdrop_path || '',
+  overview: metadata?.overview || '',
+  season: metadata?.season || 1,
+  episode: metadata?.episode || 1,
+  source: metadata?.source || '111movies',
+  playerUrl: metadata?.playerUrl || metadata?.url || '',
+});
 
 export const useWatchParty = videoRef => {
   const [isHost, setIsHost] = useState(false);
@@ -20,21 +41,11 @@ export const useWatchParty = videoRef => {
 
   const syncIntervalRef = useRef(null);
   const lastSyncRef = useRef(null);
-  const userIdRef = useRef(generateUserId());
+  const userIdRef = useRef(`user_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`);
 
-  // Generate unique user ID
-  function generateUserId() {
-    return `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  // Generate party ID
-  function generatePartyId() {
-    return `party_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  // Get current user info
   const getCurrentUser = useCallback(() => {
-    const username = localStorage.getItem('nikzflix_username') || 'Guest';
+    const username =
+      (typeof window !== 'undefined' && localStorage.getItem('nikzflix_username')) || 'Guest';
     return {
       id: userIdRef.current,
       username,
@@ -43,129 +54,199 @@ export const useWatchParty = videoRef => {
     };
   }, [isHost]);
 
-  // Load party state from storage
   const loadPartyState = useCallback(() => {
-    try {
-      const stored = localStorage.getItem(`${STORAGE_KEY}_${partyId}`);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (error) {
-      console.error('Error loading party state:', error);
-    }
-    return null;
+    if (!partyId) return null;
+    return loadRoom(partyId);
   }, [partyId]);
 
-  // Save party state to storage
   const savePartyState = useCallback(
     state => {
-      try {
-        localStorage.setItem(
-          `${STORAGE_KEY}_${partyId}`,
-          JSON.stringify({
-            ...state,
-            lastUpdate: Date.now(),
-          })
-        );
-      } catch (error) {
-        console.error('Error saving party state:', error);
-      }
+      if (!partyId || !state) return null;
+      return saveRoom(partyId, state);
     },
     [partyId]
   );
 
-  // Create new watch party
   const createParty = useCallback(
     (videoUrl, metadata) => {
-      const newPartyId = generatePartyId();
+      const newPartyId = createRoomCode();
       const currentUser = getCurrentUser();
+      const hostUser = {
+        ...currentUser,
+        isHost: true,
+      };
 
       const initialState = {
-        id: newPartyId,
-        host: currentUser,
-        participants: [currentUser],
-        video: {
-          url: videoUrl,
-          metadata,
+        roomCode: newPartyId,
+        createdAt: new Date().toISOString(),
+        host: hostUser,
+        participants: [
+          {
+            id: hostUser.id,
+            username: hostUser.username,
+            isHost: true,
+          },
+        ],
+        media: {
+          ...buildMediaPayload(metadata),
+          playerUrl: videoUrl || metadata?.playerUrl || metadata?.url || '',
+        },
+        playback: {
           currentTime: 0,
           isPlaying: false,
           playbackRate: 1,
+          source: metadata?.source || '111movies',
         },
-        messages: [],
-        createdAt: new Date().toISOString(),
+        chat: [],
       };
 
+      saveRoom(newPartyId, initialState);
       setPartyId(newPartyId);
       setIsHost(true);
-      setParticipants([currentUser]);
+      setParticipants(initialState.participants);
+      setMessages([]);
       setIsConnected(true);
-      savePartyState(initialState);
-
       return newPartyId;
     },
-    [getCurrentUser, savePartyState]
+    [getCurrentUser]
   );
 
-  // Join existing party
+  const sendMessage = useCallback(
+    (text, type = 'user') => {
+      if (!partyId) return;
+      const messageText = String(text || '').trim();
+      if (!messageText) return;
+
+      const currentUser = getCurrentUser();
+      appendChatMessage(partyId, {
+        id: `${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
+        userId: currentUser.id,
+        username: currentUser.username,
+        text: messageText,
+        type,
+        timestamp: new Date().toISOString(),
+      });
+
+      const updated = loadPartyState();
+      if (updated) {
+        setMessages(updated.chat || []);
+      }
+    },
+    [getCurrentUser, loadPartyState, partyId]
+  );
+
   const joinParty = useCallback(
     partyIdToJoin => {
-      const state = loadPartyState();
+      const normalizedPartyId = String(partyIdToJoin || '')
+        .trim()
+        .toUpperCase();
+      if (!normalizedPartyId) throw new Error('Party not found');
+
+      let state = loadRoom(normalizedPartyId);
+      if (!state) {
+        const legacyRaw =
+          typeof window !== 'undefined'
+            ? localStorage.getItem(`nikzflix_watch_party_${normalizedPartyId}`)
+            : null;
+        if (legacyRaw) {
+          try {
+            state = JSON.parse(legacyRaw);
+          } catch {
+            state = null;
+          }
+        }
+      }
 
       if (!state) {
         throw new Error('Party not found');
       }
 
-      if (state.participants.length >= MAX_PARTICIPANTS) {
+      const participantsList = Array.isArray(state.participants) ? state.participants : [];
+      if (participantsList.length >= MAX_PARTICIPANTS) {
         throw new Error('Party is full');
       }
 
       const currentUser = getCurrentUser();
-      const updatedState = {
+      const nextParticipants = participantsList.some(
+        participant =>
+          participant.id === currentUser.id || participant.username === currentUser.username
+      )
+        ? participantsList
+        : [...participantsList, { ...currentUser, isHost: false }];
+
+      const nextState = saveRoom(normalizedPartyId, {
         ...state,
-        participants: [...state.participants, currentUser],
-      };
+        roomCode: normalizedPartyId,
+        participants: nextParticipants,
+        chat: state.chat || state.messages || [],
+        playback: {
+          currentTime: state.playback?.currentTime || state.video?.currentTime || 0,
+          isPlaying: state.playback?.isPlaying ?? state.video?.isPlaying ?? false,
+          playbackRate: state.playback?.playbackRate || state.video?.playbackRate || 1,
+          source: state.playback?.source || state.media?.source || '111movies',
+        },
+      });
 
-      setPartyId(partyIdToJoin);
-      setIsHost(false);
-      setParticipants(updatedState.participants);
-      setMessages(state.messages || []);
+      setPartyId(normalizedPartyId);
+      setIsHost(Boolean(nextState?.host?.username === currentUser.username));
+      setParticipants(nextState?.participants || []);
+      setMessages(nextState?.chat || []);
       setIsConnected(true);
-      savePartyState(updatedState);
 
-      // Send join message
-      sendMessage(`${currentUser.username} joined the party`, 'system');
+      if (currentUser.username !== nextState?.host?.username) {
+        appendChatMessage(normalizedPartyId, {
+          id: `${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
+          userId: currentUser.id,
+          username: currentUser.username,
+          text: `${currentUser.username} joined the party`,
+          type: 'system',
+          timestamp: new Date().toISOString(),
+        });
+        const refreshed = loadRoom(normalizedPartyId);
+        if (refreshed) {
+          setMessages(refreshed.chat || []);
+        }
+      }
 
-      return updatedState.video;
+      return nextState?.media;
     },
-    [getCurrentUser, loadPartyState, savePartyState, sendMessage]
+    [getCurrentUser]
   );
 
-  // Leave party
   const leaveParty = useCallback(() => {
     if (!partyId) return;
 
     const state = loadPartyState();
     if (state) {
       const currentUser = getCurrentUser();
-      const updatedParticipants = state.participants.filter(p => p.id !== currentUser.id);
+      const remaining = (state.participants || []).filter(p => p.id !== currentUser.id);
 
-      if (updatedParticipants.length === 0) {
-        // Last person leaving, delete party
-        localStorage.removeItem(`${STORAGE_KEY}_${partyId}`);
+      if (remaining.length === 0) {
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem(getRoomStorageKey(partyId));
+          }
+        } catch (error) {
+          console.error('Failed to remove empty room', error);
+        }
       } else {
-        // Update participants list
-        const updatedState = {
+        const nextHost = state.host?.username === currentUser.username ? remaining[0] : state.host;
+        savePartyState({
           ...state,
-          participants: updatedParticipants,
-          // If host is leaving, transfer to next participant
-          host: isHost ? updatedParticipants[0] : state.host,
-        };
-        savePartyState(updatedState);
-        sendMessage(`${currentUser.username} left the party`, 'system');
+          host: nextHost || state.host,
+          participants: remaining,
+        });
+        appendChatMessage(partyId, {
+          id: `${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
+          userId: currentUser.id,
+          username: currentUser.username,
+          text: `${currentUser.username} left the party`,
+          type: 'system',
+          timestamp: new Date().toISOString(),
+        });
       }
     }
 
-    // Clear local state
     if (syncIntervalRef.current) {
       clearInterval(syncIntervalRef.current);
     }
@@ -174,9 +255,8 @@ export const useWatchParty = videoRef => {
     setParticipants([]);
     setMessages([]);
     setIsConnected(false);
-  }, [partyId, isHost, getCurrentUser, loadPartyState, savePartyState, sendMessage]);
+  }, [getCurrentUser, loadPartyState, partyId, savePartyState]);
 
-  // Sync video state
   const syncVideoState = useCallback(() => {
     if (!partyId || !videoRef?.current || !syncEnabled) return;
 
@@ -186,30 +266,28 @@ export const useWatchParty = videoRef => {
     const video = videoRef.current;
 
     if (isHost) {
-      // Host broadcasts current state
       const videoState = {
         currentTime: video.currentTime,
         isPlaying: !video.paused,
         playbackRate: video.playbackRate,
       };
 
-      const updatedState = {
-        ...state,
-        video: {
-          ...state.video,
+      const nextState = updateRoom(partyId, {
+        playback: {
+          ...((state && state.playback) || {}),
           ...videoState,
+          source: state.playback?.source || state.media?.source || '111movies',
         },
-      };
+      });
 
-      savePartyState(updatedState);
-      lastSyncRef.current = videoState;
+      if (nextState) {
+        lastSyncRef.current = videoState;
+      }
     } else {
-      // Participants sync to host's state
-      const hostState = state.video;
+      const hostState = state.playback || {};
 
-      if (!lastSyncRef.current || Math.abs(video.currentTime - hostState.currentTime) > 2) {
-        // Significant desync, jump to correct time
-        video.currentTime = hostState.currentTime;
+      if (!lastSyncRef.current || Math.abs(video.currentTime - (hostState.currentTime || 0)) > 2) {
+        video.currentTime = hostState.currentTime || 0;
       }
 
       if (hostState.isPlaying && video.paused) {
@@ -218,61 +296,30 @@ export const useWatchParty = videoRef => {
         video.pause();
       }
 
-      if (video.playbackRate !== hostState.playbackRate) {
-        video.playbackRate = hostState.playbackRate;
+      if (video.playbackRate !== (hostState.playbackRate || 1)) {
+        video.playbackRate = hostState.playbackRate || 1;
       }
 
       lastSyncRef.current = hostState;
     }
-  }, [partyId, videoRef, isHost, syncEnabled, loadPartyState, savePartyState]);
+  }, [isHost, loadPartyState, partyId, syncEnabled, videoRef]);
 
-  // Send chat message
-  const sendMessage = useCallback(
-    (text, type = 'user') => {
-      if (!partyId) return;
-
-      const state = loadPartyState();
-      if (!state) return;
-
-      const currentUser = getCurrentUser();
-      const message = {
-        id: Date.now(),
-        userId: currentUser.id,
-        username: currentUser.username,
-        text,
-        type, // 'user', 'system', 'sync'
-        timestamp: new Date().toISOString(),
-      };
-
-      const updatedState = {
-        ...state,
-        messages: [...state.messages, message],
-      };
-
-      savePartyState(updatedState);
-      setMessages(updatedState.messages);
-    },
-    [partyId, getCurrentUser, loadPartyState, savePartyState]
-  );
-
-  // Poll for updates
   useEffect(() => {
-    if (!partyId || !isConnected) return;
+    if (!partyId || !isConnected) return undefined;
 
     const pollInterval = setInterval(() => {
       const state = loadPartyState();
       if (state) {
         setParticipants(state.participants || []);
-        setMessages(state.messages || []);
+        setMessages(state.chat || state.messages || []);
       }
     }, 1000);
 
     return () => clearInterval(pollInterval);
-  }, [partyId, isConnected, loadPartyState]);
+  }, [isConnected, loadPartyState, partyId]);
 
-  // Setup sync interval
   useEffect(() => {
-    if (!partyId || !isConnected || !videoRef?.current) return;
+    if (!partyId || !isConnected || !videoRef?.current) return undefined;
 
     syncIntervalRef.current = setInterval(syncVideoState, SYNC_INTERVAL);
 
@@ -281,16 +328,13 @@ export const useWatchParty = videoRef => {
         clearInterval(syncIntervalRef.current);
       }
     };
-  }, [partyId, isConnected, videoRef, syncVideoState]);
+  }, [isConnected, partyId, syncVideoState, videoRef]);
 
-  // Get party invite link
   const getInviteLink = useCallback(() => {
     if (!partyId) return null;
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/watch-party/${partyId}`;
+    return roomInviteLink(partyId);
   }, [partyId]);
 
-  // Copy invite link
   const copyInviteLink = useCallback(async () => {
     const link = getInviteLink();
     if (!link) return false;
@@ -304,7 +348,6 @@ export const useWatchParty = videoRef => {
     }
   }, [getInviteLink]);
 
-  // Share invite link
   const shareInviteLink = useCallback(async () => {
     const link = getInviteLink();
     if (!link) return false;
@@ -323,18 +366,15 @@ export const useWatchParty = videoRef => {
         }
         return false;
       }
-    } else {
-      // Fallback to copy
-      return copyInviteLink();
     }
-  }, [getInviteLink, copyInviteLink]);
 
-  // Toggle sync
+    return copyInviteLink();
+  }, [copyInviteLink, getInviteLink]);
+
   const toggleSync = useCallback(() => {
     setSyncEnabled(prev => !prev);
   }, []);
 
-  // Kick participant (host only)
   const kickParticipant = useCallback(
     participantId => {
       if (!isHost || !partyId) return;
@@ -342,34 +382,29 @@ export const useWatchParty = videoRef => {
       const state = loadPartyState();
       if (!state) return;
 
-      const updatedParticipants = state.participants.filter(p => p.id !== participantId);
-      const kickedUser = state.participants.find(p => p.id === participantId);
+      const updatedParticipants = (state.participants || []).filter(p => p.id !== participantId);
+      const kickedUser = (state.participants || []).find(p => p.id === participantId);
 
-      const updatedState = {
+      savePartyState({
         ...state,
         participants: updatedParticipants,
-      };
-
-      savePartyState(updatedState);
+      });
       setParticipants(updatedParticipants);
 
       if (kickedUser) {
         sendMessage(`${kickedUser.username} was removed from the party`, 'system');
       }
     },
-    [isHost, partyId, loadPartyState, savePartyState, sendMessage]
+    [isHost, loadPartyState, partyId, savePartyState, sendMessage]
   );
 
   return {
-    // State
     isHost,
     partyId,
     participants,
     messages,
     isConnected,
     syncEnabled,
-
-    // Actions
     createParty,
     joinParty,
     leaveParty,

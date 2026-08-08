@@ -9,6 +9,7 @@ const ReactPlayer = React.lazy(() => import('react-player'));
 import { fetchData } from '../utils/fetchData';
 import { usePreviewsSetting } from '../hooks/usePreviewsSetting';
 import { useSettings } from '../context/SettingsContext';
+import DownloadButton from './DownloadButton';
 
 // Simple in-memory cache so repeated hovers don't refetch details
 const trailerCache = new Map();
@@ -27,6 +28,7 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
   const isPreviewCapable =
     typeof window !== 'undefined'
       ? settings?.previewsEnabled &&
+        !settings?.dataSaver &&
         window.matchMedia &&
         window.matchMedia('(hover: hover)').matches &&
         window.innerWidth >= 640
@@ -104,6 +106,7 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
 
   const genreNames = getGenreNamesByIds(item.genre_ids);
   const displayTitle = item.title || item.name || 'Untitled';
+  const progress = Number(item.progress || item.watchProgress || 0);
 
   // Highlight matched query substrings in titles (use helper)
   const renderHighlighted = text => {
@@ -161,7 +164,7 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
         >
           {/* Progressive image (low-res placeholder -> high-res) */}
           <ProgressiveImage
-            src={imageUrl}
+            src={settings?.dataSaver ? lowResUrl : imageUrl}
             placeholderSrc={lowResUrl}
             alt={displayTitle}
             className="w-full h-full"
@@ -204,6 +207,19 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
               title="Watched"
             >
               <FaCheck className="text-sm" />
+            </div>
+          )}
+          {Number.isFinite(progress) && progress > 0 && progress < 100 && (
+            <div className="absolute bottom-0 left-0 right-0 z-30 h-1.5 bg-black/45">
+              <div
+                className="h-full bg-red-500 shadow-[0_0_14px_rgba(228,9,20,0.65)]"
+                style={{ width: `${Math.min(100, progress)}%` }}
+              />
+            </div>
+          )}
+          {typeof item.rank === 'number' && (
+            <div className="absolute -left-2 top-2 z-40 flex h-12 w-12 items-center justify-center rounded-full border-4 border-black bg-[linear-gradient(135deg,#E50914,#ff626d)] text-lg font-black text-white shadow-[0_0_30px_rgba(228,9,20,0.45)]">
+              {item.rank}
             </div>
           )}
           {/* --- HOVER OVERLAY --- */}
@@ -263,6 +279,10 @@ export const Poster = ({ item, onOpenModal, isWatched, isLarge, season, episode,
               >
                 <FaInfoCircle />
               </button>
+            </div>
+
+            <div className="absolute left-3 right-3 bottom-12 flex justify-center">
+              <DownloadButton item={item} size="small" showLabel={true} label="Save Offline" />
             </div>
 
             {/* Genres on Hover */}

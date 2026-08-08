@@ -70,7 +70,7 @@ const WatchPartyControls = ({ videoRef, videoUrl, videoMetadata }) => {
 
     try {
       // Extract party ID from link or use directly
-      const idMatch = joinInput.match(/watch-party\/([^/?]+)/);
+      const idMatch = joinInput.match(/(?:watch-party|party)\/([^/?]+)/);
       const partyIdToJoin = idMatch ? idMatch[1] : joinInput.trim();
 
       joinParty(partyIdToJoin);

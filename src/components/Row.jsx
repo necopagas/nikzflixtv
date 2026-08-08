@@ -16,6 +16,7 @@ export const Row = ({
   isLarge = false,
   isLoading: propIsLoading = false,
   query = '',
+  showRankNumbers = false,
 }) => {
   const scrollContainerRefs = useRef([]);
   const [rowRef, isVisible] = useIntersectionObserver({ threshold: 0.1, triggerOnce: true });
@@ -168,13 +169,13 @@ export const Row = ({
               <p className="text-lg font-medium">No results found</p>
             </div>
           ) : (
-            visibleItems.map(item => (
+            visibleItems.map((item, index) => (
               <div
                 key={item.id}
                 className={`shrink-0 ${isLarge ? 'w-[8.5rem] sm:w-[10rem] md:w-[11rem]' : 'w-[7.25rem] sm:w-[8.5rem] md:w-[9.5rem]'} snap-start`}
               >
                 <Poster
-                  item={item}
+                  item={showRankNumbers ? { ...item, rank: index + 1 } : item}
                   onOpenModal={onOpenModal}
                   isWatched={isWatched && isWatched(item.id)}
                   isLarge={isLarge}

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { fetchData } from '../utils/fetchData';
 import { API_ENDPOINTS, BACKDROP_PATH } from '../config';
+import { useSettings } from '../context/SettingsContext';
 const ReactPlayer = React.lazy(() => import('react-player'));
 import { FaPlay, FaInfoCircle, FaVolumeUp, FaVolumeMute, FaStar } from 'react-icons/fa';
 
@@ -9,6 +10,7 @@ import { FaPlay, FaInfoCircle, FaVolumeUp, FaVolumeMute, FaStar } from 'react-ic
 const getMatchPct = rating => Math.round(Math.min(rating * 10, 99));
 
 export const Banner = ({ onOpenModal }) => {
+  const { dataSaver } = useSettings();
   const [items, setItems] = useState([]);
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [trailerKey, setTrailerKey] = useState(null);
@@ -22,17 +24,17 @@ export const Banner = ({ onOpenModal }) => {
   useEffect(() => {
     fetchData(API_ENDPOINTS.trending).then(data => {
       const validItems = (data.results || []).filter(i => i.backdrop_path);
-      setItems(validItems.slice(0, 8)); // limit to 8 for banner rotation
-      setCurrentItemIndex(Math.floor(Math.random() * Math.min(validItems.length, 8)));
+      setItems(validItems.slice(0, 5));
+      setCurrentItemIndex(Math.floor(Math.random() * Math.min(validItems.length, 5)));
     });
   }, []);
 
-  // Auto-rotate banner every 15s
+  // Auto-rotate banner every 8s
   useEffect(() => {
     if (items.length > 1) {
       const timer = setInterval(() => {
         setCurrentItemIndex(prev => (prev + 1) % items.length);
-      }, 15000);
+      }, 8000);
       return () => clearInterval(timer);
     }
   }, [items]);
@@ -93,7 +95,7 @@ export const Banner = ({ onOpenModal }) => {
     >
       {/* Trailer Video Layer */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        {trailerKey && (
+        {!dataSaver && trailerKey && (
           <Suspense fallback={null}>
             <ReactPlayer
               url={`https://www.youtube.com/watch?v=${trailerKey}`}

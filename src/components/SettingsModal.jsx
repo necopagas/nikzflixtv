@@ -35,7 +35,6 @@ export const SettingsModal = ({
   const [activeTab, setActiveTab] = useState('general');
   const [videoQuality, setVideoQuality] = useState(localStorage.getItem('videoQuality') || 'auto');
   const [autoplay, setAutoplay] = useState(localStorage.getItem('autoplay') !== 'false');
-  const [dataSaver, setDataSaver] = useState(localStorage.getItem('dataSaver') === 'true');
   const [language, setLanguage] = useState(localStorage.getItem('language') || 'en');
   const [showShortcuts, setShowShortcuts] = useState(false);
 
@@ -79,9 +78,8 @@ export const SettingsModal = ({
   };
 
   const handleDataSaverToggle = () => {
-    const newValue = !dataSaver;
-    setDataSaver(newValue);
-    localStorage.setItem('dataSaver', String(newValue));
+    settings.toggleDataSaver();
+    localStorage.setItem('dataSaver', String(!settings.dataSaver));
   };
 
   const handleLanguageChange = lang => {
@@ -104,7 +102,7 @@ export const SettingsModal = ({
       theme,
       videoQuality,
       autoplay,
-      dataSaver,
+      dataSaver: settings.dataSaver,
       language,
       previewsEnabled: settings.previewsEnabled,
       exportDate: new Date().toISOString(),
@@ -131,7 +129,9 @@ export const SettingsModal = ({
             localStorage.setItem('autoplay', String(imported.autoplay));
           }
           if (typeof imported.dataSaver !== 'undefined') {
-            setDataSaver(imported.dataSaver);
+            if (Boolean(imported.dataSaver) !== Boolean(settings.dataSaver)) {
+              settings.toggleDataSaver();
+            }
             localStorage.setItem('dataSaver', String(imported.dataSaver));
           }
           if (imported.language) handleLanguageChange(imported.language);
@@ -378,7 +378,7 @@ export const SettingsModal = ({
 
               <SettingCard title="Data Saver Mode">
                 <ToggleSwitch
-                  enabled={dataSaver}
+                  enabled={settings.dataSaver}
                   onChange={handleDataSaverToggle}
                   label="Reduce image quality to save bandwidth"
                 />

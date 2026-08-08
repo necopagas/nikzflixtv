@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { SANTA_HAT_USER } from '../assets/santaHatUser';
 import { useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { ProfileSwitcher } from './ProfileSwitcher.jsx';
 import { LevelBadge } from './LevelBadge';
 // Icons (use react-icons for consistent, lightweight icons)
 import {
@@ -19,6 +20,7 @@ import {
 
 const PRIMARY_NAV_LINKS = [
   { to: '/', label: 'Home' },
+  { to: '/live-tv', label: 'Live TV' },
   { to: '/anime', label: 'Anime' },
   { to: '/drama', label: 'Drama' },
   { to: '/my-list', label: 'My List' },
@@ -32,6 +34,7 @@ const MORE_NAV_LINKS = [
   { to: '/playlists', label: 'Playlists' },
   { to: '/achievements', label: 'Achievements' },
   { to: '/downloads', label: 'Downloads' },
+  { to: '/admin', label: 'Admin' },
   { to: '/chat-room', label: 'Chat Room' },
 ];
 
@@ -54,7 +57,7 @@ const useClock = () => {
   return time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
+export const Header = ({ theme, toggleTheme, onOpenSettings, onInstallApp }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -314,6 +317,15 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
           <div className="hidden md:flex items-center gap-6">
             {/* Actions Compartment */}
             <div className="header-compartment actions-compartment flex items-center gap-3">
+              {onInstallApp && (
+                <button
+                  type="button"
+                  onClick={onInstallApp}
+                  className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/10 hover:text-white"
+                >
+                  Install App
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleOpenSettings}
@@ -333,6 +345,7 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
                 {theme === 'light' ? <FaMoon /> : <FaSun />}
               </button>
               <LevelBadge />
+              <ProfileSwitcher compact />
               <div className="clock text-xl font-semibold whitespace-nowrap">{clock}</div>
             </div>
 
@@ -430,6 +443,11 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
         <div className="mobile-menu__meta">
           <span className="mobile-menu__clock">{clock}</span>
           <div className="mobile-menu__meta-actions">
+            {onInstallApp && (
+              <button type="button" onClick={onInstallApp} aria-label="Install app">
+                Install
+              </button>
+            )}
             <button type="button" onClick={handleOpenSettings} aria-label="Open settings">
               <FaCog />
             </button>
@@ -485,6 +503,9 @@ export const Header = ({ theme, toggleTheme, onOpenSettings }) => {
 
           {/* Mobile User Compartment */}
           <div className="mobile-menu__compartment mobile-user-compartment">
+            <div className="mb-3">
+              <ProfileSwitcher compact />
+            </div>
             {currentUser ? (
               <div className="mobile-menu__auth">
                 <div className="mobile-menu__user-email">{currentUser.email}</div>

@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiUsers, FiArrowLeft, FiAlertCircle } from 'react-icons/fi';
 import ProgressiveImage from '../components/ProgressiveImage';
+import { loadRoom, normalizeLegacyPartyRoom, saveRoom } from '../utils/watchPartyRooms';
 
 /**
  * Watch Party Join Page
- * Landing page for joining watch parties via invite link
+ * Legacy invite landing page that bridges older links into the new /party/:roomCode room.
  */
 const WatchPartyJoinPage = () => {
   const { partyId } = useParams();
@@ -16,16 +17,28 @@ const WatchPartyJoinPage = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Load party info
     const loadPartyInfo = () => {
       try {
+        const normalized = loadRoom(partyId);
+        if (normalized) {
+          setPartyInfo(normalized);
+          return;
+        }
+
         const stored = localStorage.getItem(`nikzflix_watch_party_${partyId}`);
         if (stored) {
-          const party = JSON.parse(stored);
-          setPartyInfo(party);
-        } else {
-          setError('Watch party not found');
+          const legacyParty = JSON.parse(stored);
+          const migrated = normalizeLegacyPartyRoom(legacyParty, partyId);
+          if (migrated) {
+            saveRoom(partyId, migrated);
+            setPartyInfo(migrated);
+            return;
+          }
+          setPartyInfo(legacyParty);
+          return;
         }
+
+        setError('Watch party not found');
       } catch {
         setError('Failed to load party information');
       } finally {
@@ -35,7 +48,6 @@ const WatchPartyJoinPage = () => {
 
     loadPartyInfo();
 
-    // Load saved username
     const savedUsername = localStorage.getItem('nikzflix_username');
     if (savedUsername) {
       setUsername(savedUsername);
@@ -48,24 +60,15 @@ const WatchPartyJoinPage = () => {
       return;
     }
 
-    // Save username
     localStorage.setItem('nikzflix_username', username.trim());
-
-    // Navigate to video with party info
-    if (partyInfo?.video?.metadata) {
-      const { mediaType, itemId } = partyInfo.video.metadata;
-      const type = mediaType === 'tv' ? 'series' : 'movie';
-      navigate(`/watch/${type}/${itemId}?party=${partyId}`);
-    } else {
-      setError('Invalid party data');
-    }
+    navigate(`/party/${partyId}`);
   };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-linear-to-b from-gray-900 via-gray-800 to-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-red-500 mx-auto mb-4"></div>
           <p className="text-gray-400">Loading party...</p>
         </div>
       </div>
@@ -83,7 +86,7 @@ const WatchPartyJoinPage = () => {
           </p>
           <button
             onClick={() => navigate('/')}
-            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+            className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
           >
             Go to Home
           </button>
@@ -91,6 +94,16 @@ const WatchPartyJoinPage = () => {
       </div>
     );
   }
+
+  const title = partyInfo.media?.title || partyInfo.video?.metadata?.title || 'Watch Party';
+  const poster = partyInfo.media?.poster || partyInfo.video?.metadata?.poster || '';
+  const host = partyInfo.host?.username || 'Unknown';
+  const createdAt = partyInfo.createdAt || new Date().toISOString();
+  const posterUrl = poster
+    ? poster.startsWith('http')
+      ? poster
+      : `https://image.tmdb.org/t/p/w185${poster}`
+    : '';
 
   return (
     <div className="min-h-screen bg-linear-to-b from-gray-900 via-gray-800 to-black pt-20 px-4">
@@ -104,8 +117,7 @@ const WatchPartyJoinPage = () => {
         </button>
 
         <div className="bg-gray-900 rounded-xl overflow-hidden border border-gray-700 shadow-2xl">
-          {/* Banner */}
-          <div className="relative h-64 bg-linear-to-br from-purple-600 via-pink-600 to-purple-800 flex items-center justify-center">
+          <div className="relative h-64 bg-linear-to-br from-red-600 via-pink-600 to-red-800 flex items-center justify-center">
             <div className="text-center">
               <FiUsers className="text-8xl text-white/90 mx-auto mb-4" />
               <h1 className="text-4xl font-bold text-white mb-2">Join Watch Party</h1>
@@ -113,29 +125,24 @@ const WatchPartyJoinPage = () => {
             </div>
           </div>
 
-          {/* Content */}
           <div className="p-8">
-            {/* Party Info */}
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-white mb-4">Party Details</h2>
               <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 space-y-3">
                 <div className="flex items-start gap-4">
-                  {partyInfo.video?.metadata?.poster && (
+                  {posterUrl ? (
                     <ProgressiveImage
-                      src={`https://image.tmdb.org/t/p/w185${partyInfo.video.metadata.poster}`}
-                      alt={partyInfo.video?.metadata?.title || ''}
+                      src={posterUrl}
+                      alt={title}
                       placeholderSrc={'/placeholder.png'}
                       imgProps={{ className: 'w-24 h-36 object-cover rounded-lg' }}
                     />
-                  )}
+                  ) : null}
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-white mb-2">
-                      {partyInfo.video?.metadata?.title || 'Watch Party'}
-                    </h3>
+                    <h3 className="text-xl font-semibold text-white mb-2">{title}</h3>
                     <div className="space-y-1 text-sm">
                       <p className="text-gray-400">
-                        <span className="text-gray-500">Host:</span>{' '}
-                        {partyInfo.host?.username || 'Unknown'}
+                        <span className="text-gray-500">Host:</span> {host}
                       </p>
                       <p className="text-gray-400">
                         <span className="text-gray-500">Participants:</span>{' '}
@@ -143,7 +150,7 @@ const WatchPartyJoinPage = () => {
                       </p>
                       <p className="text-gray-400">
                         <span className="text-gray-500">Created:</span>{' '}
-                        {new Date(partyInfo.createdAt).toLocaleString()}
+                        {new Date(createdAt).toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -151,7 +158,6 @@ const WatchPartyJoinPage = () => {
               </div>
             </div>
 
-            {/* Username Input */}
             <div className="mb-8">
               <label className="block text-white font-semibold mb-2">Your Name</label>
               <input
@@ -159,7 +165,7 @@ const WatchPartyJoinPage = () => {
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 placeholder="Enter your name"
-                className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-purple-500 focus:outline-none"
+                className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-red-500 focus:outline-none"
                 maxLength={20}
                 autoFocus
               />
@@ -168,16 +174,14 @@ const WatchPartyJoinPage = () => {
               </p>
             </div>
 
-            {/* Join Button */}
             <button
               onClick={handleJoin}
               disabled={!username.trim()}
-              className="w-full px-6 py-4 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-700 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-bold text-lg transition-all duration-300 hover:scale-105 disabled:hover:scale-100"
+              className="w-full px-6 py-4 bg-linear-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 disabled:from-gray-700 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-bold text-lg transition-all duration-300 hover:scale-105 disabled:hover:scale-100"
             >
               Join Watch Party
             </button>
 
-            {/* Info */}
             <div className="mt-8 bg-blue-900/20 border border-blue-700/30 rounded-lg p-4">
               <h4 className="text-blue-400 font-semibold mb-2">What is Watch Party?</h4>
               <ul className="text-gray-300 text-sm space-y-1">

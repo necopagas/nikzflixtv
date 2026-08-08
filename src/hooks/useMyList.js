@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { db } from '../firebase';
 import { doc, setDoc, deleteDoc, collection, onSnapshot } from 'firebase/firestore';
+import { useProfile } from '../context/ProfileContext.jsx';
+import { profileStorageKey } from '../utils/profileStorage.js';
 
 export const useMyList = () => {
   const { currentUser } = useAuth();
+  const { activeProfile } = useProfile();
   const [myList, setMyList] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -12,7 +15,15 @@ export const useMyList = () => {
     // Kung naay naka-login nga user...
     if (currentUser) {
       setLoading(true);
-      const listCollectionRef = collection(db, 'users', currentUser.uid, 'myList');
+      const profileId = activeProfile?.id || 'default';
+      const listCollectionRef = collection(
+        db,
+        'users',
+        currentUser.uid,
+        'profiles',
+        profileId,
+        'myList'
+      );
 
       // Ang onSnapshot maminaw sa real-time updates gikan sa Firestore
       const unsubscribe = onSnapshot(listCollectionRef, snapshot => {
@@ -26,25 +37,39 @@ export const useMyList = () => {
     }
     // Kung walay naka-login, gamiton gihapon ang localStorage
     else {
-      const localList = JSON.parse(localStorage.getItem('myNikzflixList')) || [];
+      const localList =
+        JSON.parse(localStorage.getItem(profileStorageKey('myNikzflixList', activeProfile?.id))) ||
+        [];
       setMyList(localList);
       setLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser, activeProfile?.id]);
 
   // I-save sa localStorage kung walay user
   useEffect(() => {
     if (!currentUser) {
-      localStorage.setItem('myNikzflixList', JSON.stringify(myList));
+      localStorage.setItem(
+        profileStorageKey('myNikzflixList', activeProfile?.id),
+        JSON.stringify(myList)
+      );
     }
-  }, [myList, currentUser]);
+  }, [myList, currentUser, activeProfile?.id]);
 
   const isItemInMyList = itemId => myList.some(item => item.id.toString() === itemId.toString());
 
   const toggleMyList = async item => {
     // Kung naay user, i-save sa Firestore
     if (currentUser) {
-      const itemRef = doc(db, 'users', currentUser.uid, 'myList', item.id.toString());
+      const profileId = activeProfile?.id || 'default';
+      const itemRef = doc(
+        db,
+        'users',
+        currentUser.uid,
+        'profiles',
+        profileId,
+        'myList',
+        item.id.toString()
+      );
       try {
         if (isItemInMyList(item.id)) {
           await deleteDoc(itemRef);
@@ -85,7 +110,15 @@ export const useMyList = () => {
       try {
         // Use Promise.all instead of forEach to properly wait for all deletions
         const deletePromises = myList.map(async item => {
-          const itemRef = doc(db, 'users', currentUser.uid, 'myList', item.id.toString());
+          const itemRef = doc(
+            db,
+            'users',
+            currentUser.uid,
+            'profiles',
+            activeProfile?.id || 'default',
+            'myList',
+            item.id.toString()
+          );
           return await deleteDoc(itemRef);
         });
         await Promise.all(deletePromises);

@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useProfile } from '../context/ProfileContext.jsx';
 import { db } from '../firebase';
 import { doc, setDoc, deleteDoc, collection, onSnapshot } from 'firebase/firestore';
+import { profileStorageKey } from '../utils/profileStorage.js';
 
 export const useWatchedHistory = () => {
   const { currentUser } = useAuth();
+  const { activeProfile } = useProfile();
   const [watchedHistory, setWatchedHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -12,7 +15,14 @@ export const useWatchedHistory = () => {
     // Kung naay user, gamita ang Firestore
     if (currentUser) {
       setLoading(true);
-      const historyCollectionRef = collection(db, 'users', currentUser.uid, 'watchedHistory');
+      const historyCollectionRef = collection(
+        db,
+        'users',
+        currentUser.uid,
+        'profiles',
+        activeProfile?.id || 'default',
+        'watchedHistory'
+      );
 
       const unsubscribe = onSnapshot(historyCollectionRef, snapshot => {
         // Map docs to objects with watchedAt so we can sort by recency
@@ -35,7 +45,12 @@ export const useWatchedHistory = () => {
     }
     // Kung walay user, gamita ang localStorage (store array of {id, watchedAt})
     else {
-      const raw = JSON.parse(localStorage.getItem('nikzflixWatchedHistory')) || [];
+      const raw =
+        JSON.parse(
+          localStorage.getItem(
+            profileStorageKey('nikzflixWatchedHistory', activeProfile?.id || 'default')
+          )
+        ) || [];
       // raw may be either array of ids (old format) or array of objects
       const normalized = raw.map(r => (typeof r === 'string' ? { id: r, watchedAt: null } : r));
       normalized.sort((a, b) => {
@@ -46,13 +61,18 @@ export const useWatchedHistory = () => {
       setWatchedHistory(normalized.map(i => i.id));
       setLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser, activeProfile?.id]);
 
   // I-save sa localStorage kung walay user
   useEffect(() => {
     if (!currentUser) {
       // Save as array of { id, watchedAt } to preserve ordering and timestamps
-      const existingRaw = JSON.parse(localStorage.getItem('nikzflixWatchedHistory')) || [];
+      const existingRaw =
+        JSON.parse(
+          localStorage.getItem(
+            profileStorageKey('nikzflixWatchedHistory', activeProfile?.id || 'default')
+          )
+        ) || [];
       // Convert existing to map for quick merge
       const map = new Map();
       existingRaw.forEach(r => {
@@ -62,16 +82,27 @@ export const useWatchedHistory = () => {
       // Update map with current watchedHistory, preserving new timestamps as null (we don't have them locally otherwise)
       const nowIso = new Date().toISOString();
       const out = watchedHistory.map(id => ({ id, watchedAt: map.get(id) || nowIso }));
-      localStorage.setItem('nikzflixWatchedHistory', JSON.stringify(out));
+      localStorage.setItem(
+        profileStorageKey('nikzflixWatchedHistory', activeProfile?.id || 'default'),
+        JSON.stringify(out)
+      );
     }
-  }, [watchedHistory, currentUser]);
+  }, [watchedHistory, currentUser, activeProfile?.id]);
 
   const addToWatched = async itemId => {
     const idStr = itemId.toString();
 
     // For Firestore: always set the watchedAt to now so it becomes the most recent
     if (currentUser) {
-      const itemRef = doc(db, 'users', currentUser.uid, 'watchedHistory', idStr);
+      const itemRef = doc(
+        db,
+        'users',
+        currentUser.uid,
+        'profiles',
+        activeProfile?.id || 'default',
+        'watchedHistory',
+        idStr
+      );
       try {
         await setDoc(itemRef, { watchedAt: new Date().toISOString() });
       } catch (error) {
@@ -93,7 +124,15 @@ export const useWatchedHistory = () => {
       try {
         // Use Promise.all instead of forEach to properly wait for all deletions
         const deletePromises = watchedHistory.map(async id => {
-          const itemRef = doc(db, 'users', currentUser.uid, 'watchedHistory', id);
+          const itemRef = doc(
+            db,
+            'users',
+            currentUser.uid,
+            'profiles',
+            activeProfile?.id || 'default',
+            'watchedHistory',
+            id
+          );
           return await deleteDoc(itemRef);
         });
         await Promise.all(deletePromises);

@@ -11,6 +11,7 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import { SettingsProvider } from './context/SettingsContext.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { ToastProvider } from './components/ToastProvider.jsx';
+import { ProfileProvider } from './context/ProfileContext.jsx';
 import { initSentry } from './config/sentry.js';
 import { initCapacitor } from './utils/capacitor.js';
 import { db } from './utils/indexedDB.js';
@@ -52,11 +53,13 @@ createRoot(document.getElementById('root')).render(
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <AuthProvider>
-            <SettingsProvider>
-              <ToastProvider>
-                <App />
-              </ToastProvider>
-            </SettingsProvider>
+            <ProfileProvider>
+              <SettingsProvider>
+                <ToastProvider>
+                  <App />
+                </ToastProvider>
+              </SettingsProvider>
+            </ProfileProvider>
           </AuthProvider>
         </BrowserRouter>
         {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}

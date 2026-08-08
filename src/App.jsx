@@ -47,6 +47,7 @@ const ChatRoomPage = lazy(() =>
 );
 const AnimePage = lazy(() => import('./pages/AnimePage').then(m => ({ default: m.AnimePage })));
 const DramaPage = lazy(() => import('./pages/DramaPage').then(m => ({ default: m.DramaPage })));
+const IPTVPage = lazy(() => import('./pages/IPTVPage').then(m => ({ default: m.IPTVPage })));
 const VideokePage = lazy(() =>
   import('./pages/VideokePage').then(m => ({ default: m.VideokePage }))
 );
@@ -72,6 +73,10 @@ const CastSettingsPage = lazy(() =>
 const DownloadsPage = lazy(() =>
   import('./pages/DownloadsPage').then(m => ({ default: m.default }))
 );
+const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
+const PartyRoomPage = lazy(() =>
+  import('./pages/PartyRoomPage').then(m => ({ default: m.PartyRoomPage }))
+);
 const WatchPartyJoinPage = lazy(() =>
   import('./pages/WatchPartyJoinPage').then(m => ({ default: m.default }))
 );
@@ -84,6 +89,7 @@ export default function App() {
   const [modalItem, setModalItem] = useState(null);
   const [playOnOpen, setPlayOnOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [installPromptEvent, setInstallPromptEvent] = useState(null);
   const [networkStatus, setNetworkStatus] = useState(() => {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       return 'offline';
@@ -191,6 +197,25 @@ export default function App() {
     }
   }, [showToast]);
 
+  useEffect(() => {
+    const onBeforeInstallPrompt = event => {
+      event.preventDefault();
+      setInstallPromptEvent(event);
+    };
+
+    const onAppInstalled = () => {
+      setInstallPromptEvent(null);
+      showToast('NikzFlix TV installed on this device.', 'success', 3500);
+    };
+
+    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+    window.addEventListener('appinstalled', onAppInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', onAppInstalled);
+    };
+  }, [showToast]);
+
   const handleOpenModal = (item, play = false) => {
     setModalItem(item);
     setPlayOnOpen(play);
@@ -203,6 +228,23 @@ export default function App() {
 
   const handleSplashFinish = () => {
     setShowSplash(false);
+  };
+
+  const handleInstallApp = async () => {
+    if (!installPromptEvent) {
+      showToast('Install prompt is not available yet.', 'info', 3000);
+      return;
+    }
+
+    try {
+      installPromptEvent.prompt();
+      const choice = await installPromptEvent.userChoice;
+      if (choice?.outcome === 'accepted') {
+        showToast('Install accepted. NikzFlix TV is being added.', 'success', 3000);
+      }
+    } finally {
+      setInstallPromptEvent(null);
+    }
   };
 
   // Show splash screen first
@@ -218,6 +260,7 @@ export default function App() {
         theme={theme}
         toggleTheme={toggleTheme}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onInstallApp={installPromptEvent ? handleInstallApp : null}
       />
 
       <div className="flex flex-1 flex-col pt-20 md:pt-24">
@@ -243,6 +286,10 @@ export default function App() {
                 element={
                   <AnimePage key="anime" onOpenModal={handleOpenModal} isWatched={isWatched} />
                 }
+              />
+              <Route
+                path="/live-tv"
+                element={<IPTVPage key="live-tv" onOpenModal={handleOpenModal} />}
               />
               <Route
                 path="/drama"
@@ -282,6 +329,8 @@ export default function App() {
                 path="/downloads"
                 element={<DownloadsPage key="downloads" onOpenModal={handleOpenModal} />}
               />
+              <Route path="/admin" element={<AdminPage key="admin" />} />
+              <Route path="/party/:roomCode" element={<PartyRoomPage key="party-room" />} />
               <Route
                 path="/watch-party/:partyId"
                 element={<WatchPartyJoinPage key="watch-party" />}

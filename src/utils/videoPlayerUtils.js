@@ -120,10 +120,11 @@ export class PlaybackSpeedController {
  * Watch progress tracker
  */
 export class WatchProgressTracker {
-  constructor(itemId, totalDuration) {
+  constructor(itemId, totalDuration, storageKey = 'watchProgress') {
     this.itemId = itemId;
     this.totalDuration = totalDuration;
     this.saveInterval = null;
+    this.storageKey = storageKey;
   }
 
   startTracking(videoElement) {
@@ -149,20 +150,20 @@ export class WatchProgressTracker {
       timestamp: Date.now(),
     };
 
-    const allProgress = JSON.parse(localStorage.getItem('watchProgress') || '{}');
+    const allProgress = JSON.parse(localStorage.getItem(this.storageKey) || '{}');
     allProgress[this.itemId] = progress;
-    localStorage.setItem('watchProgress', JSON.stringify(allProgress));
+    localStorage.setItem(this.storageKey, JSON.stringify(allProgress));
   }
 
-  static getProgress(itemId) {
-    const allProgress = JSON.parse(localStorage.getItem('watchProgress') || '{}');
+  static getProgress(itemId, storageKey = 'watchProgress') {
+    const allProgress = JSON.parse(localStorage.getItem(storageKey) || '{}');
     return allProgress[itemId] || null;
   }
 
-  static clearProgress(itemId) {
-    const allProgress = JSON.parse(localStorage.getItem('watchProgress') || '{}');
+  static clearProgress(itemId, storageKey = 'watchProgress') {
+    const allProgress = JSON.parse(localStorage.getItem(storageKey) || '{}');
     delete allProgress[itemId];
-    localStorage.setItem('watchProgress', JSON.stringify(allProgress));
+    localStorage.setItem(storageKey, JSON.stringify(allProgress));
   }
 }
 

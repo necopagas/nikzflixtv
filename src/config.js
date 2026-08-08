@@ -85,6 +85,7 @@ export const API_ENDPOINTS = {
   recommendations: (type, id) => tmdb(`/${type}/${id}/recommendations`),
   byGenre: genreId => `${tmdb('/discover/movie')}&with_genres=${genreId}&sort_by=popularity.desc`,
   discoverMovies: params => `${tmdb('/discover/movie')}&${toQS(params)}`,
+  discoverTv: params => `${tmdb('/discover/tv')}&${toQS(params)}`,
 };
 
 // --- EMBED SOURCES ---
@@ -391,4 +392,3 @@ export const getEmbedUrl = (type, id, season, episode, imdb_id, mal_id) => {
   }
   return null;
 };
-

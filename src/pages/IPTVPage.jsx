@@ -3,11 +3,20 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { IPTVPlayer } from '../components/IPTVPlayer';
 import { useIPTVSync } from '../hooks/useIPTVSync'; // Auto-sync hook
 import { useChannelHealth } from '../hooks/useChannelHealth'; // Health check hook
-import { FaSync, FaHeartbeat, FaCircle, FaSearch } from 'react-icons/fa';
+import {
+  FaSync,
+  FaHeartbeat,
+  FaCircle,
+  FaSearch,
+  FaMicrophone,
+  FaMicrophoneSlash,
+  FaLock,
+} from 'react-icons/fa';
 import ChannelRequestModal from '../components/ChannelRequestModal';
 import { useChannelDiscovery } from '../hooks/useChannelDiscovery';
 import { getSeededScrapeCandidates } from '../utils/scrapeSeeds';
 import logger from '../utils/logger';
+import { useProfile } from '../context/ProfileContext.jsx';
 
 const DISCOVERY_STORAGE_KEY = 'iptv_discovery_cache_v1';
 const MAX_DISCOVERY_CANDIDATES = 10;
@@ -36,6 +45,7 @@ const buildDiscoveryKey = channel => {
 export const IPTVPage = () => {
   // Use auto-sync hook (syncs once per hour)
   const { channels, isSyncing, syncStatus, syncChannels, hasUpdates } = useIPTVSync(true);
+  const { activeProfile, unlockKidsProfile, isKidsUnlocked } = useProfile();
   const [userChannels, setUserChannels] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('iptv_user_channels') || '[]');
@@ -77,6 +87,11 @@ export const IPTVPage = () => {
     }
   });
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [voiceActive, setVoiceActive] = useState(false);
+  const [kidsPinInput, setKidsPinInput] = useState('');
+  const recognitionRef = useRef(null);
 
   const { discover: discoverStreams } = useChannelDiscovery({
     country: 'PH',
@@ -900,6 +915,87 @@ export const IPTVPage = () => {
     [attemptDiscoveryFallback]
   );
 
+  const startVoiceSearch = useCallback(() => {
+    const SpeechRecognition =
+      typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
+    if (!SpeechRecognition) {
+      setVoiceTranscript('Voice search is not supported in this browser.');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.onresult = event => {
+        const transcript = event.results?.[0]?.[0]?.transcript || '';
+        setSearch(transcript);
+        setVoiceTranscript(transcript);
+        setShowVoiceModal(false);
+        setVoiceActive(false);
+      };
+      recognition.onerror = () => {
+        setVoiceTranscript('Voice capture failed. Try typing instead.');
+        setVoiceActive(false);
+      };
+      recognition.onend = () => setVoiceActive(false);
+      recognition.start();
+      recognitionRef.current = recognition;
+      setVoiceActive(true);
+      setShowVoiceModal(true);
+      setVoiceTranscript('Listening for a channel name...');
+    } catch (error) {
+      logger.warn('[IPTV] Voice search failed to start', error);
+      setVoiceTranscript('Voice search could not start.');
+      setVoiceActive(false);
+    }
+  }, []);
+
+  const kidsLocked = Boolean(activeProfile?.isKids && !isKidsUnlocked);
+
+  if (kidsLocked) {
+    return (
+      <div className="px-4 sm:px-8 md:px-16 pt-28 pb-20 min-h-screen">
+        <div className="mx-auto max-w-2xl rounded-3xl border border-yellow-400/20 bg-black/60 p-8 text-center shadow-2xl backdrop-blur-xl">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border border-yellow-400/30 bg-yellow-400/10 text-3xl text-yellow-300">
+            <FaLock />
+          </div>
+          <h1 className="text-3xl font-bold">Kids profile lock</h1>
+          <p className="mt-3 text-white/70">
+            Live TV is hidden while the Kids profile is active. Enter the parent PIN to unlock it
+            for this session.
+          </p>
+          <form
+            className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
+            onSubmit={e => {
+              e.preventDefault();
+              const result = unlockKidsProfile(kidsPinInput);
+              if (!result.ok) {
+                setVoiceTranscript('Incorrect parent PIN.');
+              }
+            }}
+          >
+            <input
+              value={kidsPinInput}
+              onChange={e => setKidsPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              placeholder="1234"
+              inputMode="numeric"
+              maxLength={4}
+              className="w-32 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center tracking-[0.4em] text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+            <button className="rounded-xl bg-yellow-400 px-5 py-3 font-semibold text-black transition hover:bg-yellow-300">
+              Unlock Live TV
+            </button>
+          </form>
+          {voiceTranscript && (
+            <div className="mt-4 text-sm text-yellow-100/80">{voiceTranscript}</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 sm:px-8 md:px-16 pt-28 pb-20 min-h-screen">
       <div className="max-w-7xl mx-auto">
@@ -1052,13 +1148,35 @@ export const IPTVPage = () => {
           {/* Controls + Channel list */}
           <div className="md:col-span-1">
             <div className="flex flex-wrap gap-3 mb-6 justify-center">
-              <input
-                type="text"
-                placeholder="Search channels..."
-                className="flex-1 min-w-[200px] max-w-md p-3 rounded-lg bg-(--bg-secondary) text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-(--brand-color)"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
+              <div className="relative flex-1 min-w-[240px] max-w-md">
+                <input
+                  type="text"
+                  placeholder="Search channels..."
+                  className="w-full p-3 pr-24 rounded-lg bg-(--bg-secondary) text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-(--brand-color)"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowVoiceModal(true)}
+                    className="rounded-md p-2 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                    aria-label="Open voice search"
+                    title="Voice search"
+                  >
+                    {voiceActive ? <FaMicrophoneSlash /> : <FaMicrophone />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={startVoiceSearch}
+                    className="rounded-md p-2 bg-red-600 text-white hover:bg-red-500"
+                    aria-label="Start voice search"
+                    title="Start voice search"
+                  >
+                    <FaSearch />
+                  </button>
+                </div>
+              </div>
               <select
                 className="p-3 rounded-lg bg-(--bg-secondary) text-white focus:outline-none focus:ring-2 focus:ring-(--brand-color)"
                 value={category}
@@ -1156,6 +1274,42 @@ export const IPTVPage = () => {
           </div>
         </div>
       </div>
+      {showVoiceModal && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 backdrop-blur-sm px-4"
+          onClick={() => setShowVoiceModal(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl border border-white/10 bg-[#111318] p-6 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold">Voice Search</h3>
+              <button
+                type="button"
+                onClick={() => setShowVoiceModal(false)}
+                className="rounded-full bg-white/5 px-3 py-1 text-white/70 hover:bg-white/10 hover:text-white"
+              >
+                Close
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={startVoiceSearch}
+              className="mb-4 w-full rounded-2xl bg-red-600 px-5 py-4 font-semibold text-white transition hover:bg-red-500"
+            >
+              {voiceActive ? 'Listening...' : 'Tap to speak'}
+            </button>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Type a channel name..."
+              className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+            {voiceTranscript && <p className="mt-4 text-sm text-white/65">{voiceTranscript}</p>}
+          </div>
+        </div>
+      )}
       <ChannelRequestModal
         open={showRequestModal}
         onClose={() => setShowRequestModal(false)}
